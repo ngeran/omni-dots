@@ -31,6 +31,9 @@ in
     # Whole-dir sources — fully static, no runtime writes
     "fastfetch".source    = ../configs/fastfetch;
     "rofi".source         = ../configs/rofi;
+    "ghostty".source      = ../configs/ghostty;
+    "kitty".source        = ../configs/kitty;
+    "ngeran".source       = ../configs/ngeran;
     "hypr/scripts".source = ../configs/hypr/scripts;   # scripts/ is static
 
     # Per-file hypr sources — keeps ~/.config/hypr/ writable for the
