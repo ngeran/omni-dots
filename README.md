@@ -1,139 +1,119 @@
-```markdown
 # 🪐 Omni-Nix Flake Architecture
 
-Welcome to the unified, declarative NixOS and Home Manager infrastructure configuration framework. This environment is built to balance strict structural reproducibility with an agile, high-performance developer workspace.
+A declarative NixOS + Home Manager flake for the **`nixos-btw`** machine (x86_64-linux, NixOS 26.05, AMD CPU/GPU desktop). It installs the OS, packages, services, and **ingests application configs** — and backs up to GitHub.
 
-Every error has a story—and this configuration is written to ensure reproducibility isn't one of them.
+## Two repos
 
----
+| Repo | Path | GitHub remote | Holds |
+|---|---|---|---|
+| **omni-dots** (this repo) | `~/.omni-nix` | `github.com/ngeran/omni-dots` | the flake: system + home config, packages, and ingested configs (fastfetch, rofi, hypr) |
+| **velocity** | `~/.config/quickshell` | `github.com/ngeran/velocity` | the QML desktop shell — kept separate (actively edited in place, writes runtime files) |
 
-## 📂 Directory Structure
-
-The system layout segregates hardware targets, user-space profiles, and modular functional layers for frictionless scalability:
+## Directory structure
 
 ```text
 ~/.omni-nix/
-├── flake.nix                  # Infrastructure entry point, inputs, and channel locks
-├── flake.lock                 # Strict cryptographic dependency version pins
-├── omni-apply                 # Custom shell wrapper script to rebuild the machine
-├── .gitignore                 # Safe-exclusion filters for secret abstraction
-├── README.md                  # This architectural reference documentation
+├── flake.nix              # entry point: inputs + the nixos-btw system
+├── flake.lock             # pinned inputs → reproducibility
+├── wallpaper.jpg          # Stylix palette source (large binary, intentional)
 │
-├── hosts/                     # Machine-specific bare-metal definitions
-│   └── desktop/               # Host profile for main system layout
-│       ├── default.nix        # System-level imports, networking, and host hooks
-│       └── hardware-configuration.nix # Generated kernel modules & file systems
+├── configs/               # ★ ingested application config trees (checked in)
+│   ├── fastfetch/         #   deployed whole-dir → ~/.config/fastfetch
+│   ├── rofi/              #   deployed whole-dir → ~/.config/rofi
+│   └── hypr/              #   deployed PER-FILE (dir must stay writable)
 │
-├── home/                      # User-space Home Manager state configurations
-│   ├── default.nix            # User context, variables, and module mappings
-│   ├── apps.nix               # Graphic assets, theme engines, and application lists
-│   └── quickshell.nix         # Minimalist UI/UX desktop styling layouts
+├── core/                  # base system: bootloader, user, nix settings
+├── hosts/desktop/         # this machine's hardware + compositor (Hyprland)
 │
-└── modules/                   # Reusable system components and app stacks
-    ├── audio.nix              # PipeWire sound infrastructure profiles
-    ├── bluetooth.nix          # Hardware radio controller maps
-    └── apps/                  # Feature/Stack-specific configurations
-        ├── essentials.nix     # Core CLI binaries (eza, bat, git, starship)
-        ├── neovim.nix         # Native Neovim runtime wrapper configuration
-        ├── programming.nix    # Node, Python, Tailwind, and Font management
-        └── virtualization.nix # QEMU, KVM, and libvirtd system hypervisors
-
+├── home/                  # Home Manager config (user: nikos)
+│   ├── default.nix        # wiring hub — imports the modules below
+│   ├── dotfiles.nix       # ★ ingests configs/* into ~/.config (xdg.configFile)
+│   ├── git.nix            # git identity (HM owns ~/.config/git/config)
+│   ├── stylix.nix         # bridges Stylix palette → quickshell seed
+│   ├── quickshell.nix     # installs the quickshell package
+│   └── apps.nix           # cursor / GTK theme / icons / dark mode
+│
+└── modules/               # system + home modules (audio, bluetooth, amdgpu, …)
 ```
+
+## Build & deploy
+
+```bash
+omni-apply      # alias: sudo nixos-rebuild switch --flake ~/.omni-nix#nixos-btw
+```
+
+Flakes evaluate from the **git index** — `git add` any new/changed file before rebuilding, or it's invisible to the build. Use `sudo nixos-rebuild dry-activate --flake .#nixos-btw` to test without switching.
 
 ---
 
-## 🛠️ Operational Guide & Workflows
+## ★ Tracking a new config file/folder
 
-### 1. How to Add New System-Level Applications/Hardware
+The declarative way to version-control an app's config. Deployed configs become **read-only Nix-store symlinks** at `~/.config/<app>` — you edit the file under `configs/` and rebuild; never edit `~/.config/<app>` directly. Three cases:
 
-If a service requires root privileges, kernel tracking, or kernel drivers (like virtualization hooks or GPU computing):
+### Case A — a fully static config (the common case: fastfetch, rofi)
 
-1. Navigate to `modules/apps/` or create a new file under `modules/`.
-2. Wrap your targets inside standard NixOS configuration logic (`environment.systemPackages` or raw `services.x.enable = true;`).
-3. Import your module path inside your specific machine file: `hosts/desktop/default.nix`.
-4. Stage the file in git (`git add .`) and execute `omni-apply`.
+The app never writes to its config dir at runtime.
 
-### 2. How to Add User-Level CLI or GUI Applications
+1. **Copy** the dir into the repo:
+   ```bash
+   cp -r ~/.config/<app> configs/<app>
+   ```
+2. **Wire** it in `home/dotfiles.nix`:
+   ```nix
+   xdg.configFile."<app>".source = ../configs/<app>;
+   ```
+3. **Build & push** using the flow below.
 
-If an application is self-contained or configures a user-space profile (like design tools or localized dependencies):
+### Case B — a config dir that is WRITTEN TO at runtime (e.g. hypr)
 
-1. Open `home/apps.nix` (or create a dedicated module inside `modules/apps/` that targets `home.packages`).
-2. Add the corresponding package name found on [NixOS Package Search](https://search.nixos.org).
-3. Stage changes and deploy using `omni-apply`.
+Quickshell writes `~/.config/hypr/quickshell-colors.conf` on theme changes. A whole-dir `.source` would turn the dir into a read-only symlink and **break those writes**, so deploy **per-file** and leave the runtime file unmanaged:
 
-### 3. Adding New Devices/Machines
+1. **Copy only the static files** into `configs/<app>/` — exclude the runtime-written file(s).
+2. **Wire per-file** in `home/dotfiles.nix` — copy the existing `hyprStaticFiles` list + `builtins.listToAttrs` pattern. The dir stays a real, writable directory.
+3. **Build & push.**
 
-To instantiate a completely new bare-metal target machine (e.g., a laptop or home server) under this Flake footprint:
+### Case C — a separate, actively-developed git project (e.g. quickshell)
 
-1. Generate a hardware profile on that machine using `nixos-generate-config --dir ./tmp`.
-2. Create a new machine profile folder: `hosts/<machine-name>/`.
-3. Copy the generated `hardware-configuration.nix` into that directory, and write a matching `default.nix` mapping its configuration.
-4. Declare a corresponding host block matching your hostname inside `flake.nix` under `nixosConfigurations`.
+Do **not** ingest it. Keep it as its own repo so you keep the edit → hot-reload dev loop, and back it up to its own GitHub remote (see *Two repos*).
+
+### The build & push flow (every time)
+
+```bash
+git add configs/<app> home/dotfiles.nix                  # 1. stage (flakes read the git index)
+sudo nixos-rebuild dry-activate --flake .#nixos-btw      # 2. confirm a clean build
+omni-apply                                                # 3. apply
+ls -l ~/.config/<app>                                     # 4. verify it's now a store symlink
+rm -rf ~/.config/<app>.backup                             # 5. remove the HM backup once verified
+git commit -m "feat(dots): ingest <app> config"          # 6. commit + push
+git push
+```
+
+### Gotchas
+
+- **`git add` before rebuild** — a new `.nix` or anything under `configs/` is invisible to the build until staged.
+- **Only static configs go as whole-dir sources.** Runtime-written dirs must be per-file (Case B), or the app's writes silently fail.
+- **HM backs up** an existing live `~/.config/<app>` to `<app>.backup` on first deploy (`backupFileExtension = "backup"`) — remove it once you've verified the symlink.
+- **Edit `configs/`, never `~/.config/<app>`** — the live path is a symlink into the read-only store.
+- **Re-login** for session/env changes to take effect.
 
 ---
 
-## 🛡️ Secrets Management & Best Practices
+## Adding packages & services (not configs)
 
-To safeguard production endpoints and API pathways while utilizing a public GitHub backup repository, follow these core tenets:
+- **System service / module** (needs root, drivers, kernel): create under `modules/`, import it in `hosts/desktop/default.nix`.
+- **User package** (no config needed): add to `home.packages` in `home/apps.nix` or `modules/apps/essentials.nix`.
+- Search packages at <https://search.nixos.org>.
 
-* **Never Plaintext Secrets:** Do not hardcode private access tokens, SSH credentials, or API structures inside any tracked `.nix` file.
-* **The Out-of-Tree Secret Matrix:** Store raw secret hashes in an untracked local filesystem layer outside the flake tree (e.g., `~/.config/secrets/`).
-* **Decoupled Injection Patterns:** Leverage environmental fallback properties inside application modules (e.g., configuring `ANTHROPIC_AUTH_TOKEN_FILE` inside your profile path instead of exposing raw variables to the pure compiler environment).
-* **Always Git-Stage:** Nix Flakes evaluate strictly from the current Git index. If you write or modify a `.nix` module, you **must** run `git add <file>` before building, or the compiler will completely ignore it.
+## Secrets
 
----
+Secrets live **out of tree** at `~/.config/secrets/` (gitignored) and are injected by activation scripts — never committed. Example: `ANTHROPIC_AUTH_TOKEN` is read from `~/.config/secrets/zai_key` and written to `~/.claude/settings.json` by the `configure-claude` activation script. Never put a literal secret in a tracked `.nix` file.
 
-## 🚀 Cloning to an Entirely New System
-
-To replicate your environment layout on a freshly installed NixOS instance:
-
-### Step 1: Boot on the target machine and capture your hardware state
+## Cloning to a fresh machine
 
 ```bash
-sudo nixos-generate-config --show-hardware-config > /tmp/hardware-configuration.nix
-
+git clone git@github.com:ngeran/omni-dots.git   ~/.omni-nix
+git clone git@github.com:ngeran/velocity.git    ~/.config/quickshell   # the desktop shell
+sudo nixos-rebuild switch --flake ~/.omni-nix#nixos-btw
 ```
 
-### Step 2: Clone your configuration repository
-
-```bash
-git clone git@github.com:yourusername/omni-nix.git ~/.omni-nix
-cd ~/.omni-nix
-
-```
-
-### Step 3: Swap or define your host profile
-
-Replace the template hardware configuration of an existing profile, or establish a brand new machine profile definition using your captured `/tmp/hardware-configuration.nix`. Ensure your system hostname matches the target configuration definition block.
-
-### Step 4: Bootstrapping and Switching Live
-
-Initialize the pipeline manually for the first switch sequence:
-
-```bash
-sudo nixos-rebuild switch --flake .#<your-hostname-here>
-
-```
-
-Once the initial generation activates, your custom path wrappers take over. Moving forward, you can modify, extend, and deploy your entire infrastructure ecosystem seamlessly by running your system upgrade utility shortcut:
-
-```bash
-omni-apply
-
-```
-
-```
-
----
-
-### Step 3: Track, Commit, and Backup
-
-Stage these final repository elements:
-
-```bash
-cd ~/.omni-nix
-git add .gitignore README.md
-
-```
-
-From here, your configuration structure is completely locked down, protected from credential leaks, and fully ready to be pushed to its remote GitHub tracking repository!
+Then restore `~/.config/secrets/` (out of tree) — `wallpaper.jpg` ships in the repo, so Stylix regenerates its palette automatically on first build.
