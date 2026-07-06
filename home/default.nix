@@ -10,6 +10,7 @@
     ./quickshell.nix
     ./stylix.nix
     ./git.nix
+    ./dotfiles.nix
     ../modules/apps/essentials.nix
     ../modules/apps/programming.nix
     ../modules/apps/nixvim/default.nix

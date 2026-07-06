@@ -1,0 +1,95 @@
+/**
+ * OBSIDIAN STEALTH - QD-OLED FINAL
+ * No Boxes | No Overlays | Plane Lines
+ **/
+
+configuration {
+    modi:                        "drun";
+    show-icons:                  true;
+    display-drun:                "";
+    drun-display-format:         "{name}";
+    font:                        "JetBrainsMono Nerd Font 11";
+}
+
+/* Global Reset to kill all default white/gray boxes */
+* {
+    background-color:            transparent;
+    /* Custom Hex Codes */
+    text-normal:                 #7B9EB1;
+    text-selected:               #DE6145;
+    line-color:                  #16161E;
+}
+
+window {
+    width:                       600px;
+    enabled:                     true;
+    background-color:            #000000; /* Pure Black */
+    border:                      1px;
+    border-color:                @line-color;
+    border-radius:               8px;
+    location:                    center;
+    anchor:                      center;
+}
+
+mainbox {
+    enabled:                     true;
+    spacing:                     0px;
+    children:                    [ "inputbar", "listview" ];
+}
+
+inputbar {
+    enabled:                     true;
+    padding:                     20px 25px;
+    border:                      0px 0px 1px 0px;
+    border-color:                @line-color;
+    children:                    [ "entry" ];
+}
+
+entry {
+    enabled:                     true;
+    text-color:                  @text-normal;
+    cursor:                      text;
+    placeholder:                 "Search apps...";
+    placeholder-color:           #333333;
+}
+
+listview {
+    enabled:                     true;
+    columns:                     1;
+    lines:                       8;
+    cycle:                       true;
+    scrollbar:                   false;
+    fixed-height:                true;
+    spacing:                     0px;
+}
+
+/* App Entry Styling */
+element {
+    enabled:                     true;
+    spacing:                     15px;
+    padding:                     15px 25px;
+    /* Plane line separating each entry */
+    border:                      0px 0px 1px 0px;
+    border-color:                @line-color;
+    text-color:                  @text-normal;
+}
+
+/* Selection: Text only color change, absolutely NO background */
+element selected {
+    background-color:            transparent;
+    text-color:                  @text-selected;
+}
+
+element-icon {
+    size:                        24px;
+    cursor:                      inherit;
+    background-color:            transparent;
+}
+
+element-text {
+    vertical-align:              0.5;
+    horizontal-align:            0.0;
+    cursor:                      inherit;
+    text-color:                  inherit;
+    background-color:            transparent;
+}
