@@ -1,0 +1,22 @@
+# Nix / Flake build outputs and results
+result
+result-*
+.direnv/
+.nix-profile/
+
+# Runtime caching & state files
+.npm/
+_logs/
+*.log
+
+# Personal Secrets and Dynamic Keys (Absolute Safeguard)
+.config/secrets/
+.ssh/id_*
+!.ssh/id_*.pub
+secrets/
+*.secret
+*.pem
+*.key
+
+# Persistent state directories we don't track
+.claude/settings.json
