@@ -5,6 +5,14 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Silence boot logs so they don't overlap with greetd (tuigreet) on TTY1.
+  # Without this, systemd services and kernel messages print [ OK ] status
+  # lines OVER the greeter while it is drawing → the classic corrupted TTY.
+  # `quiet` suppresses most kernel output; show_status=auto shows systemd
+  # status only on failure/slow boot (not every service start).
+  boot.kernelParams = [ "quiet" "systemd.show_status=auto" "rd.systemd.show_status=auto" ];
+  boot.consoleLogLevel = 3;   # 0=emerg..7=debug; 3 = only errors and above
+
   # Core Localization
   time.timeZone = "America/New_York";
 
