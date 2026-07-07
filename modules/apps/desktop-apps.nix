@@ -16,5 +16,7 @@
     awww          # Your wallpaper tool
     grim          # Screenshot grabber
     slurp         # Area selector
+    # --- Notification --
+    mako
   ];
 }
