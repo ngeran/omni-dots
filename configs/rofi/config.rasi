@@ -1,7 +1,20 @@
 /**
- * OBSIDIAN STEALTH - QD-OLED FINAL
- * No Boxes | No Overlays | Plane Lines
+ * OBSIDIAN STEALTH - VOID_LAUNCHER EDITION (theme-aware)
+ * Same footprint (600px width / 8-line list), sharp corners, full-fill
+ * selection, terminal-style prompt + footer.
+ *
+ * Colors follow the ACTIVE Quickshell theme: the settings process writes the
+ * live palette to ~/.cache/theme/rofi.rasi (variables @bg, @text, @accent…),
+ * and we @import it here. rofi re-reads config.rasi on every launch, so a
+ * theme change applies the next time the launcher opens — no reload needed.
+ *
+ * The import is an ABSOLUTE path on purpose: config.rasi is deployed as a
+ * read-only nix-store symlink, and rofi resolves a relative @import against
+ * the store path (where ../../.cache/theme/ does not exist). Absolute works.
+ * Var names are hyphen-free because rasi rejects hyphens in @var references.
  **/
+
+@import "/home/nikos/.cache/theme/rofi.rasi"
 
 configuration {
     modi:                        "drun";
@@ -11,22 +24,21 @@ configuration {
     font:                        "JetBrainsMono Nerd Font 11";
 }
 
-/* Global Reset to kill all default white/gray boxes */
+/* Global reset — palette comes from the imported rofi.rasi */
 * {
     background-color:            transparent;
-    /* Custom Hex Codes */
-    text-normal:                 #7B9EB1;
-    text-selected:               #DE6145;
-    line-color:                  #16161E;
+    text-normal:                 @text;
+    text-selected:               @accent;
+    line-color:                  @outlinealt;
 }
 
 window {
     width:                       600px;
     enabled:                     true;
-    background-color:            #000000; /* Pure Black */
+    background-color:            @bg;
     border:                      1px;
     border-color:                @line-color;
-    border-radius:               8px;
+    border-radius:               0px;
     location:                    center;
     anchor:                      center;
 }
@@ -34,22 +46,29 @@ window {
 mainbox {
     enabled:                     true;
     spacing:                     0px;
-    children:                    [ "inputbar", "listview" ];
+    children:                    [ "inputbar", "listview", "message" ];
 }
 
+/* Search bar — terminal prompt style, bottom rule only, no box */
 inputbar {
     enabled:                     true;
-    padding:                     20px 25px;
+    padding:                     18px 25px;
     border:                      0px 0px 1px 0px;
     border-color:                @line-color;
-    children:                    [ "entry" ];
+    children:                    [ "prompt", "entry" ];
+}
+
+prompt {
+    enabled:                     true;
+    text-color:                  @text-selected;
+    padding:                     0px 12px 0px 0px;
 }
 
 entry {
     enabled:                     true;
     text-color:                  @text-normal;
     cursor:                      text;
-    placeholder:                 "Search apps...";
+    placeholder:                 "Type to search...";
     placeholder-color:           #333333;
 }
 
@@ -60,28 +79,29 @@ listview {
     cycle:                       true;
     scrollbar:                   false;
     fixed-height:                true;
-    spacing:                     0px;
+    spacing:                     4px;
+    padding:                     10px 12px;
 }
 
-/* App Entry Styling */
+/* App entry — flat row, no borders between items (gap, not rules) */
 element {
     enabled:                     true;
     spacing:                     15px;
-    padding:                     15px 25px;
-    /* Plane line separating each entry */
-    border:                      0px 0px 1px 0px;
-    border-color:                @line-color;
+    padding:                     15px 13px;
+    border-radius:               0px;
+    background-color:            transparent;
     text-color:                  @text-normal;
 }
 
-/* Selection: Text only color change, absolutely NO background */
+/* Selected: full-row fill in accent, inverted (bg) text — follows the theme */
 element selected {
-    background-color:            transparent;
-    text-color:                  @text-selected;
+    background-color:            @text-selected;
+    text-color:                  @bg;
+    border-radius:               0px;
 }
 
 element-icon {
-    size:                        24px;
+    size:                        22px;
     cursor:                      inherit;
     background-color:            transparent;
 }
@@ -92,4 +112,20 @@ element-text {
     cursor:                      inherit;
     text-color:                  inherit;
     background-color:            transparent;
+}
+
+/* Footer strip — populated by the launcher binding's -mesg flag
+   (LAUNCHER in configs/hypr/environment.lua). Stays hidden until -mesg
+   is passed. */
+message {
+    enabled:                     true;
+    padding:                     12px 25px;
+    border:                      1px 0px 0px 0px;
+    border-color:                @line-color;
+    background-color:            @bg;
+}
+
+textbox {
+    text-color:                  @textdim;
+    font:                        "JetBrainsMono Nerd Font 10";
 }

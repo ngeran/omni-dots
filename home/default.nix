@@ -9,6 +9,7 @@
     ./apps.nix
     ./quickshell.nix
     ./stylix.nix
+    ./notifications.nix
     ./git.nix
     ./dotfiles.nix
     ../modules/apps/essentials.nix

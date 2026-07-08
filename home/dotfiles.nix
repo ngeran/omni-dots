@@ -28,10 +28,13 @@ in
   # ──────────────────────────────────────────────────────────────────────────
 
   xdg.configFile = {
-    # Whole-dir sources — fully static, no runtime writes
+    # Whole-dir sources — fully static, no runtime writes.
+    # NOTE: ghostty is deliberately NOT here — Quickshell writes the live
+    # theme into ~/.config/ghostty/config at runtime, so that file must stay
+    # writable (a whole-dir symlink would make it read-only and silently break
+    # live theming — the colors.json lesson). See ThemeService.syncToExternalApps.
     "fastfetch".source    = ../configs/fastfetch;
     "rofi".source         = ../configs/rofi;
-    "ghostty".source      = ../configs/ghostty;
     "kitty".source        = ../configs/kitty;
     "ngeran".source       = ../configs/ngeran;
     "hypr/scripts".source = ../configs/hypr/scripts;   # scripts/ is static
