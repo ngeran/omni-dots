@@ -5,12 +5,22 @@
  * FLAT transparent rows with dim text, full accent fill on the selected
  * row with inverted text, and a footer hint strip.
  *
- * Colors come from ~/.cache/theme/rofi.rasi, which the Quickshell settings
- * process writes on every theme change. Imported via ABSOLUTE path because
- * config.rasi is a read-only nix-store symlink (a relative @import would
- * resolve into the store and fail). Var names are hyphen-free (rasi rejects
- * hyphens in @var refs) and values must be UNQUOTED (a quoted "hex" is stored
- * as a string and silently breaks color properties → default light theme).
+ * HOW THE ROW COLORS WORK (the non-obvious part):
+ * Rofi's built-in default theme does NOT style `element normal` directly.
+ * It styles the substate selectors `element normal.normal`,
+ * `element selected.normal`, etc., and those read NAMED COLOR PROPERTIES:
+ *   normal-background, selected-normal-background, alternate-normal-background, …
+ * So overriding `element normal { … }` is futile — the default's substate
+ * rule (more specific) wins and you get the white/gray cells. The idiomatic
+ * fix is to set the NAMED PROPERTIES themselves, which is what we do in the
+ * `* {}` block below. That kills every default row cell in one place.
+ *
+ * Palette comes from ~/.cache/theme/rofi.rasi (written by Quickshell's
+ * ThemeService on every theme change), imported via ABSOLUTE path (config.rasi
+ * is a read-only nix-store symlink; a relative @import resolves into the
+ * store and fails). Var names are hyphen-free (rasi rejects hyphens in @var
+ * refs) and palette values must be UNQUOTED (a quoted "hex" is a string, not
+ * a color → properties silently fail → default light theme).
  **/
 
 @import "/home/nikos/.cache/theme/rofi.rasi"
@@ -23,9 +33,20 @@ configuration {
     font:                        "JetBrainsMono Nerd Font 11";
 }
 
-/* Global reset — every default fill killed so rows render truly flat */
+/* Global reset + rofi's named color properties (see header comment).
+   Non-selected rows: transparent + dim text. Selected row: accent fill + bg text. */
 * {
     background-color:            transparent;
+
+    normal-background:           transparent;             normal-foreground:           @textdim;
+    urgent-background:           transparent;             urgent-foreground:           @textdim;
+    active-background:           transparent;             active-foreground:           @textdim;
+    selected-normal-background:  @accent;                 selected-normal-foreground:  @bg;
+    selected-urgent-background:  @accent;                 selected-urgent-foreground:  @bg;
+    selected-active-background:  @accent;                 selected-active-foreground:  @bg;
+    alternate-normal-background: transparent;             alternate-normal-foreground: @textdim;
+    alternate-urgent-background: transparent;             alternate-urgent-foreground: @textdim;
+    alternate-active-background: transparent;             alternate-active-foreground: @textdim;
 }
 
 window {
@@ -79,26 +100,13 @@ listview {
     padding:                     12px;
 }
 
-/* Rows — FLAT. Explicit normal + alternate states override rofi's built-in
-   row fills (the default light cells). Dim text matches the mockup's
-   text-on-surface-variant. Direct @var refs only (no chained aliases —
-   rasi does not resolve var→var at render time). */
+/* Row structure only — colors come from the named properties above */
 element {
     enabled:                     true;
     spacing:                     15px;
     padding:                     13px;
     border-radius:               0px;
-    background-color:            transparent;
-    text-color:                  @textdim;
     cursor:                      pointer;
-}
-element normal {
-    background-color:            transparent;
-    text-color:                  @textdim;
-}
-element alternate {
-    background-color:            transparent;
-    text-color:                  @textdim;
 }
 element-icon {
     background-color:            transparent;
@@ -111,13 +119,6 @@ element-text {
     cursor:                      inherit;
     text-color:                  inherit;
     background-color:            transparent;
-}
-
-/* Selected row — full accent fill, inverted (bg) text */
-element selected {
-    background-color:            @accent;
-    text-color:                  @bg;
-    border-radius:               0px;
 }
 
 /* Footer hint strip — populated by the launcher binding's -mesg flag
