@@ -1,17 +1,16 @@
 /**
- * OBSIDIAN STEALTH - VOID_LAUNCHER EDITION (theme-aware)
- * Same footprint (600px width / 8-line list), sharp corners, full-fill
- * selection, terminal-style prompt + footer.
+ * VOID_LAUNCHER — theme-aware (adapts the active Quickshell palette)
  *
- * Colors follow the ACTIVE Quickshell theme: the settings process writes the
- * live palette to ~/.cache/theme/rofi.rasi (variables @bg, @text, @accent…),
- * and we @import it here. rofi re-reads config.rasi on every launch, so a
- * theme change applies the next time the launcher opens — no reload needed.
+ * Look: black canvas, terminal-style search (prompt glyph + underline),
+ * FLAT transparent rows with dim text, full accent fill on the selected
+ * row with inverted text, and a footer hint strip.
  *
- * The import is an ABSOLUTE path on purpose: config.rasi is deployed as a
- * read-only nix-store symlink, and rofi resolves a relative @import against
- * the store path (where ../../.cache/theme/ does not exist). Absolute works.
- * Var names are hyphen-free because rasi rejects hyphens in @var references.
+ * Colors come from ~/.cache/theme/rofi.rasi, which the Quickshell settings
+ * process writes on every theme change. Imported via ABSOLUTE path because
+ * config.rasi is a read-only nix-store symlink (a relative @import would
+ * resolve into the store and fail). Var names are hyphen-free (rasi rejects
+ * hyphens in @var refs) and values must be UNQUOTED (a quoted "hex" is stored
+ * as a string and silently breaks color properties → default light theme).
  **/
 
 @import "/home/nikos/.cache/theme/rofi.rasi"
@@ -19,17 +18,14 @@
 configuration {
     modi:                        "drun";
     show-icons:                  true;
-    display-drun:                "";
+    display-drun:                "❯";
     drun-display-format:         "{name}";
     font:                        "JetBrainsMono Nerd Font 11";
 }
 
-/* Global reset — palette comes from the imported rofi.rasi */
+/* Global reset — every default fill killed so rows render truly flat */
 * {
     background-color:            transparent;
-    text-normal:                 @text;
-    text-selected:               @accent;
-    line-color:                  @outlinealt;
 }
 
 window {
@@ -37,7 +33,7 @@ window {
     enabled:                     true;
     background-color:            @bg;
     border:                      1px;
-    border-color:                @line-color;
+    border-color:                @outlinealt;
     border-radius:               0px;
     location:                    center;
     anchor:                      center;
@@ -49,27 +45,27 @@ mainbox {
     children:                    [ "inputbar", "listview", "message" ];
 }
 
-/* Search bar — terminal prompt style, bottom rule only, no box */
+/* Search bar — terminal prompt glyph + single underline rule */
 inputbar {
     enabled:                     true;
-    padding:                     18px 25px;
+    padding:                     20px 25px 16px;
     border:                      0px 0px 1px 0px;
-    border-color:                @line-color;
+    border-color:                @outlinealt;
     children:                    [ "prompt", "entry" ];
+    spacing:                     12px;
 }
 
 prompt {
     enabled:                     true;
-    text-color:                  @text-selected;
-    padding:                     0px 12px 0px 0px;
+    text-color:                  @accent;
 }
 
 entry {
     enabled:                     true;
-    text-color:                  @text-normal;
+    text-color:                  @text;
     cursor:                      text;
     placeholder:                 "Type to search...";
-    placeholder-color:           #333333;
+    placeholder-color:           @textdim;
 }
 
 listview {
@@ -80,32 +76,35 @@ listview {
     scrollbar:                   false;
     fixed-height:                true;
     spacing:                     4px;
-    padding:                     10px 12px;
+    padding:                     12px;
 }
 
-/* App entry — flat row, no borders between items (gap, not rules) */
+/* Rows — FLAT. Explicit normal + alternate states override rofi's built-in
+   row fills (the default light cells). Dim text matches the mockup's
+   text-on-surface-variant. Direct @var refs only (no chained aliases —
+   rasi does not resolve var→var at render time). */
 element {
     enabled:                     true;
     spacing:                     15px;
-    padding:                     15px 13px;
+    padding:                     13px;
     border-radius:               0px;
     background-color:            transparent;
-    text-color:                  @text-normal;
+    text-color:                  @textdim;
+    cursor:                      pointer;
 }
-
-/* Selected: full-row fill in accent, inverted (bg) text — follows the theme */
-element selected {
-    background-color:            @text-selected;
-    text-color:                  @bg;
-    border-radius:               0px;
+element normal {
+    background-color:            transparent;
+    text-color:                  @textdim;
 }
-
+element alternate {
+    background-color:            transparent;
+    text-color:                  @textdim;
+}
 element-icon {
+    background-color:            transparent;
     size:                        22px;
     cursor:                      inherit;
-    background-color:            transparent;
 }
-
 element-text {
     vertical-align:              0.5;
     horizontal-align:            0.0;
@@ -114,18 +113,25 @@ element-text {
     background-color:            transparent;
 }
 
-/* Footer strip — populated by the launcher binding's -mesg flag
-   (LAUNCHER in configs/hypr/environment.lua). Stays hidden until -mesg
-   is passed. */
+/* Selected row — full accent fill, inverted (bg) text */
+element selected {
+    background-color:            @accent;
+    text-color:                  @bg;
+    border-radius:               0px;
+}
+
+/* Footer hint strip — populated by the launcher binding's -mesg flag
+   (LAUNCHER in configs/hypr/environment.lua). Stays hidden without -mesg. */
 message {
     enabled:                     true;
     padding:                     12px 25px;
     border:                      1px 0px 0px 0px;
-    border-color:                @line-color;
+    border-color:                @outlinealt;
     background-color:            @bg;
 }
 
 textbox {
     text-color:                  @textdim;
     font:                        "JetBrainsMono Nerd Font 10";
+    horizontal-align:            0.5;
 }

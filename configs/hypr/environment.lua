@@ -5,7 +5,7 @@
 MAIN_MOD     = "SUPER"
 TERMINAL     = "ghostty"
 FILE_MANAGER = "thunar"
-LAUNCHER     = "rofi -show drun -mesg 'ENTER  RUN     ESC  EXIT'"
+LAUNCHER     = "rofi -show drun -mesg 'ENTER  RUN     ESC  EXIT     SYSTEM_READY'"
 
 
 -- ── Core Display & Cursor Scaling ────────────────────────────────────────────
