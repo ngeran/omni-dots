@@ -23,37 +23,62 @@
       url = "github:nix-community/nixvim/main"; # Using main for 26.05 compatibility
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
   };
 
-
   outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, ... }@inputs: {
-    nixosConfigurations.nixos-btw = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        # --- HARDWARE PROFILES ---
-        nixos-hardware.nixosModules.common-cpu-amd
-        nixos-hardware.nixosModules.common-gpu-amd
-        nixos-hardware.nixosModules.common-pc-ssd
+    nixosConfigurations = {
+      # --- MAIN DESKTOP RIG ---
+      nixos-btw = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          nixos-hardware.nixosModules.common-cpu-amd
+          nixos-hardware.nixosModules.common-gpu-amd
+          nixos-hardware.nixosModules.common-pc-ssd
 
-        ./core                          # Core systems settings
-        ./hosts/desktop                 # Desktop hardware & graphic layer
+          ./core                          # Core systems settings
+          ./hosts/desktop                 # Desktop hardware & graphic layer
 
-        stylix.nixosModules.stylix      # Wallpaper -> palette generator (replaces matugen)
+          stylix.nixosModules.stylix      # Wallpaper -> palette generator
 
-	# Pass nixvim into specialArgs so modules can see it
-        { _module.args.inputs = inputs; }
+          { _module.args.inputs = inputs; }
 
-        home-manager.nixosModules.home-manager {
-          home-manager = {
-            useGlobalPkgs = true;
-            useUserPackages = true;
-	    extraSpecialArgs = { inherit inputs; };
-            users.nikos = import ./home/default.nix;
-            backupFileExtension = "backup";
-          };
-        }
-      ];
+          home-manager.nixosModules.home-manager {
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = { inherit inputs; };
+              users.nikos = import ./home/default.nix;
+              backupFileExtension = "backup";
+            };
+          }
+        ];
+      };
+
+      # --- DELL LATITUDE 3440 LAPTOP ---
+      dell3440 = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          # Standard Dell Latitude optimizations (handles power management, CPU scaling, etc.)
+          nixos-hardware.nixosModules.dell-latitude-common
+
+          ./core                          # Inherit the exact same core configuration
+          ./hosts/dell3440                # Target folder for your laptop's hardware-configuration.nix
+
+          stylix.nixosModules.stylix      # Keep the theme engine unified
+
+          { _module.args.inputs = inputs; }
+
+          home-manager.nixosModules.home-manager {
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = { inherit inputs; };
+              users.nikos = import ./home/default.nix; # Shared dots across both machines
+              backupFileExtension = "backup";
+            };
+          }
+        ];
+      };
     };
   };
 }
