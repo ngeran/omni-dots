@@ -57,4 +57,9 @@
     # Tells Stylix that your explicit Adwaita style wins!
     style.name = lib.mkForce "adwaita-dark";
   };
+
+  # ── 5. Disable Stylix Desktop Hooks for Home Manager ────────────────────────
+  stylix.targets.gtk.enable = false;
+  stylix.targets.qt.enable = false;
+  stylix.targets.gnome.enable = false;
 }
