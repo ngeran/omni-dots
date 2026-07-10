@@ -16,6 +16,9 @@
   ];
 
   networking.hostName = "nixos-btw";
+  ===== LASTEST STABLE KERNEL =====
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
   boot.kernelModules = [ "kvm-amd" ];
 
   # =========================================================================
