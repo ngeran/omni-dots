@@ -1,4 +1,3 @@
-# Add lib to the arguments list right here:
 { config, pkgs, lib, ... }:
 
 {
@@ -50,10 +49,12 @@
     HYPRCURSOR_SIZE = "24";
   };
 
+  # ── 4. Qt Engine Overrides ──────────────────────────────────────────────────
   qt = {
     enable = true;
-    # Use lib.mkForce here to tell Stylix that your GTK-engine mapping wins!
+    # Tells Stylix that your custom GTK-engine mapping wins!
     platformTheme.name = lib.mkForce "gtk";
-    style.name = "adwaita-dark";
+    # Tells Stylix that your explicit Adwaita style wins!
+    style.name = lib.mkForce "adwaita-dark";
   };
 }
