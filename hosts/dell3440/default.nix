@@ -28,10 +28,10 @@
   # ===== STYLIX THEME ACTIVATION =====
   stylix = {
     enable = true;
-    image = pkgs.fetchurl {
-      url = "https://www.pixelstalk.net/wp-content/uploads/2016/06/Solid-Black-Wallpaper-HD.jpg";
-      sha256 = "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="; 
-    };
+    # Generate a pure #000000 canvas locally to avoid remote 404 errors and protect OLED panels
+    image = pkgs.runCommand "pure-black.png" { nativeBuildInputs = [ pkgs.imagemagick ]; } ''
+      convert -size 1x1 xc:#000000 $out
+    '';
     base16Scheme = "${pkgs.base16-schemes}/share/themes/tomorrow-night.yaml";
   };
 
