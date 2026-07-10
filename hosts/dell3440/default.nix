@@ -34,7 +34,11 @@
     };
     base16Scheme = "${pkgs.base16-schemes}/share/themes/tomorrow-night.yaml";
 
-    # Prevent Stylix from overwriting your custom cursor and app layouts
+    # Prevent Stylix from passing conflicting values down to Home Manager
+    homeManagerIntegration.autoImport = true;
+    homeManagerIntegration.followSystem = false;
+
+    # Prevent Stylix from overwriting system or application desktop assets
     targets.gnome.enable = false;
     targets.gtk.enable = false;
     targets.qt.enable = false;
