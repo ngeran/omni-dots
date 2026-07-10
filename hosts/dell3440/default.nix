@@ -26,7 +26,6 @@
   networking.networkmanager.enable = true;
 
   # ===== STYLIX THEME ACTIVATION =====
-  # This initializes the theme engine so home-manager can read the colors
   stylix = {
     enable = true;
     image = pkgs.fetchurl {
@@ -34,6 +33,11 @@
       sha256 = "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="; 
     };
     base16Scheme = "${pkgs.base16-schemes}/share/themes/tomorrow-night.yaml";
+
+    # Prevent Stylix from overwriting your custom cursor and app layouts
+    targets.gnome.enable = false;
+    targets.gtk.enable = false;
+    targets.qt.enable = false;
   };
 
   # ===== LAPTOP SPECIFIC PACKAGES & UTILS =====
