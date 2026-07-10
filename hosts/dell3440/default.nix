@@ -1,28 +1,23 @@
-# NixOS Configuration for dell4400
-# Minimal setup for NixOS 26.05 with Hyprland and greetd
-
-{ config, pkgs, lib, inputs, ... }:
+# NixOS Configuration for Dell Latitude 3440
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
-    # Include the results of the hardware scan
     ./hardware-configuration.nix
   ];
 
- # ===== BOOTLOADER =====
+  # ===== BOOTLOADER =====
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
  
-  # Load the modern Intel graphics module early
   boot.initrd.kernelModules = [ "i915" ];
 
   # ===== GRAPHICS / ACCELERATION =====
-  # (hardware.graphics is the standard for NixOS 24.11+)
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [
-      intel-media-driver   # Modern QuickSync / VA-API acceleration for recent Intel IGPs
-      vpl-gpu-rt           # Modern oneVPL runtime for Intel Iris Xe / UHD Graphics
+      intel-media-driver
+      vpl-gpu-rt
     ];
   };
  
@@ -30,21 +25,28 @@
   networking.hostName = "dell3440";
   networking.networkmanager.enable = true;
 
+  # ===== STYLIX THEME ACTIVATION =====
+  # This initializes the theme engine so home-manager can read the colors
+  stylix = {
+    enable = true;
+    image = pkgs.fetchurl {
+      url = "https://www.pixelstalk.net/wp-content/uploads/2016/06/Solid-Black-Wallpaper-HD.jpg";
+      sha256 = "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="; 
+    };
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/tomorrow-night.yaml";
+  };
+
   # ===== LAPTOP SPECIFIC PACKAGES & UTILS =====
   environment.systemPackages = with pkgs; [
-    brightnessctl # Easy backlight control for laptop screens
-    powertop      # Battery usage analyzer
+    brightnessctl 
+    powertop      
   ];
 
-  # ===== HYPRLAND COMPATIBILITY =====
-  # Since you are tracking the standard NixOS channel, let NixOS manage the package 
-  # versions natively instead of referencing an unimported flake input.
+  # ===== HYPRLAND CONFIGURATION =====
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
   };
 
-  # ===== SYSTEM VERSION =====
-  # Match the core architecture version
   system.stateVersion = "26.05";
 }
