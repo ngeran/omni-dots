@@ -58,11 +58,12 @@
       dell3440 = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
-          # Standard Dell Latitude optimizations (handles power management, CPU scaling, etc.)
-          nixos-hardware.nixosModules.dell-latitude-common
+          # Swap out the missing dell-latitude attribute for these:
+          nixos-hardware.nixosModules.common-cpu-intel
+          nixos-hardware.nixosModules.common-pc-ssd
 
           ./core                          # Inherit the exact same core configuration
-          ./hosts/dell3440                # Target folder for your laptop's hardware-configuration.nix
+          ./hosts/dell3440                # Target folder for your laptop's layout
 
           stylix.nixosModules.stylix      # Keep the theme engine unified
 
@@ -73,7 +74,7 @@
               useGlobalPkgs = true;
               useUserPackages = true;
               extraSpecialArgs = { inherit inputs; };
-              users.nikos = import ./home/default.nix; # Shared dots across both machines
+              users.nikos = import ./home/default.nix;
               backupFileExtension = "backup";
             };
           }
