@@ -148,18 +148,19 @@
   };
 
   # =========================================================================
-  # 3. (Optional) CLI tools — NOT enabled here
+  # 3. Lab CLI tools — installed WITH the lab (when this module is imported)
   # =========================================================================
-  # This module does NOT install kubectl/k9s/helm/gnmic — the lab rule is
-  # "nothing installs until enabled", and `k3s kubectl` already covers basic
-  # cluster access. When you want the standalone tools, paste the block below
-  # into modules/apps/dev-tools.nix (inside its existing
-  # `environment.systemPackages = with pkgs; [ ... ]` list), `git add` it,
-  # and `omni-apply`:
-  #
-  #   # --- k8s-telemetry lab CLI tools ---
-  #   kubectl            # standalone client (1.36.2)
-  #   k9s                # TUI cluster explorer (0.50.18)
-  #   kubernetes-helm    # Helm 3 (3.20.2)
-  #   gnmic              # gNMI telemetry client (0.46.0)
+  # These come on when you enable k3s and off when you remove the import, so
+  # the whole lab (service + tooling) is behind one switch — honoring the
+  # "nothing installs until enabled" rule. `k3s kubectl` already works once
+  # k3s is up (the k3s module adds the k3s binary to PATH), but the standalone
+  # `kubectl` is nicer to type; k9s is the cluster TUI; gnmic is for host-side
+  # gNMI capability/subscribe testing (the in-cluster gnmic does the actual
+  # collection). helm is OMITTED — this lab uses plain YAML, no Helm charts;
+  # add `kubernetes-helm` here if you want it (3.20.2 in nixpkgs).
+  environment.systemPackages = with pkgs; [
+    kubectl            # standalone client (nixpkgs 1.36.2)
+    k9s                # TUI cluster explorer (nixpkgs 0.50.18)
+    gnmic              # gNMI telemetry client (nixpkgs 0.46.0)
+  ];
 }
