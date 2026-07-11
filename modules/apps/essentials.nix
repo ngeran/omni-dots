@@ -178,4 +178,46 @@ EOF
         printf '%s' ${lib.escapeShellArg (builtins.toJSON defaultTheme)} > "$HOME/.cache/theme/colors.json"
       fi
     '';
+
+  # Seed a default ~/.config/hypr/quickshell-colors.conf — the lock screen's
+  # themed background + input-field, sourced by hyprlock.conf — ONLY when absent.
+  # Quickshell's ThemeService overwrites it with the live palette at login / on
+  # every theme change; this just guarantees hyprlock always has a password box
+  # to render, even on a fresh boot before the settings process has run. Mirrors
+  # seedThemeColors above. Keep the input-field geometry in sync with the writer
+  # in ~/.config/quickshell/settings/services/ThemeService.qml.
+  home.activation.seedHyprlockColors =
+    let
+      # Neutral static fallback (same shape as the ThemeService block).
+      defaultHyprlockColors = ''
+        # Managed by QuickShell ThemeService — sourced at END of hyprlock.conf.
+        # Seeded default; overwritten with the live theme at login.
+        background {
+            color = rgba(000000ff)
+        }
+        input-field {
+            monitor =
+            size = 400, 50
+            position = 0, 0
+            halign = center
+            valign = center
+            rounding = 16
+            outline_thickness = 2
+            inner_color = rgba(0f0f0fff)
+            outer_color = rgba(2d2d2dff)
+            font_color = rgba(ebebebff)
+            font_family = JetBrainsMono Nerd Font
+            placeholder_text = Enter Password
+            fail_text = <i>$FAIL ($ATTEMPTS)</i>
+            shadow_passes = 0
+            fade_on_empty = false
+        }
+      '';
+    in
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      if [ ! -f "$HOME/.config/hypr/quickshell-colors.conf" ]; then
+        mkdir -p "$HOME/.config/hypr"
+        printf '%s' ${lib.escapeShellArg defaultHyprlockColors} > "$HOME/.config/hypr/quickshell-colors.conf"
+      fi
+    '';
 }
