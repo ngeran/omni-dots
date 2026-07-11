@@ -4,12 +4,24 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ../../modules/audio.nix
+    ../../modules/bluetooth.nix
+    ../../modules/greetd.nix
+    ../../modules/stylix.nix
+    ../../modules/fonts.nix
+    ../../modules/apps/desktop-apps.nix
+    ../../modules/apps/desktop-apps.nix
+    ../../modules/apps/file-manager.nix
+    ../../modules/apps/dev-tools.nix
   ];
 
   # ===== BOOTLOADER =====
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
- 
+
+  # ===== LASTEST STABLE KERNEL =====
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
   boot.initrd.kernelModules = [ "i915" ];
 
   # ===== GRAPHICS / ACCELERATION =====
