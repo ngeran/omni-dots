@@ -1,0 +1,64 @@
+# =============================================================================
+# cRPD (Juniper) — OPTIONAL, Phase 6. Bring-your-own image + license.
+# =============================================================================
+# cRPD is NOT on Docker Hub and requires a license. This manifest is a STUB —
+# it will NOT run as-is (the image is a placeholder). To use it:
+#   1. Obtain a cRPD image + license from Juniper; push the image to a registry
+#      this desktop can reach.
+#   2. Create the license secret OUT OF TREE (never commit it — repo secrets
+#      live at ~/.config/secrets/):
+#        kubectl -n telemetry create secret generic crpd-license \
+#          --from-file=crpd-license.key=/path/to/juniper_license.key
+#   3. Edit CRPD_IMAGE:REPLACE_ME below to your real image:tag.
+#   4. kubectl apply -f manifests/60-crpd.yaml
+#   5. Point gnmic at crpd:57400 (see README Phase 6).
+# =============================================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crpd
+  namespace: telemetry
+  labels:
+    app: crpd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crpd
+  template:
+    metadata:
+      labels:
+        app: crpd
+    spec:
+      containers:
+        - name: crpd
+          # PLACEHOLDER — replace with your real cRPD image:tag.
+          image: CRPD_IMAGE:REPLACE_ME
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          ports:
+            - name: gnmi
+              containerPort: 57400
+          volumeMounts:
+            - name: license
+              mountPath: /etc/crpd/license
+              readOnly: true
+      volumes:
+        - name: license
+          secret:
+            secretName: crpd-license
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crpd
+  namespace: telemetry
+spec:
+  selector:
+    app: crpd
+  ports:
+    - name: gnmi
+      port: 57400
+      targetPort: 57400

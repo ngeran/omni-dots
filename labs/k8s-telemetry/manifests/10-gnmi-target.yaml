@@ -1,0 +1,47 @@
+# Free gNMI target simulator (FRR-based, serves interface counters).
+# Resolves the cRPD/Docker-Hub conflict: no license, pulls from Docker Hub.
+# Image entrypoint runs `gnmi-target start --insecure`.
+#
+# ⚠️ The image declares no EXPOSE; port 9339 (IANA gNMI) is ASSUMED.
+# Verify on first apply (Phase 2):
+#   kubectl -n telemetry exec deploy/gnmi-target -- sh -c 'ss -ltnp 2>/dev/null || netstat -ltnp'
+# If it listens on a different port, update containerPort + the Service
+# targetPort here AND the gnmic target address in 20-gnmic.yaml, then re-apply.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gnmi-target
+  namespace: telemetry
+  labels:
+    app: gnmi-target
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gnmi-target
+  template:
+    metadata:
+      labels:
+        app: gnmi-target
+    spec:
+      containers:
+        - name: gnmi-target
+          image: flex/frr-gnmi-target:1sec
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: gnmi
+              containerPort: 9339
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gnmi-target
+  namespace: telemetry
+spec:
+  selector:
+    app: gnmi-target
+  ports:
+    - name: gnmi
+      port: 9339
+      targetPort: 9339

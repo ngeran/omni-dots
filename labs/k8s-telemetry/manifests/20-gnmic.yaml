@@ -1,0 +1,86 @@
+# gnmic collector — subscribes to the gNMI target, exposes /metrics on :9804.
+# Image is on GHCR (not Docker Hub) — flagged in README.
+# NOTE: if you changed the gNMI port in 10-gnmi-target.yaml, update the target
+# address below (gnmi-target:<port>) to match.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gnmic-config
+  namespace: telemetry
+data:
+  gnmic.yaml: |
+    username: admin
+    password: admin
+    insecure: true
+    encoding: json_ietf
+    log: true
+    targets:
+      gnmi-target:
+        address: gnmi-target:9339
+        username: admin
+        password: admin
+        insecure: true
+    subscriptions:
+      sub1:
+        paths:
+          - /interfaces/interface/state/counters
+        stream-mode: sample
+        sample-interval: 1s
+    outputs:
+      prom-output:
+        type: prometheus
+        listen: :9804
+        path: /metrics
+        expiration: 60s
+        strings-as-labels: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gnmic
+  namespace: telemetry
+  labels:
+    app: gnmic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gnmic
+  template:
+    metadata:
+      labels:
+        app: gnmic
+    spec:
+      containers:
+        - name: gnmic
+          image: ghcr.io/openconfig/gnmic:0.46.0
+          imagePullPolicy: IfNotPresent
+          # gnmic image binary is /gnmic (ENTRYPOINT). If a different image is
+          # used and the path differs, adjust `command` below.
+          command: ["/gnmic"]
+          args: ["--config", "/app/gnmic.yaml", "subscribe"]
+          ports:
+            - name: metrics
+              containerPort: 9804
+          volumeMounts:
+            - name: config
+              mountPath: /app
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: gnmic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gnmic
+  namespace: telemetry
+spec:
+  selector:
+    app: gnmic
+  ports:
+    - name: metrics
+      port: 9804
+      targetPort: 9804

@@ -1,0 +1,20 @@
+# Lab namespaces. Apply first.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: telemetry
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab
