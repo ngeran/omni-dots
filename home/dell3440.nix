@@ -11,8 +11,8 @@
 
   # ===== IMPORTS =====
   imports = [
-   # ./features/desktop/hyprland
-    #./features/desktop/hyprland/monitors.nix
+    ../modules/apps/davinci.nix
+
   ];
 
 

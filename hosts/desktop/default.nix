@@ -13,7 +13,6 @@
     ../../modules/fonts.nix
     ../../modules/apps/desktop-apps.nix
     ../../modules/apps/dev-tools.nix
-    ../../modules/apps/davinci.nix
   ];
 
   networking.hostName = "nixos-btw";
