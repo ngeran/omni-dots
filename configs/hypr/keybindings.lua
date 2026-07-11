@@ -28,7 +28,7 @@ hl.bind(mod .. " + X", hl.dsp.exec_cmd(TERMINAL))
 hl.bind(mod .. " + B", hl.dsp.exec_cmd("chromium"))
 hl.bind(mod .. " + SPACE", hl.dsp.exec_cmd(LAUNCHER))
 hl.bind(mod .. " + C", hl.dsp.window.close())
-hl.bind(mod .. " + F", hl.dsp.exec_cmd(FILE_MANAGER))
+hl.bind(modShift .. " + F", hl.dsp.exec_cmd(FILE_MANAGER))
 
 -- --- QuickShell IPC Toggles --------------------------------------------------
 -- Bar toggle clamped to SUPER + SHIFT + B to avoid conflicts

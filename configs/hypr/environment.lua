@@ -79,7 +79,10 @@ hl.on("hyprland.start", function()
   hl.exec_cmd("/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &")
 
   -- 10. Start Hypridle LAST (logs → $HOME/.local/state/hypr/hypridle.log)
-  hl.exec_cmd("sleep 2 && mkdir -p $HOME/.local/state/hypr && hypridle >> $HOME/.local/state/hypr/hypridle.log 2>&1 &")
+  -- Seed a WRITABLE runtime config (cp -n: only if absent) from the read-only
+  -- template, then launch hypridle with -c pointing at it so Quickshell's
+  -- HypridleService can regenerate it live (see settings/services/HypridleService.qml).
+  hl.exec_cmd("sleep 2 && mkdir -p $HOME/.cache/hypr $HOME/.local/state/hypr && cp -n $HOME/.config/hypr/hypridle.conf $HOME/.cache/hypr/hypridle.conf && hypridle -c $HOME/.cache/hypr/hypridle.conf >> $HOME/.local/state/hypr/hypridle.log 2>&1 &")
 
   -- ControlWindow removed — consolidated into settings
 end)
