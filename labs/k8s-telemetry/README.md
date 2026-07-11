@@ -102,6 +102,10 @@ labs/k8s-telemetry/
 
 ## 📐 Phased build plan
 
+> **Need to bring the whole lab up right now?** See **[`RUNBOOK.md`](./RUNBOOK.md)** —
+> a detailed, copy-pasteable start procedure with a verify block for every step
+> and a troubleshooting table. The phases below are the same plan in summary form.
+
 Apply manifests in order; each phase builds on the previous. **Phases 2–5
 require k3s to be enabled first (see *Enabling k3s*).**
 
