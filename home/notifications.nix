@@ -68,6 +68,7 @@ let
               })
               try:
                   subprocess.run(QS + [payload], check=False, timeout=5)
+                  print("[quickshell-notify] " + str(app_name or "?") + " -> " + str(summary or ""), flush=True)
               except Exception as e:
                   print("[quickshell-notify] forward failed: " + str(e), file=sys.stderr)
               return 0
@@ -98,8 +99,6 @@ in
   systemd.user.services.quickshell-notify = {
     Unit = {
       Description = "Quickshell notification forwarder (org.freedesktop.Notifications -> bar IPC)";
-      PartOf = [ "graphical-session.target" ];
-      After = [ "graphical-session.target" ];
     };
     Service = {
       ExecStart = "${quickshellNotifyForwarder}/bin/quickshell-notify-forwarder";
@@ -107,7 +106,12 @@ in
       RestartSec = 3;
     };
     Install = {
-      WantedBy = [ "graphical-session.target" ];
+      # Bind to default.target — it is ALWAYS active for a logged-in user.
+      # Do NOT use graphical-session.target: on this Hyprland+NixOS setup that
+      # target is never activated, so a graphical-session-bound service never
+      # auto-starts (the silent-failure bug this corrects). The forwarder only
+      # needs the session bus (always present) and the bar running for delivery.
+      WantedBy = [ "default.target" ];
     };
   };
 }

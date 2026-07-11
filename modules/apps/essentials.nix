@@ -18,6 +18,8 @@
     kicad
     inkscape
     krita
+    # Network Security
+    openssh
   ];
 
   # Modern eza aliases to completely replace standard ls
