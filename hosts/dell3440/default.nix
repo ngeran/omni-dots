@@ -7,7 +7,7 @@
     ../../modules/audio.nix
     ../../modules/bluetooth.nix
     ../../modules/greetd.nix
-    ../../modules/stylix.nix
+    #    ../../modules/stylix.nix
     ../../modules/fonts.nix
     ../../modules/apps/desktop-apps.nix
     ../../modules/apps/desktop-apps.nix
