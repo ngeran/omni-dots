@@ -282,3 +282,58 @@ sudo journalctl -u k3s -f                  # live k3s daemon logs
 
 Port-forwards (`kubectl -n <ns> port-forward svc/<name> <local>:<port>`) are
 localhost-only and need no firewall changes.
+
+---
+
+## 🔌 Cluster networking (reference)
+
+### The fabric — k3s built-in, already working, no config needed
+- **CNI:** flannel (VXLAN), bundled with k3s. Pod CIDR `10.42.0.0/16` (set in `nix/k3s.nix`).
+- **Service CIDR:** `10.43.0.0/16`. Every Service gets a stable `10.43.x.x` ClusterIP.
+- **DNS:** CoreDNS. Services resolve as `<svc>.<ns>.svc.cluster.local` (short form `<svc>.<ns>`). This is exactly how the manifests wire together:
+  - gnmic → `gnmi-target:9339` (same namespace → short name)
+  - Prometheus → `gnmic.telemetry.svc.cluster.local:9804` (cross-namespace FQDN)
+  - Grafana → `prometheus.monitoring.svc.cluster.local:9090` and `loki.monitoring.svc.cluster.local:3100`
+- **CIDR conflict check:** your LAN is `10.0.0.0/24` (desktop `10.0.0.86` on wifi). Pod/service CIDRs (`10.42/16`, `10.43/16`) do **not** overlap — ✅ safe.
+
+### Egress (pods → internet/LAN) — automatic
+Pods NAT through the node's IP (`10.0.0.86`). That's why `kubectl apply` pulls images from Docker Hub / GHCR with zero extra config.
+
+### Ingress (LAN → pods) — you must wire this yourself
+Every Service in this lab is `ClusterIP` by default — reachable **only inside the cluster**. To reach one from the LAN (another machine, or Pihole as network DNS), change its Service `type` and open the firewall:
+
+| Method | Use when | Reachable at | Firewall |
+|---|---|---|---|
+| `port-forward` (current) | Personal/ephemeral, localhost | `localhost:<port>` on the desktop | none |
+| `NodePort` | Quick LAN access for HTTP | `10.0.0.86:30000-32767` | open that TCP port |
+| `LoadBalancer` | Stable LAN IP per service — **Klipper is still enabled** (only traefik was disabled), so this works single-node without MetalLB | `10.0.0.86:<port>` | open that port |
+| `hostNetwork` (Pihole) | Pihole binding the node's NIC on :53/:80 | `10.0.0.86:53` / `:80` | open 53 (udp+tcp), 80 |
+| Ingress (re-enable traefik) | Hostnames (`grafana.lab.local`) — HTTP only, **not** DNS | `10.0.0.86:80/443` | open 80/443 |
+
+### Firewall — the gotcha
+NixOS firewall is **on by default** and k3s opens **no** ports for you. Any LAN-facing method above needs the port opened in NixOS, e.g. add to `hosts/desktop/default.nix` (or a module):
+```nix
+networking.firewall.allowedTCPPorts = [ 30090 ];   # a NodePort for Grafana
+networking.firewall.allowedUDPPorts = [ 53 ];      # Pihole DNS (also allow TCP 53)
+```
+`port-forward` (localhost) needs no firewall change.
+
+### Concrete: expose Grafana to the LAN
+Edit the Service in `manifests/50-grafana.yaml`:
+```yaml
+spec:
+  type: NodePort          # or LoadBalancer — Klipper gives it 10.0.0.86
+  ports:
+    - name: web
+      port: 3000
+      targetPort: 3000
+      nodePort: 30090     # NodePort only; range 30000-32767
+```
+Then open `30090` in the NixOS firewall (`omni-apply`), `kubectl apply -f manifests/50-grafana.yaml`, and browse to `http://10.0.0.86:30090` from any LAN device.
+
+### Pihole specifically
+Pihole must be LAN-reachable as DNS — `port-forward` **cannot** do this. Use either:
+- **`hostNetwork: true`** on the Pihole pod — binds `10.0.0.86:53/80` directly; simplest, one pod; or
+- **`type: LoadBalancer`** with MetalLB for a dedicated stable IP (e.g. `10.0.0.53`) if you want Pihole on its own IP rather than sharing the desktop's.
+
+Either way, open firewall ports **53 (udp+tcp)** and **80**.
