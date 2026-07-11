@@ -13,6 +13,7 @@
     ../../modules/fonts.nix
     ../../modules/apps/desktop-apps.nix
     ../../modules/apps/dev-tools.nix
+    ../../modules/ssh.nix
   ];
 
   networking.hostName = "nixos-btw";
