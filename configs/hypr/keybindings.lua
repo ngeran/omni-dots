@@ -16,8 +16,8 @@
 -- [ Modifiers Already Used / Reserved ]
 --   SUPER + B         -> Chromium
 --   SUPER + SHIFT + B -> QuickShell Bar Toggle
---   SUPER + F         -> Fullscreen (New)
---   SUPER + +/-       -> Resize (New)
+--   SUPER + F         -> Fullscreen
+--   SUPER + +/-       -> Resize
 -- =============================================================================
 
 local mod      = MAIN_MOD -- "SUPER"
@@ -78,12 +78,12 @@ hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mod .. " + J", hl.dsp.layout("togglesplit"))
 
 -- Toggle Fullscreen mode
-hl.bind(mod .. " + F", hl.dsp.dispatch("fullscreen", "0"))
+hl.bind(mod .. " + F", hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"))
 
 -- Resize Active Window (Hold Mod and + or -)
 -- Using "repeating = true" allows holding the key down to continue resizing
-hl.bind(mod .. " + EQUAL", hl.dsp.dispatch("resizeactive", "40 40"), { repeating = true })
-hl.bind(mod .. " + MINUS", hl.dsp.dispatch("resizeactive", "-40 -40"), { repeating = true })
+hl.bind(mod .. " + EQUAL", hl.dsp.exec_cmd("hyprctl dispatch resizeactive 40 40"), { repeating = true })
+hl.bind(mod .. " + MINUS", hl.dsp.exec_cmd("hyprctl dispatch resizeactive -40 -40"), { repeating = true })
 
 
 -- --- Navigation & Window Moving ----------------------------------------------
@@ -94,10 +94,10 @@ hl.bind(mod .. " + UP",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mod .. " + DOWN",  hl.dsp.focus({ direction = "down" }))
 
 -- Move/Swap Windows positions using Mod + Shift + Arrow Keys
-hl.bind(modShift .. " + LEFT",  hl.dsp.dispatch("movewindow", "l"))
-hl.bind(modShift .. " + RIGHT", hl.dsp.dispatch("movewindow", "r"))
-hl.bind(modShift .. " + UP",    hl.dsp.dispatch("movewindow", "u"))
-hl.bind(modShift .. " + DOWN",  hl.dsp.dispatch("movewindow", "d"))
+hl.bind(modShift .. " + LEFT",  hl.dsp.exec_cmd("hyprctl dispatch movewindow l"))
+hl.bind(modShift .. " + RIGHT", hl.dsp.exec_cmd("hyprctl dispatch movewindow r"))
+hl.bind(modShift .. " + UP",    hl.dsp.exec_cmd("hyprctl dispatch movewindow u"))
+hl.bind(modShift .. " + DOWN",  hl.dsp.exec_cmd("hyprctl dispatch movewindow d"))
 
 
 -- --- Workspace Switching & Window Moving (1-10) -------------------------------
