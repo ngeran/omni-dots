@@ -1,6 +1,15 @@
 { config, lib, pkgs, ... }:
 
 {
+  # =========================================================================
+  # Host platform
+  # =========================================================================
+  # Replaces the deprecated `system = "x86_64-linux"` argument to
+  # nixpkgs.lib.nixosSystem (which emits the "'system' has been renamed to
+  # stdenv.hostPlatform.system" evaluation warning). Both hosts (desktop +
+  # dell3440) are x86_64-linux and import this module, so it's set once here.
+  nixpkgs.hostPlatform = "x86_64-linux";
+
   # Bootloader setup
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;

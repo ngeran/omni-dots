@@ -24,7 +24,10 @@
 { inputs, pkgs, ... }:
 
 {
+  # NOTE: use pkgs.stdenv.hostPlatform.system, not the deprecated pkgs.system
+  # (which emits the "'system' has been renamed to stdenv.hostPlatform.system"
+  # evaluation warning).
   environment.systemPackages = [
-    inputs.matugen.packages.${pkgs.system}.default
+    inputs.matugen.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }

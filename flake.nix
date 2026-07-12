@@ -48,7 +48,6 @@
     nixosConfigurations = {
       # --- MAIN DESKTOP RIG ---
       nixos-btw = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
         modules = [
           nixos-hardware.nixosModules.common-cpu-amd
           nixos-hardware.nixosModules.common-gpu-amd
@@ -75,7 +74,6 @@
 
       # --- DELL LATITUDE 3440 LAPTOP ---
       dell3440 = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
         modules = [
           # Swap out the missing dell-latitude attribute for these:
           nixos-hardware.nixosModules.common-cpu-intel
