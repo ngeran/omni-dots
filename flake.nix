@@ -68,9 +68,6 @@
 
           stylix.nixosModules.stylix      # Wallpaper -> palette generator
 
-          # Claude Code module
-          ./modules/apps/claude.nix
-
           { _module.args.inputs = inputs; }
 
           home-manager.nixosModules.home-manager {
@@ -96,9 +93,6 @@
           ./hosts/dell3440                # Target folder for your laptop's layout
 
           stylix.nixosModules.stylix      # Keep the theme engine unified
-
-          # Claude Code module
-          ./modules/apps/claude.nix
 
           { _module.args.inputs = inputs; }
 
