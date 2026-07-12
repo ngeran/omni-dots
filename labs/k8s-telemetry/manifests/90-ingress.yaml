@@ -1,0 +1,76 @@
+# Ingress — map *.lab.local hostnames to the lab's HTTP UIs.
+#
+# traefik (re-enabled in ../nix/k3s.nix) implements these; it owns
+# 10.0.0.86:80/443 via Klipper. DNS for *.lab.local is served by Pi-hole
+# (see 80-pihole.yaml -> 02-lab.conf wildcard). loki + gnmic stay
+# ClusterIP-only (not user UIs — Grafana/Prometheus reach them internally).
+#
+# Ingress objects are namespace-scoped and the backend Service must live in the
+# SAME namespace, so this is three objects: monitoring / lab / network.
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring-ingress
+  namespace: monitoring
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: grafana.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+    - host: prometheus.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pyapp-ingress
+  namespace: lab
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: pyapp.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pyapp
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pihole-ingress
+  namespace: network
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: pihole.lab.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pihole-web
+                port:
+                  number: 8080

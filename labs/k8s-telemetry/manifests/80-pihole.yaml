@@ -1,0 +1,105 @@
+# Pi-hole — full LAN DNS + ad-blocker (hostNetwork).
+#
+# The web UI is moved to :8080 (FTLCONF_webserver_port) so it does NOT collide
+# with traefik, which owns :80. DNS binds the host directly on 10.0.0.86:53
+# (UDP+TCP) — that is why this pod needs hostNetwork (an HTTP ingress can't
+# serve UDP DNS on :53). The wildcard zone *.lab.local -> 10.0.0.86
+# (ConfigMap 02-lab.conf) lets every LAN device resolve the ingress hostnames
+# once the router's DHCP DNS is pointed at this host.
+#
+# Env vars use the Pi-hole v6 FTLCONF_ prefix (v6 = embedded web server + API).
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pihole-lab-dns
+  namespace: network
+data:
+  02-lab.conf: |
+    # Wildcard: resolve ANY *.lab.local to the desktop (the ingress target).
+    address=/lab.local/10.0.0.86
+    local=/lab.local/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pihole-config
+  namespace: network
+spec:
+  storageClassName: local-path          # k3s default; state lands under /persist via the k3s bind mount
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pihole
+  namespace: network
+  labels:
+    app: pihole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pihole
+  template:
+    metadata:
+      labels:
+        app: pihole
+    spec:
+      hostNetwork: true                  # bind 10.0.0.86:53 (DNS) + :8080 (web) directly on the host
+      dnsPolicy: ClusterFirstWithHostNet # still resolve cluster DNS while on the host net
+      containers:
+        - name: pihole
+          image: pihole/pihole:2025.11.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: FTLCONF_webserver_port        # web UI off :80 -> no clash with traefik
+              value: "8080"
+            - name: FTLCONF_webserver_api_password # CHANGE THIS (v6 name; legacy WEBPASSWORD still works)
+              value: "change-me-lab"
+            - name: FTLCONF_dns_upstreams          # upstream resolvers for non-blocked queries
+              value: "9.9.9.9;8.8.8.8"
+            - name: FTLCONF_misc_etc_dnsmasq_d     # load /etc/dnsmasq.d (so 02-lab.conf applies)
+              value: "true"
+            - name: TZ
+              value: "America/New_York"
+          ports:
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+            - name: web
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/pihole
+            - name: dnsmasq-d                       # subPath: single file, does NOT shadow the dir
+              mountPath: /etc/dnsmasq.d/02-lab.conf
+              subPath: 02-lab.conf
+              readOnly: true
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: pihole-config
+        - name: dnsmasq-d
+          configMap:
+            name: pihole-lab-dns
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole-web
+  namespace: network
+spec:
+  selector:
+    app: pihole
+  ports:
+    - name: web
+      port: 8080
+      targetPort: 8080

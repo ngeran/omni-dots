@@ -97,11 +97,11 @@
       "--service-cidr 10.43.0.0/16"
     ];
 
-    # No ingress controller: this lab is reached via `kubectl port-forward`,
-    # not HTTP ingress. Disabling traefik avoids a component we don't use.
-    # (Add "servicelb" here too if you don't want the bundled ServiceLB
-    # spawning pods — usually desirable on a single-node lab.)
-    disable = [ "traefik" ];
+    # Ingress controller: traefik is ENABLED (we expose the lab's HTTP UIs as
+    # *.lab.local via Ingress — see ../manifests/90-ingress.yaml). Klipper
+    # (ServiceLB) stays enabled too, so traefik binds 10.0.0.86:80/443 on this
+    # single node. To turn ingress back off, set: disable = [ "traefik" ];
+    disable = [ ];
 
     # Future lab workloads: auto-deploying manifests can be added via
     #   manifests.foo = { content = { ... }; };
@@ -121,6 +121,19 @@
   # This clears the unit's wantedBy so multi-user.target no longer pulls it in;
   # `systemctl start k3s` still works exactly as before.
   systemd.services.k3s.wantedBy = lib.mkForce [ ];
+
+  # =========================================================================
+  # 1b. Firewall — open the LAN-facing ports the lab needs
+  # =========================================================================
+  # k3s opens NO ports itself and the NixOS firewall is on by default. These
+  # openings (merged with the SSH port from modules/ssh.nix) make the lab
+  # reachable from the home network:
+  #   80/443 tcp -> traefik ingress (UIs served as *.lab.local)
+  #   53 tcp/udp -> Pi-hole DNS (hostNetwork pod binding 10.0.0.86:53)
+  networking.firewall = {
+    allowedTCPPorts = [ 80 443 53 ];
+    allowedUDPPorts = [ 53 ];
+  };
 
   # =========================================================================
   # 2. Persistent State — bind /var/lib/rancher/k3s onto /persist
