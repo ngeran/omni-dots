@@ -19,6 +19,11 @@
     npm_config_prefix = "$HOME/.npm-global";
     # Point Claude directly to your clean un-tracked key file via env sequence
     ANTHROPIC_AUTH_TOKEN_FILE = "$HOME/.config/secrets/zai_key";
+    # kubectl / k3s lab. The kubeconfig is runtime-written by k3s (not a store
+    # path), so point kubectl at the user copy in ~/.kube/config. Set globally —
+    # harmless when k3s is off (kubectl just reports a missing file). See
+    # labs/k8s-telemetry/CHEATSHEET.md.
+    KUBECONFIG = "$HOME/.kube/config";
   };
 
   programs.bash.initExtra = ''
