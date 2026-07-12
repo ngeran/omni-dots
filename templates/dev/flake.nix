@@ -60,7 +60,7 @@
               echo ""
               echo "  ❯ devshell active"
               echo "      node    $(node -v 2>/dev/null || echo '—')"
-              echo "      python  $(${python3}/bin/python --version 2>&1 | awk '{print $2}')"
+              echo "      python  $(python3 --version 2>&1 | awk '{print $2}')"
               echo "      hugo    $(hugo version 2>/dev/null | awk '{print $2}' | tr -d '+-' || echo '—')"
               echo ""
             '';
