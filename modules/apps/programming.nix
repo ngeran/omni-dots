@@ -1,40 +1,43 @@
+# =========================================================================
+# PROGRAMMING — cross-project foundations (fonts + dev-service env)
+# =========================================================================
+#
+# Language toolchains (nodejs, python, hugo, tailwind) USED to live here and
+# in dev-tools.nix. They have been moved to PER-PROJECT shells — see
+# home/devshell.nix and templates/dev/. This keeps $HOME clean and lets each
+# project pin its own versions.
+#
+# What remains here is genuinely cross-project:
+#   • programming fonts — used by every editor/terminal
+#   • dev-service env vars — Claude gateway key path + kubeconfig location
+#
 { config, pkgs, ... }:
 
 {
+  # =========================================================================
+  # 1. Programming Fonts
+  # =========================================================================
+  # Editor/terminal fonts, installed user-wide. (fonts.fontconfig is a Home
+  # Manager option; the system-wide font set lives in modules/fonts.nix.)
   home.packages = with pkgs; [
-    hugo
-    python3
-    python3Packages.pip
-    python3Packages.virtualenv
-    nodejs
-    tailwindcss
     fontconfig
     nerd-fonts.jetbrains-mono
     nerd-fonts.fira-code
   ];
-
   fonts.fontconfig.enable = true;
 
+  # =========================================================================
+  # 2. Dev-service Environment Variables
+  # =========================================================================
   home.sessionVariables = {
-    npm_config_prefix = "$HOME/.npm-global";
-    # Point Claude directly to your clean un-tracked key file via env sequence
+    # Point Claude Code at the un-tracked key file (see essentials.nix →
+    # configure-claude activation script). Env fallback path, never a literal.
     ANTHROPIC_AUTH_TOKEN_FILE = "$HOME/.config/secrets/zai_key";
-    # kubectl / k3s lab. The kubeconfig is runtime-written by k3s (not a store
-    # path), so point kubectl at the user copy in ~/.kube/config. Set globally —
-    # harmless when k3s is off (kubectl just reports a missing file). See
-    # labs/k8s-telemetry/CHEATSHEET.md.
+
+    # kubectl / k3s lab. The kubeconfig is runtime-written by k3s (not a
+    # store path), so point kubectl at the user copy in ~/.kube/config. Set
+    # globally — harmless when k3s is off (kubectl just reports a missing
+    # file). See labs/k8s-telemetry/CHEATSHEET.md.
     KUBECONFIG = "$HOME/.kube/config";
   };
-
-  programs.bash.initExtra = ''
-    export PATH="$HOME/.npm-global/bin:$PATH"
-  '';
-
-  # NOTE: ~/.claude/settings.json is intentionally NOT managed by home.file.
-  # It is written by the `configure-claude` activation script in essentials.nix,
-  # which injects ANTHROPIC_AUTH_TOKEN from ~/.config/secrets/zai_key. Managing
-  # it here as well made home-manager fight the activation script every switch:
-  # each switch left a real file that home-manager then tried to back up, and the
-  # accumulating .backup files eventually blocked switches ("would be clobbered").
-  # The activation script is the sole, authoritative writer of this file.
 }

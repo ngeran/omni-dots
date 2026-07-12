@@ -28,10 +28,14 @@ A declarative NixOS + Home Manager flake for the **`nixos-btw`** machine (x86_64
 ├── home/                  # Home Manager config (user: nikos)
 │   ├── default.nix        # wiring hub — imports the modules below
 │   ├── dotfiles.nix       # ★ ingests configs/* into ~/.config (xdg.configFile)
+│   ├── devshell.nix       # ★ direnv + nix-direnv (per-project dev shells)
 │   ├── git.nix            # git identity (HM owns ~/.config/git/config)
 │   ├── stylix.nix         # bridges Stylix palette → quickshell seed
 │   ├── quickshell.nix     # installs the quickshell package
 │   └── apps.nix           # cursor / GTK theme / icons / dark mode
+│
+├── templates/dev/         # ★ project scaffold: `nix flake init -t .#dev`
+│                          #   flake.nix + .envrc (.gitignore'd .direnv cache)
 │
 └── modules/               # system + home modules (audio, bluetooth, amdgpu, …)
 ```
@@ -102,7 +106,60 @@ git push
 
 - **System service / module** (needs root, drivers, kernel): create under `modules/`, import it in `hosts/desktop/default.nix`.
 - **User package** (no config needed): add to `home.packages` in `home/apps.nix` or `modules/apps/essentials.nix`.
+- **Language toolchains (node, python, hugo, tailwind, …): NOT global.** Put them in a per-project flake — see *Development environments* below.
 - Search packages at <https://search.nixos.org>.
+
+---
+
+## 🧑‍💻 Development environments (per-project shells)
+
+Language toolchains are **not installed globally** — that's what broke things after the Arch migration (read-only store → PEP-668 pip errors, npm-global hacks, one version per language). Instead each project declares its own tools in a `flake.nix`, and `direnv` auto-loads them on `cd`. The system and `~/.config` stay clean. This is wired by `home/devshell.nix` (direnv + nix-direnv).
+
+### Create a NEW project
+
+```bash
+mkdir my-app && cd my-app
+git init
+nix flake init -t ~/.omni-nix#dev      # writes flake.nix + .envrc + .gitignore
+direnv allow                            # one-time: trust the devShell
+```
+
+You're done — `node`, `python`, `hugo`, `tailwindcss`, `uv` are now on `$PATH`. Tailor `flake.nix` to the project (delete packages you don't need), then `direnv allow` again.
+
+### Add a devShell to an EXISTING project
+
+```bash
+cd path/to/existing-project
+nix flake init -t ~/.omni-nix#dev      # scaffolds flake.nix + .envrc (no overwrites if they exist)
+direnv allow                            # trust + load the shell
+```
+
+Then trim `flake.nix` to just the tools that project needs and re-run `direnv allow`. Commit `flake.nix`, `flake.lock`, and `.envrc`; the `.direnv/` cache stays gitignored.
+
+### Everyday use
+
+| Action | Command |
+|---|---|
+| Enter project | `cd project/` → tools auto-load (instant, cached) |
+| Leave project | `cd ..` → tools auto-unload |
+| After editing `flake.nix` | `direnv allow` (re-evaluates) |
+| Force a clean reload | `direnv reload` |
+| Manual entry (no direnv) | `nix develop` |
+
+### Python — the one rule that matters
+
+Never `pip install` against Nix's Python (read-only → PEP-668). Use `uv` inside the shell:
+
+```bash
+uv venv && source .venv/bin/activate
+uv pip install -r requirements.txt   # or: uv sync  (with pyproject.toml)
+```
+
+The interpreter comes from Nix; deps + venv come from `uv`. Best of both.
+
+### Note after the first rebuild
+
+The first time you run `omni-apply` with these changes, `node`/`python`/`hugo`/`tailwindcss` leave the global `$PATH`. They reappear the moment you `cd` into any project that has a `flake.nix` (existing ones get one via the steps above). Nothing is lost — just scoped.
 
 ## Secrets
 

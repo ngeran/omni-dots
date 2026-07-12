@@ -1,0 +1,6 @@
+# nix-direnv caches the flake eval here — machine-local, never commit it.
+/.direnv/
+/.envrc.direnv/
+
+# Python venvs created inside the project (uv/pip).
+/.venv/

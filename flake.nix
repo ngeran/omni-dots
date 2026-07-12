@@ -26,6 +26,16 @@
   };
 
   outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, ... }@inputs: {
+    # =========================================================================
+    # PROJECT TEMPLATES — `nix flake init -t ~/.omni-nix#<name>`
+    # =========================================================================
+    # `dev` scaffolds a project devShell (flake.nix + .envrc + .gitignore) for
+    # node/python/hugo/tailwind. Auto-loaded by direnv (home/devshell.nix).
+    templates.dev = {
+      path = ./templates/dev;
+      description = "Project devShell — node / python / hugo / tailwind (direnv + nix flake)";
+    };
+
     nixosConfigurations = {
       # --- MAIN DESKTOP RIG ---
       nixos-btw = nixpkgs.lib.nixosSystem {

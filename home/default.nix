@@ -12,6 +12,7 @@
     ./notifications.nix
     ./git.nix
     ./dotfiles.nix
+    ./devshell.nix              # ★ direnv + nix-direnv (per-project dev shells)
     ../modules/apps/essentials.nix
     ../modules/apps/programming.nix
     ../modules/apps/nixvim/default.nix
