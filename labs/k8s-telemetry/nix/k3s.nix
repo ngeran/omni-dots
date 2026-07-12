@@ -72,7 +72,7 @@
 #     plus your workloads). Disable by removing the import and rebuilding.
 # =============================================================================
 
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   # =========================================================================
@@ -109,6 +109,18 @@
     # systemd-tmpfiles before k3s starts. Left empty for now — the lab uses
     # plain YAML under ../manifests/ applied with `kubectl apply`.
   };
+
+  # =========================================================================
+  # On-demand: do NOT auto-start k3s at boot
+  # =========================================================================
+  # k3s is heavyweight (~300-600 MB RAM idle + workloads). It stays installed
+  # and fully configured, but does NOT launch at boot — start it when you sit
+  # down to do lab work, stop it when done (state in /persist is preserved):
+  #     sudo systemctl start k3s   # bring the cluster up
+  #     sudo systemctl stop k3s    # tear it down, free the RAM
+  # This clears the unit's wantedBy so multi-user.target no longer pulls it in;
+  # `systemctl start k3s` still works exactly as before.
+  systemd.services.k3s.wantedBy = lib.mkForce [ ];
 
   # =========================================================================
   # 2. Persistent State — bind /var/lib/rancher/k3s onto /persist

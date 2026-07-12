@@ -168,6 +168,17 @@
           -- groups) — no separate :colorscheme call needed (RRethy/base16-nvim
           -- doesn't register a named scheme; calling :colorscheme base16 errors).
           require("base16-colorscheme").setup(palette)
+
+          -- Text-selection visibility: base16 derives the Visual group from
+          -- base02, but this theme clamps base00/base01/base02 all to pure
+          -- black (#000000, oledClamp) for the OLED look — so the selection
+          -- background is identical to the editor background and renders
+          -- completely invisible. Override it with a clearly-visible,
+          -- OLED-friendly mid blue-gray (kept above the near-black band QD-OLED
+          -- renders noisily) that harmonises with the blue-gray text palette.
+          -- Re-applied on every theme reload so it survives live theme switches.
+          vim.api.nvim_set_hl(0, "Visual",   { bg = "#3a3d4d" })
+          vim.api.nvim_set_hl(0, "VisualNC", { bg = "#272a38" })
           -- lualine: re-theme from the same palette so the statusline matches.
           -- pcall in case lualine isn't loaded (e.g. lazy-loaded / absent).
           pcall(function()

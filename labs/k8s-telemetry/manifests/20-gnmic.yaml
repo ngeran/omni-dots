@@ -1,7 +1,7 @@
 # gnmic collector — subscribes to the gNMI target, exposes /metrics on :9804.
 # Image is on GHCR (not Docker Hub) — flagged in README.
-# NOTE: if you changed the gNMI port in 10-gnmi-target.yaml, update the target
-# address below (gnmi-target:<port>) to match.
+# gNMI target port is 7030 (verified; see 10-gnmi-target.yaml). If you change it
+# there, update the address below (gnmi-target:<port>) to match.
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -17,16 +17,22 @@ data:
     log: true
     targets:
       gnmi-target:
-        address: gnmi-target:9339
+        address: gnmi-target:7030
         username: admin
         password: admin
         insecure: true
+    # Path is KEYED (/interface[name=eth0]) — this flex/frr-gnmi-target build
+    # requires the YANG list key; the un-keyed /interfaces/interface/... is
+    # rejected ("schema key name is not found"). Target exposes eth0 and lo;
+    # eth0 is UP with live counters.
     subscriptions:
       sub1:
         paths:
-          - /interfaces/interface/state/counters
-        stream-mode: sample
-        sample-interval: 1s
+          - /interfaces/interface[name=eth0]/state/counters
+        # SAMPLE stream-mode is NOT implemented by this target
+        # ("SubscriptionMode_SAMPLE is not yet implemented"); use ON_CHANGE.
+        # The simulator ticks counters ~1s, so on-change yields regular updates.
+        stream-mode: on-change
     outputs:
       prom-output:
         type: prometheus
@@ -56,16 +62,17 @@ spec:
         - name: gnmic
           image: ghcr.io/openconfig/gnmic:0.46.0
           imagePullPolicy: IfNotPresent
-          # gnmic image binary is /gnmic (ENTRYPOINT). If a different image is
-          # used and the path differs, adjust `command` below.
-          command: ["/gnmic"]
-          args: ["--config", "/app/gnmic.yaml", "subscribe"]
+          # The image ENTRYPOINT is /app/gnmic (binary lives at /app/gnmic), so do
+          # NOT set `command` — overriding it to "/gnmic" fails with
+          # "stat /gnmic: no such file or directory". The config ConfigMap must be
+          # mounted OUTSIDE /app, or it shadows the binary; we use /etc/gnmic.
+          args: ["--config", "/etc/gnmic/gnmic.yaml", "subscribe"]
           ports:
             - name: metrics
               containerPort: 9804
           volumeMounts:
             - name: config
-              mountPath: /app
+              mountPath: /etc/gnmic
               readOnly: true
       volumes:
         - name: config
