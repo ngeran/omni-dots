@@ -14,6 +14,7 @@
     ../../modules/apps/desktop-apps.nix
     ../../modules/apps/dev-tools.nix
     ../../modules/ssh.nix
+    ../../labs/k8s-telemetry/nix/k3s.nix  # opt-in: single-node k3s cluster (telemetry lab)
   ];
 
   networking.hostName = "nixos-btw";
