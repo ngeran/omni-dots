@@ -17,7 +17,7 @@ in
     # Add Claude Code to system packages
     environment.systemPackages = lib.mkIf isSupported (with pkgs; [
       inputs.claude-code.packages.${pkgs.stdenv.hostPlatform.system}.default
-    ] ++ lib.optionals config.programs.rofi.enable [
+    ] ++ lib.optionals (config.programs.rofi.enable or false) [
       (makeDesktopItem {
         name = "claude-code";
         exec = "claude";
@@ -31,15 +31,15 @@ in
     ]);
 
     # Shell aliases for convenience
-    programs.bash.initExtra = lib.mkIf (isSupported && config.programs.bash.enable) (lib.mkOptional ''
+    programs.bash.initExtra = lib.mkIf (isSupported && (config.programs.bash.enable or false)) ''
       alias c="claude"
       alias cc="claude --continue"
-    '');
+    '';
 
-    programs.zsh.initExtra = lib.mkIf (isSupported && config.programs.zsh.enable) (lib.mkOptional ''
+    programs.zsh.initExtra = lib.mkIf (isSupported && (config.programs.zsh.enable or false)) ''
       alias c="claude"
       alias cc="claude --continue"
-    '');
+    '';
 
     # Create Claude config directory
     system.activationScripts.claude-config = lib.mkIf isSupported {
