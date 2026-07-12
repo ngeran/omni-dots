@@ -17,6 +17,7 @@
     ../modules/apps/programming.nix
     ../modules/apps/nixvim/default.nix
     ../modules/apps/video-editing.nix
+    ../modules/apps/claude.nix
   ];
 
   home.username = "nikos";
