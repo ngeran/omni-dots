@@ -2,18 +2,25 @@
 
 {
   # =========================================================================
-  # Stylix — wallpaper -> base16 palette generator (replaces matugen)
+  # Stylix — cold-boot palette SEED (hybrid with matugen runtime)
   # =========================================================================
-  # matugen's `image` subcommand is broken in nixpkgs matugen 4.0.0 (it cannot
-  # decode images), so wallpaper->palette generation moved to Stylix, which
-  # generates a base16 palette from the image at BUILD time.
+  # HYBRID ARCHITECTURE:
+  #   • Stylix (HERE) generates a base16 palette from wallpaper.jpg at BUILD
+  #     time and bridges it into the Quickshell seed (home/stylix.nix). It is
+  #     the COLD-BOOT seed only — loaded once when no live theme is active.
+  #   • matugen (modules/matugen.nix, from github:InioX/matugen) is the RUNTIME
+  #     generator: Quickshell runs it on the LIVE wallpaper for instant palettes
+  #     with NO rebuild. This is what makes wallpaper→palette instant.
+  #   They never fight: Quickshell's clobber-guard (loadStylixSeed) skips the
+  #   seed once a non-stylix theme is active.
+  #
+  # NOTE: nixpkgs matugen 4.0.0's `image` subcommand is broken (cannot decode
+  # images) — that is why matugen comes from a flake input, not pkgs.matugen.
   #
   # SCOPE: palette generator ONLY. `autoEnable = false` disables all of Stylix's
   # per-app targets so it does NOT fight Quickshell's ThemeService.syncToExternalApps
-  # (which still themes ghostty/kitty/mako/Hyprland live). The generated palette is
-  # exposed as `config.lib.stylix.colors`, which home/stylix.nix bridges into a
-  # Quickshell seed file. Enabling Stylix's per-app targets is future work (it would
-  # require moving ghostty/kitty/etc. from system packages to home-manager programs).
+  # (which themes ghostty/kitty/hyprlock/nvim/rofi/gtk live). The palette is
+  # exposed as `config.lib.stylix.colors`, bridged by home/stylix.nix.
   # =========================================================================
   stylix = {
     enable = true;

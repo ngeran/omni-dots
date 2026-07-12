@@ -10,6 +10,7 @@
     ../../modules/greetd.nix
     ../../modules/apps/file-manager.nix
     ../../modules/stylix.nix
+    ../../modules/matugen.nix        # runtime wallpaper→palette generator (hybrid with stylix)
     ../../modules/fonts.nix
     ../../modules/apps/desktop-apps.nix
     ../../modules/apps/dev-tools.nix

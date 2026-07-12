@@ -23,6 +23,15 @@
       url = "github:nix-community/nixvim/main"; # Using main for 26.05 compatibility
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # -- MATUGEN (runtime wallpaper → palette) --
+    # Pinned to upstream (NOT nixpkgs): nixpkgs matugen 4.0.0's `image`
+    # subcommand cannot decode images, so it can't generate palettes. This
+    # flake builds a working matugen. It does NOT follow nixpkgs — it vendors
+    # its own Rust crate set. Used by Quickshell for INSTANT wallpaper→palette
+    # generation at runtime (no rebuild). See modules/matugen.nix for the
+    # hybrid contract: Stylix = cold-boot seed, matugen = runtime generator.
+    matugen.url = "github:InioX/matugen";
   };
 
   outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, ... }@inputs: {
