@@ -6,20 +6,18 @@ let
   isSupported = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
 in
 {
-  config = lib.mkIf isSupported {
-    # Nixpkgs configuration to allow unfree packages
-    nixpkgs.config.allowUnfreePredicate = pkg:
+  config = {
+    # Only apply Claude-specific config if supported
+    nixpkgs.config.allowUnfreePredicate = lib.mkIf isSupported (pkg:
       builtins.elem (lib.getName pkg) [
         "claude-code"
         "claude"
-      ] || config.nixpkgs.config.allowUnfree or false;
+      ] || config.nixpkgs.config.allowUnfree or false);
 
     # Add Claude Code to system packages
-    # Combine both package definitions in one place
-    environment.systemPackages = with pkgs; [
+    environment.systemPackages = lib.mkIf isSupported (with pkgs; [
       inputs.claude-code.packages.${pkgs.stdenv.hostPlatform.system}.default
     ] ++ lib.optionals config.programs.rofi.enable [
-      # Add desktop entry if rofi is enabled
       (makeDesktopItem {
         name = "claude-code";
         exec = "claude";
@@ -30,21 +28,21 @@ in
         terminal = true;
         type = "Application";
       })
-    ];
+    ]);
 
     # Shell aliases for convenience
-    programs.bash.initExtra = lib.mkIf config.programs.bash.enable (lib.mkOptional ''
+    programs.bash.initExtra = lib.mkIf (isSupported && config.programs.bash.enable) (lib.mkOptional ''
       alias c="claude"
       alias cc="claude --continue"
     '');
 
-    programs.zsh.initExtra = lib.mkIf config.programs.zsh.enable (lib.mkOptional ''
+    programs.zsh.initExtra = lib.mkIf (isSupported && config.programs.zsh.enable) (lib.mkOptional ''
       alias c="claude"
       alias cc="claude --continue"
     '');
 
     # Create Claude config directory
-    system.activationScripts.claude-config = {
+    system.activationScripts.claude-config = lib.mkIf isSupported {
       text = ''
         if [ ! -d "$HOME/.config/claude" ]; then
           mkdir -p "$HOME/.config/claude"
@@ -53,9 +51,10 @@ in
       '';
       deps = [ "users" ];
     };
-  };
 
-  config.warnings = lib.mkIf (!isSupported) [
-    "Claude Code is not supported on ${pkgs.stdenv.hostPlatform.system}. Skipping."
-  ];
+    # Warning for unsupported platforms
+    warnings = lib.mkIf (!isSupported) [
+      "Claude Code is not supported on ${pkgs.stdenv.hostPlatform.system}. Skipping."
+    ];
+  };
 }
