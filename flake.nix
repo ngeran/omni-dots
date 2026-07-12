@@ -32,7 +32,6 @@
     # generation at runtime (no rebuild). See modules/matugen.nix for the
     # hybrid contract: Stylix = cold-boot seed, matugen = runtime generator.
     matugen.url = "github:InioX/matugen";
-  };
 
     # -- CLAUDE CODE (AI-powered development assistant) --
     # Claude Code is a terminal-based AI assistant from Anthropic.
@@ -42,10 +41,10 @@
       url = "github:ryoppippi/nix-claude-code";
       # Use the same nixpkgs version as the rest of the system
       inputs.nixpkgs.follows = "nixpkgs";
-      };
     };
+  };
 
-  outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, claude-code, ... }@inputs: {
+  outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, matugen, claude-code, ... }@inputs: {
     # =========================================================================
     # PROJECT TEMPLATES — `nix flake init -t ~/.omni-nix#<name>`
     # =========================================================================
@@ -68,6 +67,9 @@
           ./hosts/desktop                 # Desktop hardware & graphic layer
 
           stylix.nixosModules.stylix      # Wallpaper -> palette generator
+
+          # Claude Code module
+          ./modules/apps/claude.nix
 
           { _module.args.inputs = inputs; }
 
@@ -94,6 +96,9 @@
           ./hosts/dell3440                # Target folder for your laptop's layout
 
           stylix.nixosModules.stylix      # Keep the theme engine unified
+
+          # Claude Code module
+          ./modules/apps/claude.nix
 
           { _module.args.inputs = inputs; }
 
