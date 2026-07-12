@@ -34,7 +34,18 @@
     matugen.url = "github:InioX/matugen";
   };
 
-  outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, ... }@inputs: {
+    # -- CLAUDE CODE (AI-powered development assistant) --
+    # Claude Code is a terminal-based AI assistant from Anthropic.
+    # Provides `claude` command for interactive coding help.
+    # Documentation: https://docs.anthropic.com/en/docs/claude-code
+    claude-code = {
+      url = "github:ryoppippi/nix-claude-code";
+      # Use the same nixpkgs version as the rest of the system
+      inputs.nixpkgs.follows = "nixpkgs";
+      };
+    };
+
+  outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, claude-code, ... }@inputs: {
     # =========================================================================
     # PROJECT TEMPLATES — `nix flake init -t ~/.omni-nix#<name>`
     # =========================================================================
