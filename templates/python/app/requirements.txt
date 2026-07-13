@@ -1,0 +1,6 @@
+# Local-dev deps (drives `uv pip install -r app/requirements.txt` into .venv).
+# NOTE: the container IMAGE does NOT read this file — it pulls flask/gunicorn
+# from nixpkgs via flake.nix → packages.image (python3.withPackages). Keep the
+# two in rough parity; for a single source of truth, graduate to uv2nix.
+flask==3.0.3
+gunicorn==22.0.0

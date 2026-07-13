@@ -1,11 +1,13 @@
 # Minimal Flask app for the k8s-telemetry lab.
 #
-# Swap in your real application here — the deployment workflow is identical:
-#   docker build -t pyapp:dev .
-#   docker save pyapp:dev -o /tmp/pyapp.tar
-#   sudo k3s ctr -n k8s.io images import /tmp/pyapp.tar
-# (then kubectl apply -f ../manifests/70-pyapp.yaml). The Deployment uses
-# imagePullPolicy: Never, so k3s never tries to pull pyapp:dev from a registry.
+# Swap in your real application here — the deployment workflow is identical.
+# The image is now built by Nix (see ./flake.nix) and pushed via skopeo:
+#   just build     # nix build .#image  → ./result
+#   just push      # skopeo → localhost:5000/pyapp:latest  (no docker)
+#   just deploy    # applies ../manifests/70-pyapp.yaml + rolls the Deployment
+# k3s pulls over plain HTTP via the registries.yaml mirror
+# (labs/k8s-registry.nix); imagePullPolicy is Always. The old `docker save |
+# sudo k3s ctr images import` + `imagePullPolicy: Never` path is gone.
 import os
 import socket
 

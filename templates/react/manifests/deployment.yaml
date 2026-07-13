@@ -1,0 +1,26 @@
+# React app Deployment (nginx serving the built SPA on :80).
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-app
+  namespace: default
+  labels:
+    app: react-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: react-app
+  template:
+    metadata:
+      labels:
+        app: react-app
+    spec:
+      containers:
+        - name: react-app
+          image: localhost:5000/react-app:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80

@@ -1,0 +1,14 @@
+# Service fronting the react-app Deployment.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: react-app
+  namespace: default
+spec:
+  selector:
+    app: react-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

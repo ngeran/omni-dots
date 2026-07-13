@@ -5,11 +5,15 @@
   # 1. User Application Workspace (Home Manager Packages)
   # =========================================================================
   home.packages = with pkgs; [
+
     # Modern CLI Alternatives & Utilities
     eza
     tree
     obsidian
     fastfetch
+    
+    # System Tools 
+    btop
 
     # Application Launcher (Merged back into upstream for 26.05)
     rofi
@@ -18,8 +22,10 @@
     kicad
     inkscape
     krita
+
     # Network Security
     openssh
+
   ];
 
   # Modern eza aliases to completely replace standard ls

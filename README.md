@@ -34,8 +34,13 @@ A declarative NixOS + Home Manager flake for the **`nixos-btw`** machine (x86_64
 │   ├── quickshell.nix     # installs the quickshell package
 │   └── apps.nix           # cursor / GTK theme / icons / dark mode
 │
-├── templates/dev/         # ★ project scaffold: `nix flake init -t .#dev`
-│                          #   flake.nix + .envrc (.gitignore'd .direnv cache)
+├── templates/             # ★ project scaffolds: `nix flake init -t .#<name>`
+│   ├── python/            #   python service: devShell + Nix image + justfile + manifests
+│   ├── hugo/              #   hugo static site → nginx image + justfile + manifests
+│   ├── react/             #   react (vite) build → nginx image + justfile + manifests
+│   └── dev/               #   kitchen-sink devShell only (no image/deploy) — the default
+│
+├── labs/                  # opt-in experiments: k8s-telemetry (k3s + manifests), k8s-registry
 │
 └── modules/               # system + home modules (audio, bluetooth, amdgpu, …)
 ```
@@ -119,14 +124,30 @@ Language toolchains are **not installed globally** — that's what broke things 
 
 ### Create a NEW project
 
+Pick the template that matches the stack — `#python`/`#react`/`#hugo` each ship a devShell **plus** a Nix-built container image and a `justfile` for build → push → k8s deploy (`#dev` is a kitchen-sink devShell only):
+
 ```bash
-mkdir my-app && cd my-app
-git init
-nix flake init -t ~/.omni-nix#dev      # writes flake.nix + .envrc + .gitignore
+mkdir my-app && cd my-app && git init
+nix flake init -t ~/.omni-nix#python    # or #react / #hugo / #dev
+git add flake.nix .envrc justfile app manifests   # flakes read the git index
 direnv allow                            # one-time: trust the devShell
 ```
 
-You're done — `node`, `python`, `hugo`, `tailwindcss`, `uv` are now on `$PATH`. Tailor `flake.nix` to the project (delete packages you don't need), then `direnv allow` again.
+The stack's tools are now on `$PATH` (auto-loaded by direnv). Tailor `flake.nix` (image name, deps), `justfile` (`image`/`tag`/`ns`/`dep`), and `manifests/` to the project, then `direnv allow` again.
+
+### Build & deploy to k8s (Python / Hugo / React templates)
+
+These templates build a **reproducible OCI image with Nix** (no Dockerfile) and deploy it to the local k3s cluster. From the project dir, with k3s up (`sudo systemctl start k3s` — it's on-demand):
+
+```bash
+just build      # nix build .#image  →  ./result (image tarball)
+just push       # skopeo → localhost:5000/<app>:latest  (no docker in the loop)
+just deploy     # kubectl apply manifests + rollout restart
+just logs       # tail the pod
+just forward    # port-forward :8080 → curl localhost:8080
+```
+
+Prerequisites, all wired by this repo: a k3s single-node cluster (`labs/k8s-telemetry/nix/k3s.nix`), a local registry on `127.0.0.1:5000` (`labs/k8s-registry.nix`), and `just` + `skopeo` globally (`modules/apps/dev-tools.nix`). The lab pyapp at `labs/k8s-telemetry/python-app/` is the live reference for this flow.
 
 ### Add a devShell to an EXISTING project
 

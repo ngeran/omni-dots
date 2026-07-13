@@ -1,11 +1,13 @@
-# Python web service — built locally and loaded into k3s (no registry).
-# Build/import (see ../python-app/):
+# Python web service — Nix-built image pulled from the local registry.
+# Build/push/deploy (see ../python-app/flake.nix + justfile):
 #   cd ../python-app
-#   docker build -t pyapp:dev .
-#   docker save pyapp:dev -o /tmp/pyapp.tar
-#   sudo k3s ctr -n k8s.io images import /tmp/pyapp.tar
-# imagePullPolicy: Never — k3s must never try to pull pyapp:dev from a registry.
-# Ingress for pyapp.lab.local lives in 90-ingress.yaml.
+#   just build     # nix build .#image  →  ./result (image tarball)
+#   just push      # skopeo → localhost:5000/pyapp:latest  (no docker)
+#   just deploy    # applies this manifest + rolls the Deployment
+# imagePullPolicy: Always — the tag is fixed (:latest) and re-pushed, so Always
+# forces k3s to fetch the newest digest each rollout (IfNotPresent would serve
+# a stale cache). k3s pulls over plain HTTP via the registries.yaml mirror in
+# labs/k8s-registry.nix. Ingress for pyapp.lab.local lives in 90-ingress.yaml.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -26,8 +28,8 @@ spec:
     spec:
       containers:
         - name: pyapp
-          image: pyapp:dev
-          imagePullPolicy: Never
+          image: localhost:5000/pyapp:latest
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080

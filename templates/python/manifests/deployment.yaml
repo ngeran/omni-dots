@@ -1,0 +1,29 @@
+# Python service Deployment.
+# image + imagePullPolicy match the justfile push target (localhost:5000).
+# Always is required: the tag is fixed (:latest) and re-pushed, so Always
+# forces k3s to fetch the newest digest each rollout.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pyapp
+  namespace: default
+  labels:
+    app: pyapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pyapp
+  template:
+    metadata:
+      labels:
+        app: pyapp
+    spec:
+      containers:
+        - name: pyapp
+          image: localhost:5000/pyapp:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080

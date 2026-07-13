@@ -48,12 +48,30 @@
     # =========================================================================
     # PROJECT TEMPLATES — `nix flake init -t ~/.omni-nix#<name>`
     # =========================================================================
-    # `dev` scaffolds a project devShell (flake.nix + .envrc + .gitignore) for
-    # node/python/hugo/tailwind. Auto-loaded by direnv (home/devshell.nix).
+    # Per-stack scaffolds. Each ships a devShell (auto-loaded by direnv,
+    # home/devshell.nix) PLUS a Nix-built container image and a `justfile`
+    # driving build → push (skopeo) → k3s rollout. See templates/<name>/.
+    #
+    #   #python / #react / #hugo  — purpose-built per stack (Nix image + deploy)
+    #   #dev                      — kitchen-sink devShell only (no image/deploy)
+    templates.python = {
+      path = ./templates/python;
+      description = "Python web service — Nix devShell + image, just → push → k3s rollout";
+    };
+    templates.hugo = {
+      path = ./templates/hugo;
+      description = "Hugo static site → nginx image, just → push → k3s rollout";
+    };
+    templates.react = {
+      path = ./templates/react;
+      description = "React (Vite) static build → nginx image, just → push → k3s rollout";
+    };
     templates.dev = {
       path = ./templates/dev;
       description = "Project devShell — node / python / hugo / tailwind (direnv + nix flake)";
     };
+    # Bare `nix flake init -t ~/.omni-nix` still gives the kitchen-sink dev shell.
+    defaultTemplate = self.templates.dev;
 
     nixosConfigurations = {
       # --- MAIN DESKTOP RIG ---

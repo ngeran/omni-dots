@@ -12,24 +12,17 @@
 #       The two runtimes (k3s containerd, system dockerd) coexist fine.
 #
 # SCOPE / STATUS
-#   This module is WRITTEN but NOT imported anywhere. Nothing on the system
-#   changes until you wire it in. This respects the lab rule: nothing installs
-#   until explicitly enabled.
+#   IMPORTED in hosts/desktop/default.nix (nixos-btw only — NOT on dell3440).
+#   k3s is installed and fully configured, but does NOT auto-start at boot
+#   (see the On-demand block below) — start it when you sit down to lab work:
+#       sudo systemctl start k3s
 #
-# HOW TO ENABLE  (desktop / nixos-btw ONLY — do NOT import on dell3440)
-#   1. Edit hosts/desktop/default.nix; add this line to the `imports` list:
-#          ../../labs/k8s-telemetry/nix/k3s.nix
-#   2. Stage it so the flake can see it (flakes evaluate the git index, NOT
-#      the working tree — unstaged files are invisible to omni-apply):
-#          git -C ~/.omni-nix add labs/k8s-telemetry/nix/k3s.nix hosts/desktop/default.nix
-#   3. Bootstrap the persistent data dir ONCE, before the first start (the
-#      bind-mount target must exist at mount time; k3s will not create it for
-#      you because it writes *under* the already-mounted path):
-#          sudo mkdir -p /persist/var/lib/rancher/k3s
-#   4. Apply:
-#          omni-apply
-#      (If you skipped step 3 and k3s failed to start at boot, run step 3 now
-#      then: sudo systemctl restart k3s)
+# FIRST-TIME BOOTSTRAP (once, before the very first start)
+#   The bind-mount target must exist at mount time (k3s writes *under* the
+#   already-mounted path, so it won't create it for you):
+#       sudo mkdir -p /persist/var/lib/rancher/k3s
+#   Then start the service. (If you forgot this and k3s failed to come up, run
+#   the mkdir now and: sudo systemctl restart k3s.)
 #
 # PERSISTENCE
 #   k3s has no `dataDir` option — its state is hardcoded to /var/lib/rancher/k3s.

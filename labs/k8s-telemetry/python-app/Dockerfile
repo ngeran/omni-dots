@@ -1,4 +1,11 @@
-# Lab Python app image. Built locally and imported into k3s (no registry).
+# ============================================================================
+# ⚠️  SUPERSEDED — kept only as a reference for a non-Nix (plain docker) build.
+# ============================================================================
+# The lab pyapp image is now built by NIX: see ./flake.nix (packages.image,
+# pkgs.dockerTools.buildImage). The deploy path is `just build && just push &&
+# just deploy` (skopeo → localhost:5000/pyapp:latest). This Dockerfile is NOT
+# on that path. Use it only if you need a classic pip-based image outside Nix.
+# ----------------------------------------------------------------------------
 FROM python:3.12-slim
 
 WORKDIR /app

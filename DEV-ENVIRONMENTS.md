@@ -17,13 +17,40 @@ Nix flake + direnv dev-shell workflow, and how to start fresh ones.
 - `nix-direnv` caches the evaluation, so loading is instant after the first time.
 
 This is wired by [`home/devshell.nix`](home/devshell.nix) (direnv + nix-direnv).
-A ready scaffold lives in the flake as the `dev` template.
+Ready scaffolds live in the flake as **per-stack templates**:
+
+| Template | Ships |
+|---|---|
+| `#python` | python devShell **+ Nix-built image + justfile + k8s manifests** |
+| `#react`  | vite devShell + nginx image + justfile + manifests |
+| `#hugo`   | hugo devShell + nginx image + justfile + manifests |
+| `#dev`    | kitchen-sink devShell only (node/python/hugo/tailwind) — the default |
+
+`#python`/`#react`/`#hugo` go beyond a devShell: they build a **reproducible OCI
+image with Nix** (no Dockerfile) and deploy it to the local k3s cluster.
+
+```bash
+mkdir my-app && cd my-app && git init
+nix flake init -t ~/.omni-nix#python    # or #react / #hugo / #dev
+git add flake.nix .envrc justfile app manifests
+direnv allow
+
+# build → push (skopeo, no docker) → k3s rollout:
+just build && just push && just deploy
+just logs       # tail the pod
+just forward    # port-forward :8080
+```
+
+Prerequisites, all wired by this repo: k3s (`labs/k8s-telemetry/nix/k3s.nix`,
+on-demand — `sudo systemctl start k3s`), a local registry on `127.0.0.1:5000`
+(`labs/k8s-registry.nix`), and `just`+`skopeo` globally (`modules/apps/dev-tools.nix`).
+The lab pyapp at `labs/k8s-telemetry/python-app/` is the live reference.
 
 ## Prerequisites (already wired into this repo)
 
 - `omni-apply` has been run (installs `direnv` + `nix-direnv`, bash hook).
 - You've **logged out and back in** once (so the bash hook is active).
-- The template is available: `nix flake init -t ~/.omni-nix#dev`.
+- Templates available: `nix flake init -t ~/.omni-nix#python` (or `#react` / `#hugo` / `#dev`).
 
 ## The two golden rules (breaking these = silent failure)
 
@@ -40,7 +67,7 @@ A ready scaffold lives in the flake as the `dev` template.
 
 ```
 1. scaffold   →  nix shell nixpkgs#<tool> -c <scaffold-cmd>   (borrow the tool once; nothing is global)
-2. flake      →  nix flake init -t ~/.omni-nix#dev  +  tailor flake.nix to the project
+2. flake      →  nix flake init -t ~/.omni-nix#<stack>  +  tailor flake.nix to the project
 3. activate   →  git add flake.nix .envrc && direnv allow
 4. install/run →  the stack's own install/run command
 ```
