@@ -1,0 +1,512 @@
+# Project Pipeline Guide — dev → Nix image → k8s
+
+The complete reference for the **per-stack dev pipeline**: scaffold or migrate a
+project, build a reproducible container image with Nix (no Dockerfile), deploy
+it to the local k3s cluster, and drive the pods.
+
+> For the direnv / dev-shell deep-dive see [`DEV-ENVIRONMENTS.md`](DEV-ENVIRONMENTS.md).
+> This doc is the one-stop guide for the **image + deploy + k8s** parts.
+
+---
+
+## Table of contents
+
+1. [Prerequisites (one-time)](#1-prerequisites-one-time)
+2. [The mental model](#2-the-mental-model)
+3. [Create a NEW project](#3-create-a-new-project)
+   - [3.1 Python](#31-new-python-project)
+   - [3.2 Hugo](#32-new-hugo-project)
+   - [3.3 React + Tailwind](#33-new-react--tailwind-project)
+4. [Migrate an EXISTING project](#4-migrate-an-existing-project)
+   - [4.1 Python](#41-migrate-an-existing-python-project)
+   - [4.2 Hugo](#42-migrate-an-existing-hugo-project)
+   - [4.3 React](#43-migrate-an-existing-react-project)
+5. [Build the image + deploy to k8s](#5-build-the-image--deploy-to-k8s-the-test-loop)
+6. [Pod lifecycle — start / stop / kill / destroy](#6-pod-lifecycle--start--stop--kill--destroy)
+7. [Reaching a deployed service](#7-reaching-a-deployed-service)
+8. [Troubleshooting](#8-troubleshooting)
+
+---
+
+## 1. Prerequisites (one-time)
+
+```bash
+omni-apply                       # installs `just` + `skopeo` globally (modules/apps/dev-tools.nix)
+```
+
+Before deploying, bring up the cluster (k3s is **on-demand**, it does not start at boot):
+
+```bash
+sudo systemctl start k3s         # bring the cluster up        (stop:  sudo systemctl stop k3s)
+curl -s localhost:5000/v2/       # registry auto-starts → {}   (provided by labs/k8s-registry.nix)
+kubectl get nodes                # → nixos-btw  Ready
+```
+
+First-ever k3s start needs a one-time bootstrap (k3s state lives on `/persist`):
+
+```bash
+sudo mkdir -p /persist/var/lib/rancher/k3s   # only before the VERY first start
+```
+
+---
+
+## 2. The mental model
+
+Each project is a directory containing a **`flake.nix`** that declares two things:
+
+| Output | What it is |
+|---|---|
+| `devShells.default` | the dev tools — auto-loaded by `direnv` when you `cd` in |
+| `packages.image` | a **reproducible OCI image** built by Nix (`dockerTools.buildImage`) — **no Dockerfile** |
+
+`just` drives the loop between them:
+
+```
+just build   →   nix build .#image      (produces ./result, the image tarball)
+just push    →   skopeo copy …          (pushes to localhost:5000, NO docker)
+just deploy  →   kubectl apply + rollout (k3s pulls the new image)
+```
+
+**Golden rules (breaking these = silent failure):**
+
+1. **`git add` before `just build`/`deploy`.** Flakes read the *git index*, not the
+   working tree. An unstaged `flake.nix` or `app/` is invisible to the build.
+2. **`direnv allow` after editing `flake.nix` or `.envrc`.**
+3. **Image strings stay in lockstep** across `flake.nix` (`name`/`tag`), the
+   `justfile` (`image`/`tag`), and `manifests/*.yaml` (`image:`). Fixed tag
+   (`:latest`) + `imagePullPolicy: Always` is intentional.
+
+---
+
+## 3. Create a NEW project
+
+### 3.1 New Python project
+
+```bash
+mkdir ~/myapp && cd ~/myapp && git init
+nix flake init -t ~/.omni-nix#python
+git add -A
+direnv allow
+```
+
+You get:
+
+```
+myapp/
+├── flake.nix              # devShell (python3/uv/ruff/mypy) + image (flask/gunicorn)
+├── .envrc                 # use flake  (+ auto-activates .venv if present)
+├── justfile               # build / push / deploy / logs / forward
+├── app/
+│   ├── app.py             # ← your code (sample Flask app)
+│   └── requirements.txt   # ← your deps (local dev)
+└── manifests/
+    ├── deployment.yaml    # namespace: default, port 8080
+    └── service.yaml
+```
+
+**Write your code** in `app/app.py`. **Run locally:**
+
+```bash
+uv venv && uv pip install -r app/requirements.txt
+uv run flask --app app run --port 8080     # → http://localhost:8080
+```
+
+**Deploy:** `just deploy` (see [§5](#5-build-the-image--deploy-to-k8s-the-test-loop)).
+
+> ⚠️ Never `pip install` against Nix's Python (read-only → PEP-668). Always go
+> through `uv` → the project `.venv`.
+
+---
+
+### 3.2 New Hugo project
+
+```bash
+mkdir ~/mysite && cd ~/mysite && git init
+nix flake init -t ~/.omni-nix#hugo
+git add -A
+direnv allow
+```
+
+You get a minimal Hugo site (`site/hugo.toml`, `site/content/`, `site/layouts/`)
+plus the image definition. **Run locally:**
+
+```bash
+just serve        # hugo server -D  → http://localhost:1313 (live reload)
+```
+
+Add a theme (submodule) and content as usual:
+
+```bash
+git submodule add https://github.com/adityatelange/hugo-PaperMod themes/PaperMod
+echo 'theme = "PaperMod"' >> site/hugo.toml
+hugo new content/posts/hello.md     # then edit +  just serve
+```
+
+**Deploy:** `just deploy`. Hugo builds **offline** inside the image (no
+lock/hash step) — nixpkgs ships the extended Hugo (SCSS / asset pipeline).
+
+If your theme uses a Node asset pipeline (Tailwind/PostCSS):
+
+```bash
+npm install        # one-time, inside the devShell (nodejs_22 is provided)
+```
+
+---
+
+### 3.3 New React + Tailwind project
+
+```bash
+mkdir ~/myweb && cd ~/myweb && git init
+nix flake init -t ~/.omni-nix#react
+git add -A
+direnv allow
+```
+
+This gives you a Vite + React + TypeScript scaffold **without** Tailwind. Add
+Tailwind (v4) on top:
+
+```bash
+cd app
+npm install                              # generates package-lock.json
+npm install tailwindcss @tailwindcss/vite
+cd ..
+```
+
+Edit `app/vite.config.ts` to register the Tailwind plugin:
+
+```ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+});
+```
+
+Create `app/src/index.css` and import it from `main.tsx`:
+
+```css
+@import "tailwindcss";
+```
+
+```ts
+// app/src/main.tsx — add at the top:
+import "./index.css";
+```
+
+Now use Tailwind classes in `App.tsx`, e.g. `<h1 className="text-3xl font-bold">`.
+
+**Run locally:**
+
+```bash
+cd app && npm run dev        # → http://localhost:5173 (HMR)
+```
+
+**One-time reproducibility step** (inherent to Nix-built JS) — set the deps hash:
+
+```bash
+nix build .#image            # FAILS, printing the correct sha256
+# paste it into flake.nix → npmDepsHash, then re-run:
+nix build .#image            # succeeds
+```
+
+(Or `nix run nixpkgs#prefetch-npm-deps -- app/package-lock.json`.) Re-do this
+whenever `package.json`/lockfile changes.
+
+**Deploy:** `just deploy`.
+
+---
+
+## 4. Migrate an EXISTING project
+
+The pattern is the same for all stacks: copy the project in, drop the matching
+template's `flake.nix` + `.envrc` + `justfile` + `manifests/` alongside your
+existing code, point the flake at your code, `git add`, `direnv allow`.
+
+### 4.1 Migrate an existing Python project
+
+*(e.g. `biterrors` — FastAPI + Textual TUI)*
+
+```bash
+cd path/to/existing-python-project
+git init                                # if not already
+nix flake init -t ~/.omni-nix#python    # writes flake.nix/.envrc/justfile/app/manifests/
+```
+
+`nix flake init` won't overwrite existing files, so your code is safe. Now
+**point the image at your real entry point** — edit `flake.nix`:
+
+```nix
+# If your app lives in ./src and the WSGI/ASGI app is src/main:app:
+appSource = pkgs.runCommand "app-src" { } ''
+  mkdir -p $out/app
+  cp -r ${./src}/. $out/app/
+'';
+# …config.WorkingDir = "/app";
+#   config.Cmd = [ "${appPython}/bin/gunicorn" "main:app" "--bind" "0.0.0.0:8080" ];
+```
+
+Add your **runtime deps** to the image — add them to `withPackages`:
+
+```nix
+appPython = pkgs.python3.withPackages (p: [ p.flask p.gunicorn p.requests p.uvicorn ]);
+# (every package your app imports at runtime must be listed here)
+```
+
+Delete the template's `app/app.py` sample if it conflicts, `git add -A`,
+`direnv allow`, then:
+
+```bash
+rm -rf .venv && uv venv && uv pip install -r requirements.txt   # recreate venv
+just deploy
+```
+
+> ⚠️ **Two dependency sources** (keep in sync):
+> - `requirements.txt` → your **local** `uv` venv (dev).
+> - `flake.nix` → `withPackages` → what the **image** ships (prod).
+>
+> Add a dep to **both**. (A single source of truth is the Increment-3 `uv2nix`
+> upgrade — not built yet.)
+
+---
+
+### 4.2 Migrate an existing Hugo project
+
+*(e.g. `ngeranio` — Hugo + Tailwind/PostCSS)*
+
+```bash
+cd path/to/existing-hugo-site
+git init
+nix flake init -t ~/.omni-nix#hugo
+```
+
+Move your existing site content under `site/` (or edit `flake.nix`'s
+`staticAssets` builder to point at your content dir, e.g. `${./.}` if the Hugo
+project root *is* the repo root). The key line in `flake.nix`:
+
+```nix
+staticAssets = pkgs.runCommand "hugo-site" { nativeBuildInputs = [ pkgs.hugo ]; } ''
+  mkdir -p $out build
+  cp -r ${./site}/. build/        # ← point this at your Hugo project dir
+  chmod -R u+w build
+  hugo -s "$PWD/build" --minify --destination "$out"
+'';
+```
+
+If you use a Node asset pipeline:
+
+```bash
+npm install                # nodejs_22 is in the devShell
+just serve                 # hugo server -D
+```
+
+Theme submodules carry over: `git submodule update --init`. `git add -A`,
+`direnv allow`, `just deploy`.
+
+---
+
+### 4.3 Migrate an existing React project
+
+*(e.g. `ggeran` — Next.js / React / Tailwind)*
+
+```bash
+cd path/to/existing-react-project
+git init
+nix flake init -t ~/.omni-nix#react
+```
+
+If your app isn't under `app/`, either move it there or edit `flake.nix`:
+
+```nix
+reactBuild = pkgs.buildNpmPackage {
+  src = ./.;                # ← point at the dir holding package.json
+  # …
+};
+```
+
+Then:
+
+```bash
+npm install                 # generate/refresh package-lock.json
+nix build .#image           # → fails with the correct hash; paste into npmDepsHash
+nix build .#image           # succeeds
+git add -A && direnv allow
+just deploy
+```
+
+> Existing `node_modules/` from another distro usually still works on NixOS.
+> If a native addon breaks after a Node bump: `npm rebuild` (or
+> `rm -rf node_modules && npm install`).
+
+---
+
+## 5. Build the image + deploy to k8s (the test loop)
+
+From inside any project dir (with k3s up):
+
+```bash
+just build       # nix build .#image  →  ./result  (the image tarball, no Dockerfile)
+just push        # skopeo → localhost:5000/<app>:latest  (no docker in the loop)
+just deploy      # kubectl apply manifests/ + rollout restart + rollout status
+just logs        # tail the pod
+just forward     # port-forward :8080 → curl localhost:8080
+```
+
+`just deploy` chains `push` which chains `build`, so `just deploy` alone does the
+whole thing. Edit code → `just deploy` is the entire loop.
+
+**Per-stack notes for the image:**
+
+| Stack | Image deps come from | One-time step |
+|---|---|---|
+| Python | `flake.nix` → `python3.withPackages (p: [ … ])` | none |
+| Hugo | nixpkgs Hugo (offline build) | none |
+| React | `package.json` → `buildNpmPackage` | set `npmDepsHash` (see [3.3](#33-new-react--tailwind-project)) |
+
+The image is **fully reproducible** from `flake.lock` — the same commit produces
+the same bytes. No `pip install` at build time, no Dockerfile, no Docker daemon
+required to build or push.
+
+---
+
+## 6. Pod lifecycle — start / stop / kill / destroy
+
+**Kubernetes reality check:** you don't usually start/stop individual pods. Pods
+are managed by a **Deployment** (a controller) that keeps N replicas alive. So:
+
+- "start" = scale the Deployment to ≥1 (or apply the manifest)
+- "stop" = scale to 0 (pods go away, Deployment stays)
+- "kill one pod" = delete it (the Deployment **recreates** a new one)
+- "destroy for good" = delete the Deployment
+
+Throughout, `<ns>` = the namespace (`default` for new templates, `lab` for the
+telemetry lab) and `<dep>` = the Deployment name (`pyapp` / `hugo-site` /
+`react-app`).
+
+### See what's running
+
+```bash
+kubectl get pods -n <ns>                      # this project's pods
+kubectl get pods -A                           # ALL namespaces
+kubectl get deploy,svc,pods -n <ns>           # the full set
+kubectl describe pod <pod-name> -n <ns>       # events, why it's stuck
+```
+
+### Logs & shell
+
+```bash
+kubectl logs <pod-name> -n <ns>               # stdout
+kubectl logs <pod-name> -n <ns> -f            # follow (tail)
+kubectl logs <pod-name> -n <ns> --previous    # logs of the LAST (crashed) instance
+```
+
+> ⚠️ **`kubectl exec -it <pod> -- sh` does NOT work on these images.** Nix-built
+> `dockerTools` images are minimal — they contain your app, not a shell or
+> coreutils. For an interactive shell, add a debug shell to the image
+> (`copyToRoot = [ … pkgs.bash pkgs.coreutils ]`), or use
+> `kubectl debug -it <pod> --image=busybox --target=<container> -- sh`.
+
+### Start / scale
+
+```bash
+kubectl apply -f manifests/                    # create the Deployment + Service (START)
+kubectl scale deploy/<dep> -n <ns> --replicas=3   # scale up to 3 pods
+kubectl scale deploy/<dep> -n <ns> --replicas=0   # STOP: drain to 0 (no pods, Deploy stays)
+```
+
+### Restart / roll out a new version
+
+```bash
+kubectl rollout restart deploy/<dep> -n <ns>   # graceful restart (new pods, then old gone)
+kubectl rollout status  deploy/<dep> -n <ns>   # watch the rollout finish
+kubectl rollout undo    deploy/<dep> -n <ns>   # roll BACK to the previous version
+```
+
+(`just deploy` does `rollout restart` + `rollout status` for you.)
+
+### Kill a single pod
+
+```bash
+kubectl delete pod <pod-name> -n <ns>          # killed; the Deployment recreates a new one
+```
+
+This is the fastest way to force a pod to restart (e.g. it's wedged but the
+image is correct). The replacement gets a new name.
+
+### Destroy everything (stop + remove)
+
+```bash
+kubectl delete deploy/<dep>  -n <ns>           # destroy the Deployment + its pods
+kubectl delete svc/<dep>     -n <ns>           # destroy the Service
+# or in one shot:
+kubectl delete -f manifests/                   # deletes everything the manifests declared
+```
+
+After `delete -f manifests/`, the project is gone from the cluster (the image
+stays in the registry until you prune it). Re-create any time with
+`kubectl apply -f manifests/` or `just deploy`.
+
+### Stop the whole cluster
+
+```bash
+sudo systemctl stop k3s        # tears down all pods/services; state on /persist survives
+sudo systemctl start k3s       # brings it back; workloads re-apply from manifests
+```
+
+---
+
+## 7. Reaching a deployed service
+
+```bash
+just forward                    # port-forward svc → localhost:8080
+# then in another terminal:
+curl http://localhost:8080/
+```
+
+This always works regardless of DNS/ingress. For the **lab** (which has a
+traefik ingress + Pi-hole DNS):
+
+```bash
+curl http://pyapp.lab.local/                              # if Pi-hole DNS is up
+curl -H 'Host: pyapp.lab.local' http://10.0.0.86/         # without lab DNS
+```
+
+New (`#python`/`#hugo`/`#react`) templates deploy to `default` as a plain
+ClusterIP Service — use `just forward`. Add an Ingress (copy
+`labs/k8s-telemetry/manifests/90-ingress.yaml` as a template) if you want a
+hostname.
+
+---
+
+## 8. Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `just build` says it can't find `.#image` / "no flake" | `flake.nix` not git-tracked → `git add flake.nix .envrc justfile app manifests` |
+| Pod `CrashLoopBackOff` / `Error` | `kubectl logs <pod> --previous`. Most common: a runtime dep missing from `withPackages` (Python) or wrong `npmDepsHash` (React). |
+| `ModuleNotFoundError: No module named 'X'` (Python) | add `X` to `withPackages` in `flake.nix` (the image's deps), not just `requirements.txt`. |
+| `ImagePullBackOff` | registry down (`curl localhost:5000/v2/`), or k3s off, or image/tag mismatch between `flake.nix`, `justfile`, manifest. |
+| skopeo: "no policy.json found" | the justfile already passes `--insecure-policy`; if running skopeo by hand, add it. |
+| React build: hash mismatch | re-run `nix run nixpkgs#prefetch-npm-deps -- app/package-lock.json`, paste into `npmDepsHash`. |
+| `kubectl exec … -- sh` fails | expected — Nix images have no shell. See [§6](#logs--shell). |
+| `python3`/`node` "not found" after `cd` | `flake.nix` not git-tracked, or `direnv allow` stale. |
+| k3s won't start (first time) | `sudo mkdir -p /persist/var/lib/rancher/k3s` then `sudo systemctl restart k3s`. |
+
+### Full reset of a project in the cluster
+
+```bash
+kubectl delete -f manifests/        # destroy
+just deploy                         # rebuild image + recreate
+```
+
+### Clean the registry (reclaim space)
+
+The registry holds every pushed tag. It's a docker volume `registry-data` — to
+wipe it entirely:
+
+```bash
+sudo docker stop registry && sudo docker volume rm registry-data && sudo docker start registry
+```
+
+(You'll need to `just push` again before the next `just deploy`.)

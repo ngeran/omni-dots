@@ -118,7 +118,9 @@ git push
 
 ## 🧑‍💻 Development environments (per-project shells)
 
-> **Full guide: [`DEV-ENVIRONMENTS.md`](DEV-ENVIRONMENTS.md)** — migrate existing Python / React / Hugo projects and start new ones, step by step.
+> **Pipeline guide (start here): [`PIPELINE.md`](PIPELINE.md)** — create/migrate Python / Hugo / React+Tailwind projects, build a Nix image, deploy to k3s, and drive pods (start/stop/kill/destroy).
+>
+> **direnv deep-dive: [`DEV-ENVIRONMENTS.md`](DEV-ENVIRONMENTS.md)** — the per-project dev-shell workflow in detail.
 
 Language toolchains are **not installed globally** — that's what broke things after the Arch migration (read-only store → PEP-668 pip errors, npm-global hacks, one version per language). Instead each project declares its own tools in a `flake.nix`, and `direnv` auto-loads them on `cd`. The system and `~/.config` stay clean. This is wired by `home/devshell.nix` (direnv + nix-direnv).
 
