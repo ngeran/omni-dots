@@ -56,9 +56,9 @@ hl.bind(mod .. " + A",
 
 
 -- --- Help / Keybind Reference -------------------------------------------------
--- Opens a floating terminal running a python script to parse this file for help
+-- Toggles the Quickshell keybinds overlay (pure QML; replaces the old python viewer)
 hl.bind(mod .. " + K",
-  hl.dsp.exec_cmd("kitty --class keybinds-float -e python3 ~/.config/hypr/scripts/keybinds_viewer.py"))
+  hl.dsp.exec_cmd("quickshell ipc -c bar call keybinds toggle"))
 
 
 -- --- Session Management ------------------------------------------------------

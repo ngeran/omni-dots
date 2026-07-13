@@ -63,7 +63,8 @@ end
 -- We define specific sizes here: Keybinds needs width, Fastfetch needs room for the logo
 local custom_floats = {
   ["keybinds-float"]  = "1100 700",
-  ["fastfetch-float"] = "1250 700"
+  ["fastfetch-float"] = "1250 700",
+  ["btop-float"]      = "1000 700"
 }
 
 for cls, sz in pairs(custom_floats) do
