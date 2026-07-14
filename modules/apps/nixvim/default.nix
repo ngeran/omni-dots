@@ -51,8 +51,9 @@
       which-key.enable = true;
       bufferline.enable = true;
       
-      # Visualizes colors (Tailwind/CSS) directly in the editor
-      nvim-highlight-colors.enable = true; 
+      # Fix: Replaced nvim-highlight-colors with colorizer (more stable in Nixvim)
+      # This shows color previews for CSS/Tailwind classes
+      colorizer.enable = true; 
 
       # -----------------------------------------------------------------------
       # Syntax & Code Structure
@@ -63,7 +64,7 @@
           indent.enable = true;
           highlight.enable = true;
         };
-        # Ensure specific grammars for your stack are installed
+        # Hugo uses Go Templates + HTML; React uses TSX/JSX
         grammarPackages = with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
           python
           tsx
@@ -75,7 +76,7 @@
           yaml
           markdown
           markdown_inline
-          go # Hugo is based on Go templates
+          go # Hugo
           lua
           nix
         ];
@@ -97,12 +98,11 @@
       # Editing Quality-of-Life
       # -----------------------------------------------------------------------
       nvim-autopairs.enable = true;
-      # Automatically close and rename HTML/JSX tags (Vital for React)
-      ts-autotag.enable = true;
-      # Quick commenting (gcc to comment line, gc in visual mode)
-      comment.enable = true; 
-      # Git signs in the gutter
-      gitsigns.enable = true;
+      
+      # Standard Nixvim option names for Autotag and Comments
+      nvim-ts-autotag.enable = true; # Auto-close/rename HTML/React tags
+      comment-nvim.enable = true;    # Commenting with 'gcc' or 'gc'
+      gitsigns.enable = true;        # Git gutter indicators
 
       # -----------------------------------------------------------------------
       # Completion & Code Intelligence
@@ -115,18 +115,18 @@
       lsp = {
         enable = true;
         servers = {
-          # --- Python ---
+          # Python
           basedpyright.enable = true;
           ruff.enable = true;
 
-          # --- React / Web ---
-          vtsls.enable = true;      # Better performance than tsserver for TS/JS
-          tailwindcss.enable = true; # Tailwind class completion
-          html.enable = true;        # General HTML support
-          cssls.enable = true;       # CSS/SCSS support
+          # React / Tailwind / Web
+          vtsls.enable = true;       # Modern TypeScript/JS support
+          tailwindcss.enable = true; # Tailwind CSS support
+          html.enable = true;
+          cssls.enable = true;
 
-          # --- Hugo / Content ---
-          marksman.enable = true;    # Markdown LSP
+          # Hugo / Markdown
+          marksman.enable = true;
         };
       };
 
@@ -135,7 +135,6 @@
         settings = {
           formattersByFt = {
             python = [ "ruff_format" ];
-            # Use prettier for everything else (React, CSS, HTML, JSON)
             javascript = [ "prettierd" ];
             typescript = [ "prettierd" ];
             javascriptreact = [ "prettierd" ];
@@ -166,9 +165,9 @@
     # Keymaps
     # =========================================================================
     keymaps = [
-      # Changed Oil to Space + e as requested
+      # Space + e now opens Oil (requested)
       { key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (edit filesystem as buffer)"; }; }
-      # Moved Neo-tree to Space + n (Navigation) to avoid conflict
+      # Space + n toggles the visual sidebar
       { key = "<leader>n"; action = "<cmd>Neotree toggle<CR>"; options = { desc = "Toggle file sidebar (neo-tree)"; }; }
     ];
 
