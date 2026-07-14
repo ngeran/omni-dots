@@ -10,7 +10,10 @@
     # =========================================================================
     # Flake Compatibility & Warning Suppressions
     # =========================================================================
+    # Suppress version mismatch warning between Nixvim (main/26.11) and NixOS (26.05)
     version.enableNixpkgsReleaseCheck = false;
+    
+    # Explicitly set nixpkgs source to match your system flake input
     nixpkgs.source = inputs.nixpkgs;
 
     # =========================================================================
@@ -50,9 +53,8 @@
       web-devicons.enable = true;
       which-key.enable = true;
       bufferline.enable = true;
-      
-      # Fix: Replaced nvim-highlight-colors with colorizer (more stable in Nixvim)
-      # This shows color previews for CSS/Tailwind classes
+
+      # Shows hex/Tailwind colors in the editor (norcalli/nvim-colorizer.lua)
       colorizer.enable = true; 
 
       # -----------------------------------------------------------------------
@@ -64,7 +66,7 @@
           indent.enable = true;
           highlight.enable = true;
         };
-        # Hugo uses Go Templates + HTML; React uses TSX/JSX
+        # Pre-install grammars for your stack: Python, Hugo (Go/HTML), React (TSX/JS)
         grammarPackages = with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
           python
           tsx
@@ -76,7 +78,7 @@
           yaml
           markdown
           markdown_inline
-          go # Hugo
+          go # Hugo logic
           lua
           nix
         ];
@@ -99,10 +101,10 @@
       # -----------------------------------------------------------------------
       nvim-autopairs.enable = true;
       
-      # Standard Nixvim option names for Autotag and Comments
-      nvim-ts-autotag.enable = true; # Auto-close/rename HTML/React tags
-      comment-nvim.enable = true;    # Commenting with 'gcc' or 'gc'
-      gitsigns.enable = true;        # Git gutter indicators
+      # Fixed Nixvim option names
+      ts-autotag.enable = true; # Auto-close/rename tags (JSX/HTML)
+      comment.enable = true;    # Quick toggle comments (gcc)
+      gitsigns.enable = true;   # Git gutter indicators
 
       # -----------------------------------------------------------------------
       # Completion & Code Intelligence
@@ -119,14 +121,14 @@
           basedpyright.enable = true;
           ruff.enable = true;
 
-          # React / Tailwind / Web
-          vtsls.enable = true;       # Modern TypeScript/JS support
-          tailwindcss.enable = true; # Tailwind CSS support
+          # React / Web Development
+          vtsls.enable = true;       # Performance-focused TS/JS server
+          tailwindcss.enable = true; # Tailwind CSS completions
           html.enable = true;
           cssls.enable = true;
 
-          # Hugo / Markdown
-          marksman.enable = true;
+          # Hugo / Content
+          marksman.enable = true;    # Advanced Markdown support
         };
       };
 
@@ -135,6 +137,7 @@
         settings = {
           formattersByFt = {
             python = [ "ruff_format" ];
+            # Prettier is the standard for React, Tailwind, and Web files
             javascript = [ "prettierd" ];
             typescript = [ "prettierd" ];
             javascriptreact = [ "prettierd" ];
@@ -165,9 +168,9 @@
     # Keymaps
     # =========================================================================
     keymaps = [
-      # Space + e now opens Oil (requested)
+      # Mapped Space + e to Oil as requested
       { key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (edit filesystem as buffer)"; }; }
-      # Space + n toggles the visual sidebar
+      # Mapped Space + n to Neo-tree toggle
       { key = "<leader>n"; action = "<cmd>Neotree toggle<CR>"; options = { desc = "Toggle file sidebar (neo-tree)"; }; }
     ];
 
