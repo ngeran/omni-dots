@@ -5,7 +5,7 @@
     ./hardware-configuration.nix
     ../../modules/audio.nix
     ../../modules/bluetooth.nix
-    ../../modules/amdgpu-compute.nix
+    #    ../../modules/amdgpu-compute.nix
     ../../modules/apps/virtualization.nix
     ../../modules/greetd.nix
     ../../modules/apps/file-manager.nix
