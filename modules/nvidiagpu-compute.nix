@@ -2,15 +2,23 @@
 # NVIDIA GPU + CUDA compute  (replaces modules/amdgpu-compute.nix)
 # =========================================================================
 # Migrated AMD RX 7600 XT (ROCm) → NVIDIA RTX 5080 Blackwell (CUDA).
-# Mirrors amdgpu-compute.nix's 4-part structure: kernel/driver → Ollama → tools.
+# Mirrors the previous module's 4-part structure: kernel/driver → Ollama → tools.
 #
-# The 5080 (Blackwell GB203) needs driver >= 570; nixpkgs stable ships 595.x —
-# well above the floor — so we use the STABLE driver (no beta needed).
+# The 5080 (Blackwell GB203) needs driver >= 570 with OPEN kernel modules —
+# proprietary modules have NO Blackwell support at all (not just "not recommended").
+# nixpkgs' nvidiaPackages.stable tracks NVIDIA's production branch, which has
+# been comfortably above the 570 floor for a while — no beta driver needed.
+# Don't hardcode the exact version here; verify what's actually resolved with:
+#   nix eval --raw .#nixosConfigurations.<host>.config.hardware.nvidia.package.version
 #
 # Hyprland-on-NVIDIA requirements baked in:
 #   • hardware.nvidia.modesetting.enable = true     — REQUIRED for Wayland
 #   • boot.kernelParams "nvidia_drm.modeset=1"      — REQUIRED for Wayland
-#   • open kernel modules                            — recommended for Blackwell (≥570)
+#   • open kernel modules                            — MANDATORY on Blackwell (≥570)
+#
+# NOTE: requires nixpkgs.config.allowUnfree = true (nvidia driver, nvidia-settings,
+# and ollama-cuda are all unfree) — set this in flake.nix / configuration.nix if
+# it isn't already set globally.
 #
 # GPU driver swaps load at BOOT — after `omni-apply`, REBOOT:
 #     omni-apply && systemctl reboot
@@ -38,6 +46,13 @@
     ];
   };
 
+  # NVIDIA has no native VA-API on Linux — apps need to be told to use the
+  # bridge above, and to prefer the faster direct-rendering backend over EGL.
+  environment.sessionVariables = {
+    LIBVA_DRIVER_NAME = "nvidia";
+    NVD_BACKEND = "direct";
+  };
+
   # NixOS gate: `videoDrivers = [ "nvidia" ]` is the TRIGGER that adds the NVIDIA
   # kernel module to the tree + wires libglvnd/OpenGL. Without it the initrd build
   # dies with "modprobe: FATAL: Module nvidia not found". It does NOT start X —
@@ -47,29 +62,28 @@
 
   hardware.nvidia = {
     # Match the driver to the running kernel (boot.kernelPackages = linuxPackages_latest).
-    package = config.boot.kernelPackages.nvidiaPackages.stable;  # 595.x → supports the 5080
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
     modesetting.enable = true;     # REQUIRED for Wayland compositors
-    open = true;                   # open GPU kernel modules — recommended for Blackwell (≥570).
-                                   # If anything glitches (rare), set open = false for proprietary.
-    powerManagement.enable = true; # runtime D3 sleep (idle power savings; optional)
+    open = true;                   # MANDATORY on Blackwell — proprietary modules do not
+                                    # support GB20x at all. Do NOT flip this to false to
+                                    # troubleshoot; it will break GPU init entirely.
+    powerManagement.enable = true; # saves/restores VRAM state across suspend/resume
     nvidiaSettings = true;         # `nvidia-settings` GUI
-    # forceFullCompositionPipeline = true;  # uncomment if you see screen tearing
   };
 
   # =========================================================================
-  # 3. Ollama — CUDA instead of ROCm (was pkgs.ollama-rocm)
+  # 3. Ollama — CUDA instead of ROCm
   # =========================================================================
   services.ollama = {
     enable = true;
     package = pkgs.ollama-cuda;
-    # rocmOverrideGfx / HSA_OVERRIDE_GFX_VERSION were AMD-only — removed.
   };
 
   # =========================================================================
-  # 4. System tools — NVIDIA/CUDA introspection (replaces rocm-smi / rocminfo)
+  # 4. System tools — NVIDIA/CUDA introspection
   # =========================================================================
   environment.systemPackages = with pkgs; [
-    nvtopPackages.nvidia   # GPU monitor (was rocm-smi)
+    nvtopPackages.nvidia   # GPU monitor
     clinfo                 # OpenCL info (works via the nvidia OpenCL ICD)
     pciutils               # lspci — confirm the 5080 is seated
   ];
