@@ -38,6 +38,13 @@
     ];
   };
 
+  # NixOS gate: `videoDrivers = [ "nvidia" ]` is the TRIGGER that adds the NVIDIA
+  # kernel module to the tree + wires libglvnd/OpenGL. Without it the initrd build
+  # dies with "modprobe: FATAL: Module nvidia not found". It does NOT start X —
+  # xserver stays disabled; we're pure-Wayland via greetd. This just registers
+  # the driver so `boot.initrd.kernelModules` (below/above) can resolve `nvidia`.
+  services.xserver.videoDrivers = [ "nvidia" ];
+
   hardware.nvidia = {
     # Match the driver to the running kernel (boot.kernelPackages = linuxPackages_latest).
     package = config.boot.kernelPackages.nvidiaPackages.stable;  # 595.x → supports the 5080
