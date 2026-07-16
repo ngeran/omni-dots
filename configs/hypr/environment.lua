@@ -23,9 +23,6 @@ hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("CLUTTER_BACKEND", "wayland")
 hl.env("SDL_VIDEODRIVER", "wayland")
 
--- Explicitly forces Mesa to use the ultra-fast ACO shader compiler for your AMD GPU
--- hl.env("AMD_DEBUG", "use_aco")
-
 -- Web renderer hardware acceleration fallback overrides
 hl.env("MOZ_ENABLE_WAYLAND", "1")
 
@@ -47,9 +44,9 @@ hl.env("GTK_APPLICATION_PREFER_DARK_THEME", "1")
 hl.on("hyprland.start", function()
   -- 1. Propagate Wayland vars to D-Bus and systemd user session (Crucial for Greetd/Portals)
   hl.exec_cmd(
-    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER AMD_DEBUG")
+    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER")
   hl.exec_cmd(
-    "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER AMD_DEBUG")
+    "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER")
 
   -- 2. Dark mode: set GTK color-scheme via gsettings (affects GTK3/4 apps)
   --    and xdg-desktop-portal (affects Electron, Firefox, and portal-aware apps)

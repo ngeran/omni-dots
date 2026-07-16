@@ -78,7 +78,6 @@
       nixos-btw = nixpkgs.lib.nixosSystem {
         modules = [
           nixos-hardware.nixosModules.common-cpu-amd
-          nixos-hardware.nixosModules.common-gpu-amd
           nixos-hardware.nixosModules.common-pc-ssd
 
           ./core                          # Core systems settings

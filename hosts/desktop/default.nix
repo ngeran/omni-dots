@@ -5,7 +5,7 @@
     ./hardware-configuration.nix
     ../../modules/audio.nix
     ../../modules/bluetooth.nix
-    #    ../../modules/amdgpu-compute.nix
+    ../../modules/nvidiagpu-compute.nix  # NVIDIA RTX 5080 + CUDA (was amdgpu-compute.nix)
     ../../modules/apps/virtualization.nix
     ../../modules/greetd.nix
     ../../modules/apps/file-manager.nix
@@ -23,7 +23,7 @@
   # ===== LASTEST STABLE KERNEL =====
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  boot.kernelModules = [ "kvm-amd" ];
+  #  boot.kernelModules = [ "kvm-amd" ];
 
   # =========================================================================
   # Storage Configurations
