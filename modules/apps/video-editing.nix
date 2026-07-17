@@ -29,10 +29,10 @@ EOF"
         cp ${pkgs.davinci-resolve}/share/applications/davinci-resolve.desktop $out/share/applications/davinci-resolve.desktop
         chmod +w $out/share/applications/davinci-resolve.desktop
         
-        substituteInPlace $out/share/applications/davinci-resolve.desktop \
-          --replace-fail "${pkgs.davinci-resolve}/bin/davinci-resolve" "$out/bin/davinci-resolve"
+        # Force the Exec line to point directly to our custom wrapped binary
+        sed -i 's|^Exec=.*|Exec='"$out"'/bin/davinci-resolve %u|' $out/share/applications/davinci-resolve.desktop
       fi
-    '';
+    ';
   };
 in
 {
