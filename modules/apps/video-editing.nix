@@ -14,11 +14,11 @@ let
       # Remove the read-only binary symlink so we can replace it with our wrapper script
       rm $out/bin/davinci-resolve
 
-      # Generate the wrapper with integer scaling variables for pixel-perfect font rendering
+      # Generate the wrapper running at native 1.0 scaling to completely prevent XWayland blur
       makeWrapper ${pkgs.davinci-resolve}/bin/davinci-resolve $out/bin/davinci-resolve \
         --set QT_QPA_PLATFORM xcb \
         --set QT_AUTO_SCREEN_SCALE_FACTOR 0 \
-        --set QT_SCREEN_SCALE_FACTORS "2.0" \
+        --set QT_SCREEN_SCALE_FACTORS "1.0" \
         --set QT_FONT_DPI 144 \
         --run "${pkgs.xrdb}/bin/xrdb -merge <<EOF
 Xft.dpi: 144
