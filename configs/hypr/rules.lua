@@ -3,14 +3,12 @@
 -- =============================================================================
 
 -- ── 1. Global System Fixes ───────────────────────────────────────────────────
--- Prevent applications from trying to maximize themselves (causes tiling flickers)
 hl.window_rule({
   name           = "suppress-maximize-events",
   match          = { class = ".*" },
   suppress_event = "maximize",
 })
 
--- Fix XWayland "ghost" windows created during drag-and-drop operations
 hl.window_rule({
   name     = "fix-xwayland-drags",
   match    = {
@@ -30,15 +28,13 @@ hl.window_rule({
 hl.window_rule({
   name = "davinci-resolve-main",
   match = { class = "resolve" },
-  -- OLED Override: Disable dimming/opacity for Resolve. 
-  -- We need 100% luminance and no transparency for accurate color grading.
-  active_opacity   = 1.0,
-  inactive_opacity = 1.0, 
-  dim_inactive     = false,
+  -- OLED Override: We use the 'opacity' rule.
+  -- Format: "active_value inactive_value"
+  -- Setting both to 1.0 ensures Resolve never dims, keeping color grading accurate.
+  opacity = "1.0 1.0", 
 })
 
 -- Dialogs & Popups
--- Ensures splash screen, project manager, and preferences don't tile.
 hl.window_rule({
   name = "davinci-resolve-popups",
   match = { 
@@ -52,7 +48,6 @@ hl.window_rule({
 
 -- ── 3. System Utilities & UI Surfaces ────────────────────────────────────────
 
--- hyprland-run: Small floating runner near the bottom-left
 hl.window_rule({
   name  = "move-hyprland-run",
   match = { class = "hyprland-run" },
@@ -60,7 +55,6 @@ hl.window_rule({
   float = true,
 })
 
--- QuickShell: The Bar, Wallpaper, and Dashboards
 hl.window_rule({
   name        = "quickshell-wayland",
   match       = { class = "quickshell" },
@@ -70,8 +64,6 @@ hl.window_rule({
 })
 
 -- ── 4. Floating Overlays (Shared Logic) ───────────────────────────────────────
--- These rules apply "Obsidian Core" traits to our TUI and UI overlays.
-
 local overlay_base = {
   float       = true,
   pin         = true,
@@ -80,7 +72,7 @@ local overlay_base = {
   border_size = 1
 }
 
--- 4.1 Standard TUI Overlays (e.g., Bluetooth, Mixer, Wi-Fi)
+-- 4.1 Standard TUI Overlays
 local standard_tuis = { "impala-float", "bluetui-float", "wiremix-float" }
 
 for _, cls in ipairs(standard_tuis) do
