@@ -19,7 +19,7 @@ build:
 push: build
     #!/usr/bin/env bash
     set -euo pipefail
-    skopeo copy --dest-tls-verify=false \
+    skopeo copy --insecure-policy --dest-tls-verify=false \
       docker-archive:"$(readlink -f result)" \
       docker://"{{image}}:{{tag}}"
 

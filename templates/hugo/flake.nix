@@ -48,6 +48,12 @@
           # paths. Override ALL of them or nginx dies at startup. The docroot
           # is the store path of the built site.
           nginxConf = pkgs.writeText "nginx.conf" ''
+            daemon off;                # run in foreground (PID 1) — default daemon mode forks
+                                        # to background, the entry process exits 0, and the
+                                        # container stops → "Completed" restart loop.
+            user root;                 # from-scratch image has only root in /etc/passwd;
+                                        # nginx's default worker user is "nobody", which
+                                        # doesn't exist here → getpwnam("nobody") failed.
             worker_processes 1;
             error_log /dev/stderr warn;
             pid        /tmp/nginx.pid;
@@ -69,6 +75,16 @@
               }
             }
           '';
+
+          # ── writable runtime dirs ──────────────────────────────────────
+          # A from-scratch image has no /tmp or /var/log/nginx. nginx writes
+          # its pid + client/proxy/... temp files under /tmp, and opens
+          # /var/log/nginx/error.log before parsing config — both must exist
+          # or nginx dies at startup (mkdir() "/tmp/client_temp" failed).
+          runtimeDirs = pkgs.runCommand "nginx-runtime-dirs" { } ''
+            mkdir -p $out/tmp $out/var/log/nginx $out/var/cache/nginx
+            chmod 1777 $out/tmp
+          '';
         in {
           default = self.packages.${system}.image;
           image = pkgs.dockerTools.buildImage {
@@ -77,6 +93,7 @@
             copyToRoot = [
               pkgs.nginx
               staticAssets
+              runtimeDirs
               (pkgs.writeTextDir "etc/passwd" "root:x:0:0::/root:/bin/sh")
               (pkgs.writeTextDir "etc/group"  "root:x:0:")
             ];
