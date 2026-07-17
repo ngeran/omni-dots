@@ -32,7 +32,7 @@ EOF"
         # Force the Exec line to point directly to our custom wrapped binary
         sed -i 's|^Exec=.*|Exec='"$out"'/bin/davinci-resolve %u|' $out/share/applications/davinci-resolve.desktop
       fi
-    ';
+    ''; # <-- Fixed the string terminator here
   };
 in
 {
