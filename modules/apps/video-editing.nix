@@ -22,9 +22,24 @@
 # =========================================================================
 { pkgs, ... }:
 
+let
+  # Create a custom wrapped version of Resolve
+  davinci-scaled = pkgs.symlinkJoin {
+    name = "davinci-resolve-scaled";
+    paths = [ pkgs.davinci-resolve ];
+    buildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/davinci-resolve \
+        --set QT_QPA_PLATFORM xcb \
+        --set QT_ENABLE_HIGHDPI_SCALING 1 \
+        --set QT_SCALE_FACTOR 1.5 \
+        --set QT_AUTO_SCREEN_SCALE_FACTOR 0
+    '';
+  };
+in
 {
   home.packages = with pkgs; [
-    davinci-resolve   # non-linear video editor (CUDA-accelerated via the NVIDIA driver)
-    blender           # 3D suite — GPU viewport; Cycles CUDA needs the override above
+    davinci-scaled    # Use our wrapped version instead of the plain one
+    blender
   ];
 }
