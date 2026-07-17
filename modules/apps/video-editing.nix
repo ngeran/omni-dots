@@ -23,23 +23,24 @@
 { pkgs, ... }:
 
 let
-  # Create a custom wrapped version of Resolve
-  davinci-scaled = pkgs.symlinkJoin {
-    name = "davinci-resolve-scaled";
+  davinci-wrapped = pkgs.symlinkJoin {
+    name = "davinci-resolve-wrapped";
     paths = [ pkgs.davinci-resolve ];
-    buildInputs = [ pkgs.makeWrapper ];
+    nativeBuildInputs = [ pkgs.makeWrapper pkgs.xorg.xrdb ];
     postBuild = ''
       wrapProgram $out/bin/davinci-resolve \
         --set QT_QPA_PLATFORM xcb \
-        --set QT_ENABLE_HIGHDPI_SCALING 1 \
+        --set QT_AUTO_SCREEN_SCALE_FACTOR 0 \
         --set QT_SCALE_FACTOR 1.5 \
-        --set QT_AUTO_SCREEN_SCALE_FACTOR 0
+        --run "${pkgs.xorg.xrdb}/bin/xrdb -merge <<EOF
+Xft.dpi: 144
+EOF"
     '';
   };
 in
 {
   home.packages = with pkgs; [
-    davinci-scaled    # Use our wrapped version instead of the plain one
+    davinci-wrapped
     blender
   ];
 }
