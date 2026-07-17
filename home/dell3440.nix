@@ -11,7 +11,7 @@
 
   # ===== IMPORTS =====
   imports = [
-    ../modules/apps/davinci.nix
+    ../modules/apps/video-editing.nix   # davinci-resolve + blender (was davinci.nix)
 
   ];
 
