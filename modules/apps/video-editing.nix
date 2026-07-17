@@ -11,7 +11,7 @@ let
     nativeBuildInputs = [ pkgs.makeWrapper pkgs.xrdb ];
     
     postBuild = ''
-      # Remove the read-only symlink so we can replace it with a wrapper script
+      # Remove the read-only binary symlink so we can replace it with our wrapper script
       rm $out/bin/davinci-resolve
 
       # Generate the wrapper pointing directly back to the actual package binary
@@ -23,8 +23,12 @@ let
 Xft.dpi: 144
 EOF"
 
-      # Patch the desktop launcher entry so GUI menus actually execute our wrapper
-      if [ -f $out/share/applications/davinci-resolve.desktop ]; then
+      # Safely handle the desktop file by making a local writeable copy
+      if [ -f ${pkgs.davinci-resolve}/share/applications/davinci-resolve.desktop ]; then
+        rm -f $out/share/applications/davinci-resolve.desktop
+        cp ${pkgs.davinci-resolve}/share/applications/davinci-resolve.desktop $out/share/applications/davinci-resolve.desktop
+        chmod +w $out/share/applications/davinci-resolve.desktop
+        
         substituteInPlace $out/share/applications/davinci-resolve.desktop \
           --replace-fail "${pkgs.davinci-resolve}/bin/davinci-resolve" "$out/bin/davinci-resolve"
       fi
