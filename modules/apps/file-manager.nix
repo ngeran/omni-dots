@@ -7,9 +7,9 @@
 
   programs.thunar = {
     enable = true;
-    plugins = with pkgs.xfce; [
-      thunar-archive-plugin  # Adds "Create Archive" and "Extract Here" to right-click menu
-      thunar-volman          # Auto-management of removable drives (USB sticks, CDs)
+    plugins = with pkgs; [
+      xfce.thunar-archive-plugin  # Adds "Create Archive" and "Extract Here" to right-click menu
+      xfce.thunar-volman          # Auto-management of removable drives (USB sticks, CDs)
     ];
   };
 
@@ -37,7 +37,7 @@
     # --- Archiving Backends (Engines) ---
     zip                     # Tool for creating .zip files
     unzip                   # Tool for extracting .zip files
-    pkgs."7zip"             # Modern, secure replacement for p7zip. Handles .7z and more.
+    p7zip                   # Standard 7-Zip implementation (Handles .7z, .zip, and more)
     unrar                   # Essential for extracting .rar files (common in downloads)
     zstd                    # Very fast modern compression used by many Linux distros
     xz                      # Standard high-compression format for Linux (.tar.xz)
