@@ -8,8 +8,8 @@
   programs.thunar = {
     enable = true;
     plugins = with pkgs; [
-      xfce.thunar-archive-plugin  # Adds "Create Archive" and "Extract Here" to right-click menu
-      xfce.thunar-volman          # Auto-management of removable drives (USB sticks, CDs)
+      thunar-archive-plugin  # Adds "Create Archive" and "Extract Here" to right-click menu
+      thunar-volman          # Auto-management of removable drives (USB sticks, CDs)
     ];
   };
 
