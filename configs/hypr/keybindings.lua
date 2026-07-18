@@ -11,7 +11,7 @@
 -- The following keys are currently UNUSED and safe to assign in the future:
 --
 -- [ Letters ]
---   D, E, G, H, I, N, O, R, U, W, Y, Z
+--   D, E, G, H, I, N, O, R, U, W, Y
 --
 -- [ Modifiers Already Used / Reserved ]
 --   SUPER + B         -> Chromium
@@ -59,6 +59,11 @@ hl.bind(mod .. " + A",
 -- Toggles the Quickshell keybinds overlay (pure QML; replaces the old python viewer)
 hl.bind(mod .. " + K",
   hl.dsp.exec_cmd("quickshell ipc -c bar call keybinds toggle"))
+
+-- --- Z.ai Usage Analytics -----------------------------------------------------
+-- Toggles the Z.ai quota HUD overlay (polls api.z.ai; alerts via NotificationService)
+hl.bind(mod .. " + Z",
+  hl.dsp.exec_cmd("quickshell ipc -c bar call zaiUsage toggle"))
 
 
 -- --- Session Management ------------------------------------------------------
