@@ -28,8 +28,9 @@ git push                     # Push to GitHub
 ```
 ~/.omni-nix/                        # This repo (github:ngeran/omni-dots)
 ├── configs/                        # Ingested application configs
+│   ├── fastfetch/                  #   → ~/.config/fastfetch (symlink)
+│   ├── hypr/                       #   → ~/.config/hypr (PER-FILE, stays writable)
 │   ├── kitty/                      #   → ~/.config/kitty (symlink)
-│   ├── ghostty/                    #   → ~/.config/ghostty (symlink)
 │   ├── rofi/                       #   → ~/.config/rofi (symlink)
 │   └── ...
 ├── home/                           # Home Manager config
@@ -52,6 +53,18 @@ git push                     # Push to GitHub
 **Two separate repos:**
 - `~/.omni-nix/` → Nix flake (this repo)
 - `~/.config/quickshell/` → QML desktop shell (separate repo)
+
+### 🔄 Two repos, two reload behaviors (the gotcha that bites)
+
+These two repos take edits VERY differently — confusing them is a top cause of
+"my change did nothing":
+
+| Repo | Edit takes effect via |
+|---|---|
+| `~/.config/quickshell/*.qml` (velocity) | **hot-reload** — save the file, Quickshell picks it up instantly. No `git add`, no rebuild. |
+| `~/.omni-nix/configs/hypr/*.lua` (this flake) | **rebuild only** — these are read-only Nix-store symlinks. Edit → `git add` → `omni-apply`, then reload Hyprland (`hyprctl reload`) or re-login so hyprload re-reads the lua. |
+
+So: a QML bar/shell tweak is instant; a Hyprland keybind or window-rule change needs a rebuild + Hyprland reload. Committing a `configs/hypr/` change to git does **not** deploy it — only `omni-apply` does.
 
 ---
 
@@ -265,39 +278,41 @@ omni-apply
 
 ---
 
-### Workflow 5: Add a New Home Module
+### Workflow 5: Add a New Home (user-space) Module
 
-**Use cases:** Create a user-space module (e.g., `modules/home/dev-environment.nix`).
+**Use cases:** Create a user-space module (e.g., a new app collection like `modules/apps/creative.nix`).
 
-**Step 1: Create the module**
+> **Where things go:** system/hardware modules (drivers, services, kernel) live in `modules/` and are imported in `hosts/desktop/default.nix`. User-space modules (apps, packages) live in `modules/apps/` and are imported in `home/default.nix`. There is no `modules/home/`.
+
+**Step 1: Create the module under modules/apps/**
 
 ```bash
-nvim ~/.omni-nix/modules/home/dev-environment.nix
+nvim ~/.omni-nix/modules/apps/creative.nix
 ```
 
 ```nix
-{ config, pkgs, lib, ... }:
+{ pkgs, ... }:
 {
   home.packages = with pkgs; [
-    nodejs
-    python3
+    # your packages
   ];
 }
 ```
 
-**Step 2: Import in home/default.nix**
+**Step 2: Import it in home/default.nix**
 
 ```bash
 nvim ~/.omni-nix/home/default.nix
 ```
 
-Add to imports:
+Add to the `imports` list:
 ```nix
 imports = [
   ./apps.nix
   ./git.nix
   ./dotfiles.nix
-  ../../modules/home/dev-environment.nix  # Add your module
+  ../modules/apps/essentials.nix
+  ../modules/apps/creative.nix   # ← your new module
   # ...
 ];
 ```
@@ -305,7 +320,7 @@ imports = [
 **Step 3: Stage and rebuild**
 
 ```bash
-git -C ~/.omni-nix add modules/home/dev-environment.nix home/default.nix
+git -C ~/.omni-nix add modules/apps/creative.nix home/default.nix
 omni-apply
 ```
 
@@ -480,10 +495,12 @@ git -C ~/.omni-nix push
 
 ## 📖 Additional Resources
 
-- **README.md** - High-level architecture overview
-- **CLAUDE.md** - Guidance for Claude Code AI assistant
-- **NixOS Search** - https://search.nixos.org (find packages)
-- **Home Manager Options** - https://nix-community.github.io/home-manager/options.html
+- **[README.md](README.md)** — high-level architecture overview + docs index
+- **[PIPELINE.md](PIPELINE.md)** — dev → Nix image → k8s (scaffold/migrate Python/Hugo/React, build images, deploy to k3s)
+- **[DEV-ENVIRONMENTS.md](DEV-ENVIRONMENTS.md)** — per-project direnv + flake dev shells in detail
+- **CLAUDE.md** — guidance for the Claude Code AI assistant
+- **NixOS Search** — https://search.nixos.org (find packages)
+- **Home Manager Options** — https://nix-community.github.io/home-manager/options.html
 
 ---
 
@@ -498,4 +515,4 @@ git -C ~/.omni-nix push
 
 ---
 
-*Last updated: 2026-07-06*
+*Last updated: 2026-07-18*

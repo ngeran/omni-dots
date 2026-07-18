@@ -1,6 +1,16 @@
 # 🪐 Omni-Nix Flake Architecture
 
-A declarative NixOS + Home Manager flake for the **`nixos-btw`** machine (x86_64-linux, NixOS 26.05, AMD CPU/GPU desktop). It installs the OS, packages, services, and **ingests application configs** — and backs up to GitHub.
+A declarative NixOS + Home Manager flake for the **`nixos-btw`** machine (x86_64-linux, NixOS 26.05, AMD Ryzen CPU + NVIDIA RTX 5080 desktop). It installs the OS, packages, services, and **ingests application configs** — and backs up to GitHub.
+
+## Documentation
+
+Deep-dive guides (this README is the overview):
+
+| Guide | Covers |
+|---|---|
+| [**PIPELINE.md**](PIPELINE.md) | Dev → Nix image → k8s: scaffold or migrate Python / Hugo / React+Tailwind, build a reproducible OCI image with Nix (no Dockerfile), deploy to the local k3s cluster, and drive pods (start/stop/kill/destroy). |
+| [**DEV-ENVIRONMENTS.md**](DEV-ENVIRONMENTS.md) | The per-project direnv + flake dev-shell workflow in detail — migrate existing projects, everyday use, troubleshooting. |
+| [**WORKFLOW.md**](WORKFLOW.md) | Making changes to THIS flake — the `git add → omni-apply → commit` cycle, where packages/configs/modules belong, the two-repo reload asymmetry, and common workflows + troubleshooting. |
 
 ## Two repos
 
@@ -42,7 +52,7 @@ A declarative NixOS + Home Manager flake for the **`nixos-btw`** machine (x86_64
 │
 ├── labs/                  # opt-in experiments: k8s-telemetry (k3s + manifests), k8s-registry
 │
-└── modules/               # system + home modules (audio, bluetooth, amdgpu, …)
+└── modules/               # system + home modules (audio, bluetooth, nvidiagpu-compute, …)
 ```
 
 ## Build & deploy

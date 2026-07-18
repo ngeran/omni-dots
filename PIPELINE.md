@@ -5,6 +5,7 @@ project, build a reproducible container image with Nix (no Dockerfile), deploy
 it to the local k3s cluster, and drive the pods.
 
 > For the direnv / dev-shell deep-dive see [`DEV-ENVIRONMENTS.md`](DEV-ENVIRONMENTS.md).
+> For changes to the flake itself (`git add → omni-apply → commit`) see [`WORKFLOW.md`](WORKFLOW.md).
 > This doc is the one-stop guide for the **image + deploy + k8s** parts.
 
 ---
