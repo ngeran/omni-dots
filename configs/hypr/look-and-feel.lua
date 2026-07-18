@@ -1,52 +1,48 @@
 -- =============================================================================
--- look-and-feel.lua — Visual appearance & OLED optimizations
+-- look-and-feel.lua — Visual appearance, OLED optimizations, input
 -- =============================================================================
--- STRATEGY FOR OLED LONGEVITY:
--- 1. No Shadows: Prevents high-brightness "halos" that cause uneven wear.
--- 2. Sharp Corners (Rounding 0): Anti-aliasing on corners keeps sub-pixels lit 
---    at varying intensities; sharp corners minimize this "bleed."
--- 3. Aggressive Dimming: Inactive windows are dimmed significantly (25%) to 
---    lower the overall panel voltage and heat.
--- 4. Low Saturation Borders: Vivid colors (Cyan/Magenta) wear out Blue OLED 
---    pixels fastest. Teal/Dark-Grey is used to minimize high-frequency wear.
--- 5. VRR (Variable Refresh Rate): Helps prevent static refresh artifacts.
+-- OLED burn-in mitigation strategy:
+--   - rounding = 0: no anti-aliased corner glow on OLED sub-pixels
+--   - active_opacity = 0.92: reduces peak luminance on static windows
+--   - inactive_opacity = 0.75: meaningful dim on unfocused windows
+--   - vrr = 2: VRR always-on reduces static refresh stress on OLED
 -- =============================================================================
 
 hl.config({
-  -- ── Layout & Borders ──────────────────────────────────────────────────────
+  -- ── Layout & borders ──────────────────────────────────────────────────────
   general = {
     gaps_in          = 1,
     gaps_out         = 1,
-    border_size      = 1, -- Minimalist border = fewer lit pixels
+    border_size      = 1, 
     col              = {
-      active_border   = "rgba(00707888)", -- Desaturated teal
-      inactive_border = "rgba(1a1a1a66)", -- Very dark grey
+      active_border   = "rgba(00707888)",
+      inactive_border = "rgba(1a1a1a66)",
     },
     resize_on_border = false,
     allow_tearing    = false,
-    layout           = "dwindle", -- Required for the 'resizeactive' bindings
+    layout           = "dwindle",
   },
 
-  -- ── Decoration & OLED Blur ────────────────────────────────────────────────
+  -- ── Decoration & OLED blur ────────────────────────────────────────────────
   decoration = {
-    rounding         = 0,    -- Disabled to prevent pixel-smearing on OLED
+    rounding         = 0,    
     rounding_power   = 2,
-    active_opacity   = 1.0,  
-    inactive_opacity = 0.75, -- Heavily dim unfocused content
-    dim_inactive     = true, -- Compositor-level dimming
-    dim_strength     = 0.15, -- 15% additional darkening
+    active_opacity   = 0.92, -- RESTORED: Your original value
+    inactive_opacity = 0.75, 
+    dim_inactive     = true, 
+    dim_strength     = 0.15, 
     shadow           = {
-      enabled = false,       -- High burn-in risk; kept OFF
+      enabled = false,       
     },
     blur             = {
       enabled = true,
       size    = 4,
       passes  = 2,
-      noise   = 0.03, -- Dithering helps prevent banding on dark OLED backgrounds
+      noise   = 0.03, 
     },
   },
 
-  -- ── Tiling Layout Logic ───────────────────────────────────────────────────
+  -- ── Tiling layouts ────────────────────────────────────────────────────────
   dwindle = {
     preserve_split = true,
   },
@@ -57,7 +53,7 @@ hl.config({
     fullscreen_on_one_column = true,
   },
 
-  -- ── Input Configuration ───────────────────────────────────────────────────
+  -- ── Input ─────────────────────────────────────────────────────────────────
   input = {
     kb_layout    = "us",
     follow_mouse = 1,
@@ -67,17 +63,17 @@ hl.config({
     },
   },
 
-  -- ── Misc / Power Management ───────────────────────────────────────────────
+  -- ── Misc / OLED power management ──────────────────────────────────────────
   misc = {
-    force_default_wallpaper = 0,    -- Disabled default graphics
-    disable_hyprland_logo   = true,  -- No static logo during boot
-    vrr                     = 2,     -- VRR Always-on (Reduces panel stress)
-    focus_on_activate       = false, -- Prevents accidental bright window popups
-    mouse_move_enables_dpms = false, -- Screen won't wake just because desk shook
-    key_press_enables_dpms  = false, -- Screen stays asleep unless intended
+    force_default_wallpaper = -1,    
+    disable_hyprland_logo   = true,  
+    vrr                     = 2,     
+    focus_on_activate       = false, 
+    mouse_move_enables_dpms = false, 
+    key_press_enables_dpms  = false,
   },
 
-  -- ── Global Animations ─────────────────────────────────────────────────────
+  -- ── Animations enabled globally (curves in animations.lua) ───────────────
   animations = {
     enabled = true,
   },
