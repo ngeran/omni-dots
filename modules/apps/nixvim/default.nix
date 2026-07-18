@@ -10,10 +10,7 @@
     # =========================================================================
     # Flake Compatibility & Warning Suppressions
     # =========================================================================
-    # Suppress version mismatch warning between Nixvim (main/26.11) and NixOS (26.05)
     version.enableNixpkgsReleaseCheck = false;
-    
-    # Explicitly set nixpkgs source to match your system flake input
     nixpkgs.source = inputs.nixpkgs;
 
     # =========================================================================
@@ -30,8 +27,10 @@
       smartcase = true;
       updatetime = 100;
       swapfile = false;
-      undofile = true;
+      undofile = true; # Persistent undo
       termguicolors = true;
+      cursorline = true; # Highlight the current line
+      scrolloff = 10;    # Keep 10 lines above/below cursor
     };
 
     # =========================================================================
@@ -53,12 +52,27 @@
       web-devicons.enable = true;
       which-key.enable = true;
       bufferline.enable = true;
+      
+      # Modern notifications and UI "snacks" (replaces older notify/noice setups)
+      snacks = {
+        enable = true;
+        settings = {
+          bigfile.enable = true;
+          notifier.enable = true;
+          quickfile.enable = true;
+          statuscolumn.enable = true;
+          words.enable = true; # Highlights other usage of word under cursor
+        };
+      };
 
-      # Shows hex/Tailwind colors in the editor (norcalli/nvim-colorizer.lua)
-      colorizer.enable = true; 
+      # Shows hex/Tailwind colors in the editor
+      colorizer = {
+        enable = true;
+        settings.user_default_options.names = false; # Don't colorize names like "Blue"
+      };
 
       # -----------------------------------------------------------------------
-      # Syntax & Code Structure
+      # Syntax & Code Structure (Treesitter)
       # -----------------------------------------------------------------------
       treesitter = {
         enable = true;
@@ -66,78 +80,99 @@
           indent.enable = true;
           highlight.enable = true;
         };
-        # Pre-install grammars for your stack: Python, Hugo (Go/HTML), React (TSX/JS)
         grammarPackages = with pkgs.vimPlugins.nvim-treesitter.builtGrammars; [
-          python
-          tsx
-          typescript
-          javascript
-          html
-          css
-          json
-          yaml
-          markdown
-          markdown_inline
-          go # Hugo logic
-          lua
-          nix
+          python tsx typescript javascript html css json yaml lua nix
+          markdown markdown_inline go gomod # Go is essential for Hugo templates
         ];
       };
 
       # -----------------------------------------------------------------------
-      # Search & Fuzzy Finding
+      # Navigation & Search
       # -----------------------------------------------------------------------
+      # Telescope remains the king of extensibility
       telescope = {
         enable = true;
         keymaps = {
           "<leader>ff" = "find_files";
           "<leader>fg" = "live_grep";
           "<leader>fb" = "buffers";
+          "<leader>fh" = "help_tags";
         };
       };
 
-      # -----------------------------------------------------------------------
-      # Editing Quality-of-Life
-      # -----------------------------------------------------------------------
-      nvim-autopairs.enable = true;
+      # Oil: Edit your file system like a normal buffer
+      oil.enable = true;
       
-      # Fixed Nixvim option names
-      ts-autotag.enable = true; # Auto-close/rename tags (JSX/HTML)
-      comment.enable = true;    # Quick toggle comments (gcc)
-      gitsigns.enable = true;   # Git gutter indicators
-
-      # -----------------------------------------------------------------------
-      # Completion & Code Intelligence
-      # -----------------------------------------------------------------------
-      blink-cmp = {
+      # Neo-tree: Sidebar for project visualization
+      neo-tree = {
         enable = true;
-        settings.keymap.preset = "default";
+        settings.window.width = 30;
       };
 
+      # -----------------------------------------------------------------------
+      # Python, React, & Web Intelligence (LSP)
+      # -----------------------------------------------------------------------
       lsp = {
         enable = true;
         servers = {
-          # Python
-          basedpyright.enable = true;
+          # Python: Ruff (Lint/Format) + Basedpyright (Types)
           ruff.enable = true;
+          basedpyright.enable = true;
 
-          # React / Web Development
-          vtsls.enable = true;       # Performance-focused TS/JS server
-          tailwindcss.enable = true; # Tailwind CSS completions
+          # Web/React: Vtsls is the modern, faster alternative to tsserver
+          vtsls.enable = true;
+          tailwindcss.enable = true;
           html.enable = true;
           cssls.enable = true;
 
-          # Hugo / Content
-          marksman.enable = true;    # Advanced Markdown support
+          # Content/Hugo: Marksman for Markdown link/ref intelligence
+          marksman.enable = true;
         };
       };
 
+      # -----------------------------------------------------------------------
+      # Modern Completion (Blink.cmp)
+      # -----------------------------------------------------------------------
+      # Faster than nvim-cmp, supports snippets and LSP natively
+      blink-cmp = {
+        enable = true;
+        settings = {
+          keymap.preset = "default";
+          appearance.use_nvim_cmp_as_default = true;
+          sources.default = [ "lsp" "path" "snippets" "buffer" ];
+        };
+      };
+
+      # -----------------------------------------------------------------------
+      # Markdown & Productivity
+      # -----------------------------------------------------------------------
+      # MUST HAVE: Renders markdown headers, tables, and boxes in-buffer
+      render-markdown.enable = true;
+
+      # Focus mode for writing Hugo posts
+      zen-mode.enable = true;
+
+      # Highlight and search for TODO, FIXME, NOTE
+      todo-comments.enable = true;
+
+      # AI: Avante.nvim (Cursor-like experience)
+      # Note: Requires an API key (Claude/OpenAI) in your env
+      avante = {
+        enable = true;
+        settings = {
+          provider = "claude"; # Recommended for coding
+          auto_suggestions_provider = "claude";
+        };
+      };
+
+      # -----------------------------------------------------------------------
+      # Formatting & Linting
+      # -----------------------------------------------------------------------
       conform-nvim = {
         enable = true;
         settings = {
           formattersByFt = {
             python = [ "ruff_format" ];
-            # Prettier is the standard for React, Tailwind, and Web files
             javascript = [ "prettierd" ];
             typescript = [ "prettierd" ];
             javascriptreact = [ "prettierd" ];
@@ -146,6 +181,7 @@
             css = [ "prettierd" ];
             json = [ "prettierd" ];
             markdown = [ "prettierd" ];
+            nix = [ "nixfmt" ];
           };
           format_on_save = {
             timeout_ms = 500;
@@ -155,31 +191,34 @@
       };
 
       # -----------------------------------------------------------------------
-      # File Management & Navigation
+      # Editing Quality-of-Life
       # -----------------------------------------------------------------------
-      oil.enable = true;
-      neo-tree = {
-        enable = true;
-        settings.window.width = 30;
-      };
+      nvim-autopairs.enable = true;
+      ts-autotag.enable = true; # JSX/HTML tag renaming
+      comment.enable = true;    # Toggle with `gcc`
+      gitsigns.enable = true;   # Git status in gutter
     };
 
     # =========================================================================
     # Keymaps
     # =========================================================================
     keymaps = [
-      # Mapped Space + e to Oil as requested
-      { key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (edit filesystem as buffer)"; }; }
-      # Mapped Space + n to Neo-tree toggle
-      { key = "<leader>n"; action = "<cmd>Neotree toggle<CR>"; options = { desc = "Toggle file sidebar (neo-tree)"; }; }
+      # File Management
+      { key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (File System)"; }; }
+      { key = "<leader>n"; action = "<cmd>Neotree toggle<CR>"; options = { desc = "Toggle Sidebar"; }; }
+      
+      # Productivity
+      { key = "<leader>z"; action = "<cmd>ZenMode<CR>"; options = { desc = "Toggle Zen Mode"; }; }
+      { key = "<leader>td"; action = "<cmd>TodoTelescope<CR>"; options = { desc = "Find Todos"; }; }
     ];
 
     # =========================================================================
-    # Colorscheme — base16 driven by the live Quickshell theme
+    # Custom Theme Logic (Base16 / Quickshell)
     # =========================================================================
     extraPlugins = [ pkgs.vimPlugins.base16-nvim ];
 
     extraConfigLua = ''
+      -- Logic to bridge the Base16 palette to Lualine
       local function lualine_theme(p)
         return {
           normal   = { a = { fg = p.base00, bg = p.base0D, gui = "bold" }, b = { fg = p.base05, bg = p.base01 }, c = { fg = p.base05, bg = p.base02 } },
@@ -192,13 +231,17 @@
         }
       end
 
+      -- Dynamic theme application based on system-wide Quickshell theme
       local function apply_qs_theme()
         local path = os.getenv("HOME") .. "/.cache/theme/nvim-base16.lua"
         local ok, palette = pcall(dofile, path)
         if ok and type(palette) == "table" and palette.base00 then
           require("base16-colorscheme").setup(palette)
+          
+          -- Overrides for visual clarity
           vim.api.nvim_set_hl(0, "Visual",   { bg = "#3a3d4d" })
           vim.api.nvim_set_hl(0, "VisualNC", { bg = "#272a38" })
+          
           pcall(function()
             require("lualine").setup({ options = { theme = lualine_theme(palette) } })
           end)
@@ -207,10 +250,12 @@
         return false
       end
 
+      -- Run on startup
       if not apply_qs_theme() then
         pcall(function() vim.cmd("colorscheme habamax") end)
       end
 
+      -- Refresh theme when returning to Neovim (in case the system theme changed)
       vim.api.nvim_create_autocmd({ "FocusGained", "VimResume" }, {
         callback = apply_qs_theme,
       })
