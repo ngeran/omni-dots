@@ -1,59 +1,52 @@
 -- =============================================================================
--- look-and-feel.lua — Visual appearance, OLED optimizations, input
+-- look-and-feel.lua — Visual appearance & OLED optimizations
 -- =============================================================================
--- OLED burn-in mitigation strategy:
---   - rounding = 0: no anti-aliased corner glow on OLED sub-pixels
---   - shadows disabled: bright halos = localised burn-in risk
---   - active_opacity = 0.92: reduces peak luminance on static windows
---   - inactive_opacity = 0.75: meaningful dim on unfocused windows
---   - dim_inactive = true: compositor-level dimming (separate from opacity)
---   - dim_strength = 0.15: subtle but effective; stacks with inactive_opacity
---   - borders: low-saturation teal replaces vivid cyan/green gradient
---     (still identifiable but ~40% lower peak brightness)
---   - blur.vibrancy removed: vibrancy boosts saturation → brighter pixels
---   - vrr = 2: VRR always-on reduces static refresh stress on OLED
---   - logo/wallpaper disabled: no static bright graphic on startup
+-- STRATEGY FOR OLED LONGEVITY:
+-- 1. No Shadows: Prevents high-brightness "halos" that cause uneven wear.
+-- 2. Sharp Corners (Rounding 0): Anti-aliasing on corners keeps sub-pixels lit 
+--    at varying intensities; sharp corners minimize this "bleed."
+-- 3. Aggressive Dimming: Inactive windows are dimmed significantly (25%) to 
+--    lower the overall panel voltage and heat.
+-- 4. Low Saturation Borders: Vivid colors (Cyan/Magenta) wear out Blue OLED 
+--    pixels fastest. Teal/Dark-Grey is used to minimize high-frequency wear.
+-- 5. VRR (Variable Refresh Rate): Helps prevent static refresh artifacts.
 -- =============================================================================
 
 hl.config({
-  -- ── Layout & borders ──────────────────────────────────────────────────────
+  -- ── Layout & Borders ──────────────────────────────────────────────────────
   general = {
     gaps_in          = 1,
     gaps_out         = 1,
-    border_size      = 1, -- thinner border = fewer always-lit pixels
+    border_size      = 1, -- Minimalist border = fewer lit pixels
     col              = {
-      -- Single low-saturation teal; no vivid gradient to prevent bright
-      -- halo around every focused window on OLED
-      active_border   = "rgba(00707888)",
-      inactive_border = "rgba(1a1a1a66)",
+      active_border   = "rgba(00707888)", -- Desaturated teal
+      inactive_border = "rgba(1a1a1a66)", -- Very dark grey
     },
     resize_on_border = false,
     allow_tearing    = false,
-    layout           = "dwindle",
+    layout           = "dwindle", -- Required for the 'resizeactive' bindings
   },
 
-  -- ── Decoration & OLED blur ────────────────────────────────────────────────
+  -- ── Decoration & OLED Blur ────────────────────────────────────────────────
   decoration = {
-    rounding         = 0,    -- sharp corners: zero anti-aliasing glow
+    rounding         = 0,    -- Disabled to prevent pixel-smearing on OLED
     rounding_power   = 2,
-    active_opacity   = 1,    -- pull peak luminance off static windows
-    inactive_opacity = 0.75, -- stronger dim on unfocused content
-    dim_inactive     = true, -- compositor-level dim (stacks with opacity)
-    dim_strength     = 0.15, -- 15% additional dim on inactive windows
+    active_opacity   = 1.0,  
+    inactive_opacity = 0.75, -- Heavily dim unfocused content
+    dim_inactive     = true, -- Compositor-level dimming
+    dim_strength     = 0.15, -- 15% additional darkening
     shadow           = {
-      enabled = false,       -- disabled: bright halos on OLED = bad
+      enabled = false,       -- High burn-in risk; kept OFF
     },
     blur             = {
       enabled = true,
       size    = 4,
       passes  = 2,
-      -- vibrancy removed: it saturates/brightens blurred regions
-      noise   = 0.03, -- slightly more dither to mask banding at
-      -- lower opacity levels on OLED
+      noise   = 0.03, -- Dithering helps prevent banding on dark OLED backgrounds
     },
   },
 
-  -- ── Tiling layouts ────────────────────────────────────────────────────────
+  -- ── Tiling Layout Logic ───────────────────────────────────────────────────
   dwindle = {
     preserve_split = true,
   },
@@ -64,31 +57,27 @@ hl.config({
     fullscreen_on_one_column = true,
   },
 
-  -- ── Input ─────────────────────────────────────────────────────────────────
+  -- ── Input Configuration ───────────────────────────────────────────────────
   input = {
     kb_layout    = "us",
-    kb_variant   = "",
-    kb_model     = "",
-    kb_options   = "",
-    kb_rules     = "",
     follow_mouse = 1,
-    sensitivity  = 0, -- 0 = no pointer acceleration
+    sensitivity  = 0, 
     touchpad     = {
       natural_scroll = false,
     },
   },
 
-  -- ── Misc / OLED power management ──────────────────────────────────────────
+  -- ── Misc / Power Management ───────────────────────────────────────────────
   misc = {
-    force_default_wallpaper = -1,    -- disable anime mascot
-    disable_hyprland_logo   = true,  -- no static logo on OLED
-    vrr                     = 2,     -- VRR always-on (best for OLED)
-    focus_on_activate       = false, -- no sudden bright flashes
-    mouse_move_enables_dpms = false, -- let screen sleep freely
-    key_press_enables_dpms  = false,
+    force_default_wallpaper = 0,    -- Disabled default graphics
+    disable_hyprland_logo   = true,  -- No static logo during boot
+    vrr                     = 2,     -- VRR Always-on (Reduces panel stress)
+    focus_on_activate       = false, -- Prevents accidental bright window popups
+    mouse_move_enables_dpms = false, -- Screen won't wake just because desk shook
+    key_press_enables_dpms  = false, -- Screen stays asleep unless intended
   },
 
-  -- ── Animations enabled globally (curves in animations.lua) ───────────────
+  -- ── Global Animations ─────────────────────────────────────────────────────
   animations = {
     enabled = true,
   },
