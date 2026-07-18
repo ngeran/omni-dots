@@ -30,35 +30,35 @@ hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mod .. " + M",
   hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 
--- --- Window Management (FIXED: Direct Function Calls) -------------------------
+-- --- Window Management (FIXED: Using Direct hyprctl Commands) ----------------
 
 -- Toggle current window between Tiled and Floating mode
-hl.bind(mod .. " + V", hl.dsp.toggle_floating())
+hl.bind(mod .. " + V", hl.dsp.exec_cmd("hyprctl dispatch togglefloating"))
 
 -- Toggle orientation (Vertical/Horizontal)
-hl.bind(mod .. " + J", hl.dsp.layout("togglesplit"))
+hl.bind(mod .. " + J", hl.dsp.exec_cmd("hyprctl dispatch togglesplit"))
 
--- Toggle Fullscreen mode (0 = real fullscreen, 1 = maximize)
-hl.bind(mod .. " + F", hl.dsp.fullscreen(0))
+-- Toggle Fullscreen mode (0 = real fullscreen)
+hl.bind(mod .. " + F", hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"))
 
 -- Resize Active Window (Hold Mod and + or -)
--- Using direct resizeactive function call
-hl.bind(mod .. " + EQUAL", hl.dsp.resize_active(40, 40), { repeating = true })
-hl.bind(mod .. " + MINUS", hl.dsp.resize_active(-40, -40), { repeating = true })
+-- These use hyprctl directly to ensure they work regardless of the Lua API
+hl.bind(mod .. " + EQUAL", hl.dsp.exec_cmd("hyprctl dispatch resizeactive 40 40"), { repeating = true })
+hl.bind(mod .. " + MINUS", hl.dsp.exec_cmd("hyprctl dispatch resizeactive -40 -40"), { repeating = true })
 
 
 -- --- Navigation & Window Moving ----------------------------------------------
--- Move Focus between windows
+-- Move Focus between windows (These helper functions are standard and should work)
 hl.bind(mod .. " + LEFT",  hl.dsp.focus({ direction = "left" }))
 hl.bind(mod .. " + RIGHT", hl.dsp.focus({ direction = "right" }))
 hl.bind(mod .. " + UP",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mod .. " + DOWN",  hl.dsp.focus({ direction = "down" }))
 
--- Swap Windows positions (Direct Function Call)
-hl.bind(modShift .. " + LEFT",  hl.dsp.move_window("l"))
-hl.bind(modShift .. " + RIGHT", hl.dsp.move_window("r"))
-hl.bind(modShift .. " + UP",    hl.dsp.move_window("u"))
-hl.bind(modShift .. " + DOWN",  hl.dsp.move_window("d"))
+-- Swap Windows positions
+hl.bind(modShift .. " + LEFT",  hl.dsp.exec_cmd("hyprctl dispatch movewindow l"))
+hl.bind(modShift .. " + RIGHT", hl.dsp.exec_cmd("hyprctl dispatch movewindow r"))
+hl.bind(modShift .. " + UP",    hl.dsp.exec_cmd("hyprctl dispatch movewindow u"))
+hl.bind(modShift .. " + DOWN",  hl.dsp.exec_cmd("hyprctl dispatch movewindow d"))
 
 
 -- --- Workspace Management ----------------------------------------------------
