@@ -96,73 +96,59 @@ git add -A
 direnv allow
 ```
 
-You get:
+You get a **variant-switched** scaffold — FastAPI web service *or* plain script:
 
 ```
 myapp/
-├── flake.nix              # devShell (python3/uv/ruff/mypy) + image (flask/gunicorn)
-├── .envrc                 # use flake  (+ auto-activates .venv if present)
-├── justfile               # build / push / deploy / logs / forward
+├── flake.nix              # ★ variant switch + devShell (python3/uv/ruff/mypy) + image
+├── justfile               # variant-aware build / push / deploy / run / logs
+├── README.md              # the variant guide
 ├── app/
-│   ├── app.py             # ← your code (sample Flask app)
-│   └── requirements.txt   # ← your deps (local dev)
+│   ├── main.py            # FastAPI app    (variant = "fastapi")
+│   ├── script.py          # plain script   (variant = "script")
+│   └── requirements.txt   # LOCAL-dev deps (uv venv) — the image reads flake.nix, NOT this
 └── manifests/
-    ├── deployment.yaml    # namespace: default, port 8080
-    └── service.yaml
+    ├── fastapi/           # Deployment + Service (variant = "fastapi")
+    └── script/            # Job                 (variant = "script")
 ```
 
-> [!important] Two frameworks, one pipeline
-> The scaffold ships a **Flask** sample app (`app/app.py`; the image runs `gunicorn app:app`). To use **FastAPI** you change the app *and* `flake.nix` (the image's deps + start command) — see "FastAPI variant" below. Deploy is always `just deploy` ([§5](#5-build-the-image--deploy-to-k8s-the-test-loop)) for either framework.
+> [!important] Two variants, one switch
+> Set the **same** value in `flake.nix` (`variant = "fastapi";`) and `justfile` (`variant := "fastapi"`):
+> - `"fastapi"` — HTTP service (`uvicorn main:app` on :8080) → `Deployment` + `Service`
+> - `"script"` — a script that runs to completion (`python /app/script.py`) → `Job`
+>
+> The image entrypoint + deps, the manifest dir, and `just run` / `just deploy` / `just logs` all follow it. `just deploy` only applies `manifests/<variant>/`, so the unused variant's manifests stay inert. Full details in the template's [`README.md`](templates/python/README.md).
 
-**Run locally.** First, install deps into the **root** `.venv` — that's the one
-`.envrc` activates and `uv run` uses (never run `uv venv` inside `app/`):
+**Run locally** (needs the repo-root `.venv` — that's what `.envrc` activates and `uv run` use; never run `uv venv` inside `app/`):
 
 ```bash
 uv venv && uv pip install -r app/requirements.txt
+just run          # uvicorn main:app (fastapi)  |  python script.py (script)
 ```
 
 > [!tip] Deps live in the root `.venv`
 > `.envrc` activates `./.venv`, and `uv run` honours that `VIRTUAL_ENV`. Run the install from the repo root; a venv created inside `app/` is ignored by `uv run`.
 
-#### Flask (scaffold default)
+**Deploy** (`just deploy` applies only `manifests/<variant>/`):
 
 ```bash
-uv run flask --app app run --port 8080     # → http://localhost:8080
+just build && just push && just deploy
+just logs         # deploy logs (fastapi)  |  job pod logs (script)
+just forward      # port-forward :8080 (fastapi only — scripts ship no Service)
 ```
 
-#### FastAPI variant
-
-1. Replace the app: write your FastAPI app as `app/main.py` (object named `app`);
-   delete `app/app.py`.
-2. Set `app/requirements.txt`:
-   ```txt
-   fastapi
-   uvicorn
-   jinja2            # only if you use templates
-   python-multipart  # only if you use Form(...)
-   ```
-3. Run **from inside `app/`** — template dirs / module paths are relative to the process cwd:
-   ```bash
-   cd app
-   uv run uvicorn main:app --reload --port 8080   # → http://localhost:8080
-   ```
-4. Make the **image** FastAPI too — edit `flake.nix` (`packages.image`):
-   ```nix
-   appPython = pkgs.python3.withPackages (p: [ p.fastapi p.uvicorn p.jinja2 p.python-multipart ]);
-   Cmd = [ "${appPython}/bin/uvicorn" "main:app" "--host" "0.0.0.0" "--port" "8080" ];
-   ```
-   (Flask stays `gunicorn app:app --bind 0.0.0.0:8080`.)
+For `variant = "script"`, `just deploy` deletes + re-applies the Job (Jobs are immutable — that's how you re-run it after edits).
 
 > [!warning] Version drift between `requirements.txt` and nixpkgs
-> They drift independently. Real example: local pinned `fastapi==0.111.0` (Starlette 0.37) while nixpkgs shipped `fastapi 0.136.3` (Starlette 1.1, which **removed** the old `TemplateResponse(name, {"request": ...})` signature) → pod returned HTTP 500 while local dev returned 200. Use the new `TemplateResponse(request, name, ctx)` (works on both), and/or bump `requirements.txt` to match nixpkgs.
+> They drift independently: `requirements.txt` drives the **local** `.venv`; the **image** pulls deps from nixpkgs via `flake.nix` (`python3.withPackages`). Real example: local pinned `fastapi==0.111.0` while nixpkgs shipped `fastapi 0.136.3` (Starlette 1.1, which **removed** the old `TemplateResponse(name, {"request": ...})` signature) → pod returned HTTP 500 while local dev returned 200. Keep them in rough parity; for a single source of truth, graduate to `uv2nix`.
 
 > [!warning] "address already in use" on :8080
-> `pkill -f uvicorn; pkill -f gunicorn` — or just run on `--port 8000`.
+> `pkill -f uvicorn` — or run on `--port 8000`.
 
 > ⚠️ Never `pip install` against Nix's Python (read-only → PEP-668). Always go
-> through `uv` → the project `.venv`.
+> through `uv` → the repo-root `.venv`.
 
-**Deploy:** `just deploy` (see [§5](#5-build-the-image--deploy-to-k8s-the-test-loop)).
+**Deploy reference:** the lab pyapp at `labs/k8s-telemetry/python-app/` (a Flask service — same shape, different framework).
 
 ---
 
@@ -282,9 +268,9 @@ existing code, point the flake at your code, `git add`, `direnv allow`.
 > [!warning] `nix flake init` won't overwrite existing files
 > If the repo already has a `.envrc` / `.gitignore` / `flake.nix`, the template
 > skips them and instead writes a fresh **sample** scaffold (e.g. `site/` for
-> Hugo, `app/app.py` for Python) next to your real content. You must reconcile
-> the three config files by hand, then delete the sample scaffold — or the build
-> serves the placeholder, not your site.
+> Hugo, `app/main.py` + `app/script.py` for Python) next to your real content.
+> You must reconcile the three config files by hand, then delete the sample
+> scaffold — or the build serves the placeholder, not your site.
 
 ### 4.1 Migrate an existing Python project
 
@@ -296,31 +282,34 @@ git init                                # if not already
 nix flake init -t ~/.omni-nix#python    # writes flake.nix/.envrc/justfile/app/manifests/
 ```
 
-`nix flake init` won't overwrite existing files, so your code is safe. Now
-**point the image at your real entry point** — edit `flake.nix`:
+`nix flake init` won't overwrite existing files, so your code is safe. Now make
+the image match your project:
 
-```nix
-# If your app lives in ./src and the WSGI/ASGI app is src/main:app:
-appSource = pkgs.runCommand "app-src" { } ''
-  mkdir -p $out/app
-  cp -r ${./src}/. $out/app/
-'';
-# …config.WorkingDir = "/app";
-#   config.Cmd = [ "${appPython}/bin/gunicorn" "main:app" "--bind" "0.0.0.0:8080" ];
-```
+1. **Pick the variant** in `flake.nix` + `justfile` — `variant = "fastapi"` (web
+   service) or `"script"` (runnable script).
+2. **Point the image at your code.** By default it bakes `./app/` and runs
+   `uvicorn main:app` (fastapi) or `python /app/script.py` (script). If your
+   code lives elsewhere, edit `appSource` (and `cmd` if you need a non-default
+   entrypoint) in `flake.nix`:
+   ```nix
+   appSource = pkgs.runCommand "app-src" { } ''
+     mkdir -p $out/app
+     cp -r ${./src}/. $out/app/        # ← point at your code dir
+   '';
+   # cmd is already variant-aware; WorkingDir=/app
+   ```
+3. **Add runtime deps** to the image's `withPackages` — every package your app
+   imports at runtime must be here (this is the image's source of truth, NOT
+   `requirements.txt`):
+   ```nix
+   appPython = pkgs.python3.withPackages (p: [ p.fastapi p.uvicorn p.requests ]);
+   ```
 
-Add your **runtime deps** to the image — add them to `withPackages`:
-
-```nix
-appPython = pkgs.python3.withPackages (p: [ p.flask p.gunicorn p.requests p.uvicorn ]);
-# (every package your app imports at runtime must be listed here)
-```
-
-Delete the template's `app/app.py` sample if it conflicts, `git add -A`,
-`direnv allow`, then:
+Delete the template's sample (`app/main.py` / `app/script.py`) if it conflicts,
+`git add -A`, `direnv allow`, then:
 
 ```bash
-rm -rf .venv && uv venv && uv pip install -r requirements.txt   # recreate venv
+rm -rf .venv && uv venv && uv pip install -r app/requirements.txt   # recreate venv
 just deploy
 ```
 

@@ -1,4 +1,4 @@
-# Cluster-internal Service fronting the pyapp Deployment.
+# Cluster-internal Service fronting the FastAPI Deployment.
 ---
 apiVersion: v1
 kind: Service

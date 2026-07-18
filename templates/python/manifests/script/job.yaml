@@ -1,0 +1,20 @@
+# Plain-script Job (variant = "script").
+# Runs the container's entrypoint (python /app/script.py) to completion.
+# Jobs are immutable — `just deploy` deletes + re-applies it to re-run after
+# edits (a plain `kubectl apply` won't re-run an existing Job).
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pyapp
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 3600   # auto-clean the Job ~1h after it completes
+  backoffLimit: 2                  # retry twice on failure
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: pyapp
+          image: localhost:5000/pyapp:latest
+          imagePullPolicy: Always

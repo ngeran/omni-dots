@@ -1,4 +1,4 @@
-# Python service Deployment.
+# FastAPI service Deployment (variant = "fastapi").
 # image + imagePullPolicy match the justfile push target (localhost:5000).
 # Always is required: the tag is fixed (:latest) and re-pushed, so Always
 # forces k3s to fetch the newest digest each rollout.

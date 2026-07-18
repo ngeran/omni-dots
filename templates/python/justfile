@@ -1,27 +1,24 @@
 # =========================================================================
-# build → push → rollout for the python service
+# build → push → deploy  (works for BOTH variants)
 # =========================================================================
-# Requires omni-nix's k3s cluster + local registry (127.0.0.1:5000) running.
-# `just` and `skopeo` are in this project's devShell (and globally on
-# omni-nix hosts via modules/apps/dev-tools.nix).
-#
-# Edit the vars below for your image / namespace / Deployment name.
-# Recipes with a `#!/usr/bin/env bash` shebang run as ONE script (so
-# `set -euo pipefail` + `\`-continuations hold); one-liners don't need it.
+# Set `variant` to match flake.nix. Requires omni-nix's k3s cluster + the
+# local registry (127.0.0.1:5000) running. `just`/`skopeo` are in the devShell
+# (and globally on omni-nix hosts).
 # =========================================================================
 set shell := ["bash", "-c"]
 
-image := "localhost:5000/pyapp"
-tag   := "latest"
-ns    := "default"        # change to match an existing Namespace
-dep   := "pyapp"
+variant := "fastapi"   # "fastapi" (web service) | "script" (Kubernetes Job)
+image   := "localhost:5000/pyapp"
+tag     := "latest"
+ns      := "default"
+dep     := "pyapp"     # Deployment name (fastapi) / Job name (script)
 
 # Build the Nix image (no Dockerfile, no docker).
 build:
     nix build .#image --out-link result
 
-# Push to the local registry over HTTP (no docker). The `result` symlink
-# resolves to the image tarball that dockerTools.buildImage produces.
+# Push to the local registry over HTTP (no docker). `result` resolves to the
+# image tarball that dockerTools.buildImage produces.
 push: build
     #!/usr/bin/env bash
     set -euo pipefail
@@ -29,20 +26,45 @@ push: build
       docker-archive:"$(readlink -f result)" \
       docker://"{{image}}:{{tag}}"
 
-# Apply manifests + roll the Deployment so k3s pulls the new image.
+# Apply the variant's manifests + (re)run it.
 deploy: push
     #!/usr/bin/env bash
     set -euo pipefail
-    kubectl apply -f manifests/
-    kubectl -n {{ns}} rollout restart deployment/{{dep}}
-    kubectl -n {{ns}} rollout status   deployment/{{dep}}
+    if [ "{{variant}}" = "script" ]; then
+      # Jobs are immutable — delete first so `apply` re-runs it after edits.
+      kubectl -n {{ns}} delete job {{dep}} --ignore-not-found
+    fi
+    kubectl apply -f manifests/{{variant}}/
+    if [ "{{variant}}" = "fastapi" ]; then
+      kubectl -n {{ns}} rollout restart deployment/{{dep}}
+      kubectl -n {{ns}} rollout status   deployment/{{dep}}
+    else
+      echo "Job '{{dep}}' submitted. Watch:  kubectl -n {{ns}} get job {{dep}} -w"
+    fi
 
-# Tail the pod logs.
+# Run locally (uvicorn for fastapi, python for script) — needs `uv venv` first.
+run:
+    #!/usr/bin/env bash
+    cd app
+    if [ "{{variant}}" = "script" ]; then
+      uv run python script.py
+    else
+      uv run uvicorn main:app --reload --port 8080
+    fi
+
+# Tail logs (Deployment for fastapi, Job pod for script).
 logs:
-    kubectl -n {{ns}} logs deploy/{{dep}} -f
+    #!/usr/bin/env bash
+    if [ "{{variant}}" = "script" ]; then
+      kubectl -n {{ns}} logs job/{{dep}} -f
+    else
+      kubectl -n {{ns}} logs deploy/{{dep}} -f
+    fi
 
-# Port-forward :8080 → curl localhost:8080 locally.
+# Port-forward the Service (fastapi only — scripts have no Service).
 forward:
+    #!/usr/bin/env bash
+    [ "{{variant}}" = "fastapi" ] || { echo "forward is for the fastapi variant (scripts ship no Service)"; exit 1; }
     kubectl -n {{ns}} port-forward svc/{{dep}} 8080:8080
 
 # Drop into the devShell manually (direnv does this automatically on cd).

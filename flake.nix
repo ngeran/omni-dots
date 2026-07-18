@@ -56,7 +56,7 @@
     #   #dev                      — kitchen-sink devShell only (no image/deploy)
     templates.python = {
       path = ./templates/python;
-      description = "Python web service — Nix devShell + image, just → push → k3s rollout";
+      description = "Python — FastAPI service or plain script (Nix devShell + image → k3s)";
     };
     templates.hugo = {
       path = ./templates/hugo;
