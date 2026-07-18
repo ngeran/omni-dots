@@ -28,23 +28,23 @@ hl.bind(mod .. " + Z", hl.dsp.exec_cmd("quickshell ipc -c bar call zaiUsage togg
 -- --- Session Management ------------------------------------------------------
 hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mod .. " + M",
-  hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+  hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 
--- --- Window Management (FIXED: Native Dispatchers) ---------------------------
+-- --- Window Management (FIXED: Direct Function Calls) -------------------------
 
 -- Toggle current window between Tiled and Floating mode
-hl.bind(mod .. " + V", hl.dsp.dispatch("togglefloating", ""))
+hl.bind(mod .. " + V", hl.dsp.toggle_floating())
 
 -- Toggle orientation (Vertical/Horizontal)
-hl.bind(mod .. " + J", hl.dsp.dispatch("togglesplit", ""))
+hl.bind(mod .. " + J", hl.dsp.layout("togglesplit"))
 
 -- Toggle Fullscreen mode (0 = real fullscreen, 1 = maximize)
-hl.bind(mod .. " + F", hl.dsp.dispatch("fullscreen", "0"))
+hl.bind(mod .. " + F", hl.dsp.fullscreen(0))
 
 -- Resize Active Window (Hold Mod and + or -)
--- These use the native resizeactive dispatcher for smooth interaction
-hl.bind(mod .. " + EQUAL", hl.dsp.dispatch("resizeactive", "40 40"), { repeating = true })
-hl.bind(mod .. " + MINUS", hl.dsp.dispatch("resizeactive", "-40 -40"), { repeating = true })
+-- Using direct resizeactive function call
+hl.bind(mod .. " + EQUAL", hl.dsp.resize_active(40, 40), { repeating = true })
+hl.bind(mod .. " + MINUS", hl.dsp.resize_active(-40, -40), { repeating = true })
 
 
 -- --- Navigation & Window Moving ----------------------------------------------
@@ -54,11 +54,11 @@ hl.bind(mod .. " + RIGHT", hl.dsp.focus({ direction = "right" }))
 hl.bind(mod .. " + UP",    hl.dsp.focus({ direction = "up" }))
 hl.bind(mod .. " + DOWN",  hl.dsp.focus({ direction = "down" }))
 
--- Swap Windows positions (Native Dispatcher)
-hl.bind(modShift .. " + LEFT",  hl.dsp.dispatch("movewindow", "l"))
-hl.bind(modShift .. " + RIGHT", hl.dsp.dispatch("movewindow", "r"))
-hl.bind(modShift .. " + UP",    hl.dsp.dispatch("movewindow", "u"))
-hl.bind(modShift .. " + DOWN",  hl.dsp.dispatch("movewindow", "d"))
+-- Swap Windows positions (Direct Function Call)
+hl.bind(modShift .. " + LEFT",  hl.dsp.move_window("l"))
+hl.bind(modShift .. " + RIGHT", hl.dsp.move_window("r"))
+hl.bind(modShift .. " + UP",    hl.dsp.move_window("u"))
+hl.bind(modShift .. " + DOWN",  hl.dsp.move_window("d"))
 
 
 -- --- Workspace Management ----------------------------------------------------
