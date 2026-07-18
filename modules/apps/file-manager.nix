@@ -1,42 +1,62 @@
 { config, pkgs, ... }:
 
 {
-  # 1. Thunar & Plugins
+  # ============================================================================
+  # THUNAR FILE MANAGER CONFIGURATION
+  # ============================================================================
+
   programs.thunar = {
     enable = true;
     plugins = with pkgs.xfce; [
-      thunar-archive-plugin
-      thunar-volman
+      thunar-archive-plugin  # Adds "Create Archive" and "Extract Here" to right-click menu
+      thunar-volman          # Auto-management of removable drives (USB sticks, CDs)
     ];
   };
 
-  # 2. Support Services
-  services.gvfs.enable = true;    # Mounting, trash, remote filesystems
-  services.udisks2.enable = true; # Storage management
-  services.tumbler.enable = true; # Thumbnail daemon
-  programs.xfconf.enable = true;  # Essential for saving Thunar preferences
+  # ============================================================================
+  # SYSTEM SERVICES (The "Engine" under the hood)
+  # ============================================================================
 
-  # 3. Packages: Backends & Thumbnailers
+  services = {
+    gvfs.enable = true;      # Required for Trash bin, network mounts, and mounting USB drives
+    udisks2.enable = true;   # Required for physical disk management and partitioning
+    tumbler.enable = true;   # The background daemon that generates file thumbnails
+  };
+
+  # Essential for Thunar to remember your settings (View preferences, side-pane width, etc.)
+  programs.xfconf.enable = true;
+
+  # ============================================================================
+  # PACKAGES (Backends and UI Tools)
+  # ============================================================================
+
   environment.systemPackages = with pkgs; [
-    # GUI Frontends
-    xarchiver
+    # --- GUI Frontends ---
+    xarchiver               # The lightweight window that Thunar uses to show archive contents
 
-    # Archive Backends (The "engines" that do the work)
-    zip
-    unzip
-    7zip        # Modern replacement for p7zip
-    unrar       # For .rar files
-    zstd        # Fast modern compression
-    xz          # Standard high-compression
-    libarchive  # Provides 'bsdtar' for broader format support
+    # --- Archiving Backends (Engines) ---
+    zip                     # Tool for creating .zip files
+    unzip                   # Tool for extracting .zip files
+    pkgs."7zip"             # Modern, secure replacement for p7zip. Handles .7z and more.
+    unrar                   # Essential for extracting .rar files (common in downloads)
+    zstd                    # Very fast modern compression used by many Linux distros
+    xz                      # Standard high-compression format for Linux (.tar.xz)
+    libarchive              # Provides 'bsdtar', a universal tool for many archive types
 
-    # Thumbnailer Engines (Enrich the file manager experience)
-    ffmpegthumbnailer # Video thumbnails
-    poppler           # PDF thumbnails
-    libgsf            # ODF/Office document thumbnails
+    # --- Thumbnailer Backends (Enrich the file manager) ---
+    ffmpegthumbnailer       # Generates video thumbnails (shows a frame of the movie)
+    poppler                 # Generates PDF document thumbnails
+    libgsf                  # Generates thumbnails for ODF/Office documents
+    webp-pixbuf-loader      # Allows Thunar to show thumbnails for .webp images
   ];
 
-  # 4. NixOS Polish
-  # Ensures thumbnailer config files are correctly linked so Tumbler finds them
+  # ============================================================================
+  # NIXOS SYSTEM POLISH
+  # ============================================================================
+
+  # This is a critical NixOS "hack":
+  # It tells the system to link thumbnailer configuration files into a place 
+  # where the 'tumbler' daemon can actually see them. Without this, you 
+  # might install 'ffmpegthumbnailer' but still see no video icons.
   environment.pathsToLink = [ "/share/thumbnailers" ];
 }
