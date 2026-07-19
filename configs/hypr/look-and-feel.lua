@@ -9,6 +9,14 @@
 -- =============================================================================
 
 hl.config({
+  -- ── XWayland High-DPI Fix ──────────────────────────────────────────────────
+  -- Prevents Hyprland from pixel-stretching X11 apps like DaVinci Resolve.
+  -- This forces the application to use the native screen resolution directly,
+  -- allowing your Nix wrapper's 144 DPI text settings to render perfectly sharp.
+  xwayland = {
+    force_zero_scaling = true,
+  },
+
   -- ── Layout & borders ──────────────────────────────────────────────────────
   general = {
     gaps_in          = 1,
@@ -31,7 +39,7 @@ hl.config({
     inactive_opacity = 0.75, 
     dim_inactive     = true, 
     dim_strength     = 0.15, 
-    shadow           = {
+    shadow = {
       enabled = false,       
     },
     blur             = {
