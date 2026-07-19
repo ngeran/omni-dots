@@ -86,5 +86,6 @@
     nvtopPackages.nvidia   # GPU monitor
     clinfo                 # OpenCL info (works via the nvidia OpenCL ICD)
     pciutils               # lspci — confirm the 5080 is seated
+    ocl-icd                # ICD loader
   ];
 }
