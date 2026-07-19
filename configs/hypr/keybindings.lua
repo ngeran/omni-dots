@@ -37,17 +37,34 @@ hl.bind(mod .. " + M",
 -- "expected a dispatcher". Pass a real dispatcher object instead.
 
 -- Toggle current window between Tiled and Floating mode
+-- NOTE: this syntax is correct (matches hyprwm/Hyprland's own example/hyprland.lua
+-- verbatim). If this still doesn't toggle, it's not this line — check for a
+-- duplicate "mod + V" bind in another sourced .lua file overriding this one
+-- (see hyprwm/Hyprland discussion #14494 for that exact failure mode), or a
+-- window_rule forcing float/tile on the focused window. Sanity-check the
+-- dispatcher itself is alive on your build with:
+--   hyprctl dispatch 'hl.dsp.window.float({action="toggle"})'
 hl.bind(mod .. " + V", hl.dsp.window.float({ action = "toggle" }))
 
 -- Toggle orientation (Vertical/Horizontal)
 hl.bind(mod .. " + J", hl.dsp.layout("togglesplit"))
 
 -- Toggle Fullscreen mode
-hl.bind(mod .. " + F", hl.dsp.window.fullscreen())
+-- NOTE: fullscreen() needs explicit mode + action - calling it with no args
+-- (as before) is a no-op. mode = 0 is real fullscreen, mode = 1 is maximize.
+-- Known 0.55 regression: toggling back off can silently fail on some builds
+-- (hyprwm/Hyprland discussions #14494, #14646) - if this stops toggling back
+-- after working once, that's an upstream bug, not this config.
+hl.bind(mod .. " + F", hl.dsp.window.fullscreen({ mode = 0, action = "toggle" }))
 
 -- Resize Active Window (Hold Mod and + or -)
-hl.bind(mod .. " + EQUAL", hl.dsp.window.resize({ x =  40, y =  40 }), { repeating = true })
-hl.bind(mod .. " + MINUS", hl.dsp.window.resize({ x = -40, y = -40 }), { repeating = true })
+-- NOTE: added relative = true. Without it, x/y are treated as an ABSOLUTE
+-- target size, so this was requesting an exact 40x40px window - below the
+-- minimum size, hence "Invalid size provided". relative = true makes it grow
+-- shrink by that many pixels each press instead, matching the wiki's own
+-- resize examples.
+hl.bind(mod .. " + EQUAL", hl.dsp.window.resize({ x =  40, y =  40, relative = true }), { repeating = true })
+hl.bind(mod .. " + MINUS", hl.dsp.window.resize({ x = -40, y = -40, relative = true }), { repeating = true })
 
 
 -- --- Navigation & Window Moving ----------------------------------------------
