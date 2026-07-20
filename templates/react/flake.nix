@@ -7,15 +7,14 @@
 #   1. devShells.default — nodejs + pnpm, direnv-loaded.
 #   2. packages.image    — an OCI image: nginx serving the built static app.
 #
-# ⚠️ ONE-TIME STEP (inherent to reproducible JS builds in Nix): the image is
-# built by `buildNpmPackage`, which needs `npmDepsHash` matching app/package-
-# lock.json. This template ships `lib.fakeHash` as a PLACEHOLDER — replace it:
+# ⚠️ DEPS HASH (inherent to reproducible JS builds in Nix): buildNpmPackage
+# needs `npmDepsHash` matching app/package-lock.json. This template ships
+# lib.fakeHash as a PLACEHOLDER — set the real one with:
 #   1. enter the shell:       direnv allow   (or `nix develop`)
 #   2. generate the lockfile: (cd app && npm install)
-#   3. build the image:       nix build .#image
-#        → it FAILS, printing the correct hash. Paste it into `npmDepsHash`
-#          below, then re-run `nix build .#image`. (Repeat whenever deps change;
-#          `nix run nixpkgs#prefetch-npm-deps -- app/package-lock.json` also works.)
+#   3. just relock            # computes the hash + writes it into npmDepsHash below
+#   4. just build
+# (Re-run `just relock` whenever deps change — it runs prefetch-npm-deps for you.)
 #
 # Dev → deploy loop (after the hash is set):
 #     just build && just push && just deploy
@@ -46,7 +45,7 @@
             pname = "react-app";
             version = "0.1.0";
             src = ./app;
-            npmDepsHash = lib.fakeHash;     # ← see ⚠️ STEP above; replace on first build
+            npmDepsHash = lib.fakeHash;     # PLACEHOLDER — set via `just relock` (see ⚠️ above)
             dontNpmBuild = false;            # run `npm run build` (the default)
             installPhase = ''
               runHook preInstall
@@ -102,8 +101,7 @@
         let pkgs = pkgsFor system; in {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              nodejs_22
-              pnpm
+              nodejs_22    # includes npm — dev + image both use npm (no pnpm drift)
               just skopeo kubectl
             ];
             shellHook = ''
@@ -111,9 +109,9 @@
               echo "  ❯ react devshell active"
               echo "      node    $(node -v 2>/dev/null || echo '—')"
               echo "      image   ${imageName}:${imageTag}"
-              echo "      serve   pnpm dev   (→ http://localhost:5173)"
+              echo "      serve   npm run dev   (→ http://localhost:5173)"
               echo "      deploy  just build && just push && just deploy"
-              echo "      ⚠️ first build needs npmDepsHash — see flake.nix"
+              echo "      deps    (cd app && npm install) → just relock → just build"
               echo ""
             '';
           };

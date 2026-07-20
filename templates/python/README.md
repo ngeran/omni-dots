@@ -27,12 +27,13 @@ That's it — `just deploy` does the rest.
 ## Layout
 
 ```
-├── flake.nix               # variant switch → image (entrypoint + deps)
+├── flake.nix               # variant switch → image (entrypoint + venv via uv2nix)
+├── pyproject.toml          # ─┐ SINGLE source of truth for Python deps
+├── uv.lock                 # ─┘ (uv2nix builds the venv for BOTH dev shell + image)
 ├── justfile                # variant-aware build / push / deploy / run / logs
 ├── app/
 │   ├── main.py             # FastAPI app    (variant = "fastapi")
-│   ├── script.py           # plain script   (variant = "script")
-│   └── requirements.txt    # LOCAL-dev deps (uv venv) — the image reads flake.nix, not this
+│   └── script.py           # plain script   (variant = "script")
 └── manifests/
     ├── fastapi/            # Deployment + Service (variant = "fastapi")
     └── script/             # Job                 (variant = "script")
@@ -44,27 +45,25 @@ manifests are inert — leave them or delete them.
 ## Run
 
 ```bash
-# local (uvicorn for fastapi, python for script) — needs `uv venv` at repo root
-uv venv && uv pip install -r app/requirements.txt
+# local — the devShell venv (built from pyproject.toml/uv.lock via uv2nix)
 just run
 
+# change deps: edit pyproject.toml → `uv lock` (in the devShell) → rebuild
 # build → push (skopeo, no docker) → deploy to k3s
 just deploy
 just logs          # tail (Deployment for fastapi, Job pod for script)
 just forward       # port-forward :8080 (fastapi only)
 ```
 
-> Never `pip install` against Nix's Python (read-only → PEP-668). Always go
-> through `uv` → the repo-root `.venv`.
+> The devShell's venv IS the image's venv (uv2nix, from uv.lock) — no
+> `pip install`, no requirements.txt, no drift.
 
 ## Notes
 
-- **Image deps** come from `flake.nix` (`python3.withPackages`), **not**
-  `requirements.txt`. For `variant = "script"`, add your runtime imports to the
-  `withPackages` list in `flake.nix` (empty by default — the sample uses only the
-  stdlib).
+- **Deps are the SAME for local dev and the image** — both come from
+  `pyproject.toml` + `uv.lock` via [uv2nix](https://github.com/pyproject-nix/uv2nix).
+  Edit `pyproject.toml`, run `uv lock` (in the devShell), then `just build`.
+  (This kills the old requirements.txt-vs-withPackages drift that once caused a
+  fastapi-version-mismatch HTTP 500 in prod.)
 - **Re-running a Job:** Jobs are immutable, so `just deploy` deletes +
   re-applies `manifests/script/job.yaml` after each edit.
-- **Graduation path:** for many/PyPI-only deps, swap `withPackages` for
-  `buildPythonApplication` + `uv2nix` so one source of truth feeds both the
-  image and local dev.

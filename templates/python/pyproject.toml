@@ -1,0 +1,20 @@
+# Single source of truth for Python deps. uv2nix reads this + uv.lock to build
+# the venv for BOTH the dev shell and the image — killing the old drift between
+# requirements.txt (local) and python3.withPackages (image) that caused the
+# fastapi 0.111-vs-0.136 → HTTP 500 incident.
+#
+# Change deps here, then refresh the lock + rebuild:
+#     nix run nixpkgs#uv -- lock      # (or `uv lock` inside the devShell)
+#     just build
+#
+# variant = "fastapi": fastapi + uvicorn (below).
+# variant = "script":  replace these with your script's imports (the scaffolded
+#                     script.py uses only the stdlib → empty dependencies).
+[project]
+name = "pyapp"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+]

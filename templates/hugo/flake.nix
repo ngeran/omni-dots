@@ -51,9 +51,9 @@
             daemon off;                # run in foreground (PID 1) — default daemon mode forks
                                         # to background, the entry process exits 0, and the
                                         # container stops → "Completed" restart loop.
-            user root;                 # from-scratch image has only root in /etc/passwd;
-                                        # nginx's default worker user is "nobody", which
-                                        # doesn't exist here → getpwnam("nobody") failed.
+            # No `user` directive: the container runs as UID 1000 (config.User
+            # below). nginx can't switch users when non-root, so it keeps the
+            # container uid — no getpwnam("nobody") issue (that only bit as root).
             worker_processes 1;
             error_log /dev/stderr warn;
             pid        /tmp/nginx.pid;
@@ -68,7 +68,7 @@
               include ${pkgs.nginx}/conf/mime.types;
               default_type application/octet-stream;
               server {
-                listen 80;
+                listen 8080;          # non-root can't bind <1024; 8080 is the safe high port
                 root  ${staticAssets};
                 index index.html;
                 location / { try_files $uri $uri/ =404; }
@@ -85,6 +85,15 @@
             mkdir -p $out/tmp $out/var/log/nginx $out/var/cache/nginx
             chmod 1777 $out/tmp
           '';
+
+          # Non-root user (UID 1000) baked in so the manifest can set
+          # runAsNonRoot + runAsUser=1000. nginx runs as this uid (no `user`
+          # directive in nginx.conf above).
+          nonRootUser = pkgs.runCommand "non-root-user" { } ''
+            mkdir -p $out/etc
+            printf 'root:x:0:0::/root:/bin/sh\nappuser:x:1000:1000::/nonexistent:/bin/sh\n' > $out/etc/passwd
+            printf 'root:x:0:\nappuser:x:1000:\n'                                       > $out/etc/group
+          '';
         in {
           default = self.packages.${system}.image;
           image = pkgs.dockerTools.buildImage {
@@ -94,12 +103,19 @@
               pkgs.nginx
               staticAssets
               runtimeDirs
-              (pkgs.writeTextDir "etc/passwd" "root:x:0:0::/root:/bin/sh")
-              (pkgs.writeTextDir "etc/group"  "root:x:0:")
+              nonRootUser
             ];
+            # nginx's writable dirs (/tmp pid+temp, /var/log/nginx, /var/cache/nginx)
+            # are provided by mounts at runtime: emptyDir + fsGroup in the k3s
+            # manifest (deploy), `--tmpfs /tmp` in `just test` (smoke). The image
+            # itself stays read-only-friendly; -e /dev/stderr below keeps the
+            # pre-config error log off /var/log/nginx entirely.
             config = {
-              Cmd          = [ "${pkgs.nginx}/bin/nginx" "-c" nginxConf ];
-              ExposedPorts = { "80/tcp" = { }; };
+              User         = "1000:1000";
+              # -e /dev/stderr: send the pre-config error log to stderr so nginx
+              # never tries to open /var/log/nginx/error.log before reading config.
+              Cmd          = [ "${pkgs.nginx}/bin/nginx" "-c" nginxConf "-e" "/dev/stderr" ];
+              ExposedPorts = { "8080/tcp" = { }; };
             };
           };
         });
