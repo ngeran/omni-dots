@@ -1,6 +1,33 @@
 { config, pkgs, ... }:
 
-{
+let
+  # qs-apply-wallpaper — the dashboard (ThemeService) runs
+  # `pkexec qs-apply-wallpaper <image>`; this script copies the image into the
+  # flake tree as wallpaper.jpg, then rebuilds so Stylix regenerates the palette
+  # seed. Paths are derived from config (not hardcoded) so the same module works
+  # on every host. pkexec runs it as root, where $HOME is /root — hence the
+  # absolute, config-derived paths.
+  user     = "nikos";
+  home     = config.users.users.${user}.home;     # /home/nikos
+  flakeDir = "${home}/.omni-nix";
+  host     = config.networking.hostName;          # nixos-btw | dell3440
+
+  qsApplyWallpaper = pkgs.writeShellScriptBin "qs-apply-wallpaper" ''
+    set -euo pipefail
+    SRC="''${1:?usage: qs-apply-wallpaper <image-path>}"
+    [ -f "$SRC" ] || { echo "not a file: $SRC" >&2; exit 1; }
+    cp -f -- "$SRC" "${flakeDir}/wallpaper.jpg"
+    chown ${user}:users "${flakeDir}/wallpaper.jpg" 2>/dev/null || true
+    exec nixos-rebuild switch --flake "${flakeDir}#${host}"
+  '';
+
+  # The EXACT store path polkit sees: it resolves the /run/current-system/sw/bin
+  # symlink the dashboard pkexecs down to this store path. Matching the exact
+  # path — not a substring — closes the bypass where any binary with
+  # "qs-apply-wallpaper" in its path could get passwordless root. Interpolated at
+  # build time so it tracks the per-rebuild store hash automatically.
+  qsApplyWallpaperBin = "${qsApplyWallpaper}/bin/qs-apply-wallpaper";
+in {
   # =========================================================================
   # Stylix — cold-boot palette SEED (hybrid with matugen runtime)
   # =========================================================================
@@ -29,41 +56,27 @@
     autoEnable = false;           # palette-only — no per-app target conflicts
   };
 
-  # =========================================================================
-  # qs-apply-wallpaper — helper invoked by the Quickshell dashboard
-  # =========================================================================
-  # Copies the chosen image into the flake tree as wallpaper.jpg, then rebuilds
-  # so Stylix regenerates the palette. The dashboard runs this via `pkexec`.
-  #
-  # NOTE: paths are hardcoded to /home/nikos because pkexec runs this as root,
-  # where $HOME is /root. Single-user machine.
-  # =========================================================================
-  environment.systemPackages = [
-    (pkgs.writeShellScriptBin "qs-apply-wallpaper" ''
-      set -euo pipefail
-      SRC="''${1:?usage: qs-apply-wallpaper <image-path>}"
-      [ -f "$SRC" ] || { echo "not a file: $SRC" >&2; exit 1; }
-      cp -f -- "$SRC" "/home/nikos/.omni-nix/wallpaper.jpg"
-      chown nikos:users "/home/nikos/.omni-nix/wallpaper.jpg" 2>/dev/null || true
-      exec nixos-rebuild switch --flake "/home/nikos/.omni-nix#nixos-btw"
-    '')
-  ];
+  # qs-apply-wallpaper is defined in the `let` above (config-derived paths; its
+  # exact store path is matched by the polkit rule below).
+  environment.systemPackages = [ qsApplyWallpaper ];
 
   # =========================================================================
-  # Passwordless polkit for qs-apply-wallpaper
+  # Passwordless polkit for qs-apply-wallpaper (EXACT path match)
   # =========================================================================
   # Without this rule, the dashboard's APPLY WALLPAPER button does nothing:
   # pkexec needs a polkit *authentication agent* (GUI prompter) to ask for a
   # password, and none ships with the Quickshell/Hyprland setup. This rule
-  # pre-authorizes exactly this one action for members of wheel, so no prompt
-  # is shown at all — the rebuild just runs.
+  # pre-authorizes exactly this one action for members of wheel, so no prompt is
+  # shown — the rebuild just runs.
   #
-  # MATCHING: polkit canonicalizes the program path through the symlink, so
-  # `action.lookup("program")` returns the resolved store path
-  # (`/nix/store/<hash>-qs-apply-wallpaper/bin/qs-apply-wallpaper`), NOT the
-  # `/run/current-system/sw/bin/...` symlink we invoke. Matching the exact
-  # symlink therefore NEVER hits. We match by binary basename instead — robust
-  # to both forms and to the store hash changing on every rebuild.
+  # SECURITY: matches the EXACT resolved store path, NOT a substring. polkit
+  # canonicalizes the pkexec'd /run/current-system/sw/bin/qs-apply-wallpaper
+  # symlink down to /nix/store/<hash>-qs-apply-wallpaper/bin/qs-apply-wallpaper;
+  # `prog ===` that exact string pre-authorizes ONLY the legit binary built into
+  # THIS system — a wheel user can't get passwordless root by pkexec'ing a
+  # differently-pathed binary whose name merely contains "qs-apply-wallpaper"
+  # (the old `indexOf` substring match allowed exactly that). The path is
+  # interpolated at build time, so it tracks the per-rebuild store hash.
   #
   # ACTIVATION: requires ONE manual `sudo nixos-rebuild switch` from a terminal
   # to land (the button itself can't bootstrap the rule). polkitd watches the
@@ -73,7 +86,7 @@
     polkit.addRule(function(action, subject) {
       var prog = action.lookup("program");
       if (action.id === "org.freedesktop.policykit.exec" &&
-          prog && prog.indexOf("/qs-apply-wallpaper") !== -1 &&
+          prog === "${qsApplyWallpaperBin}" &&
           subject.isInGroup("wheel")) {
         return polkit.Result.YES;
       }
