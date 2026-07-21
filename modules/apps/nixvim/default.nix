@@ -97,7 +97,6 @@
       # Telescope remains the king of extensibility
       telescope = {
         enable = true;
-        # These keys start with Space (your new leader)
         keymaps = {
           "<leader>ff" = "find_files";
           "<leader>fg" = "live_grep";
@@ -108,12 +107,13 @@
 
       # Oil: Edit your file system like a normal buffer
       oil.enable = true;
+
+      # Flash: The fastest way to jump around the screen
+      # Press 's' then start typing the word you want to jump to
+      flash.enable = true;
       
-      # Neo-tree: Sidebar for project visualization
-      neo-tree = {
-        enable = true;
-        settings.window.width = 30;
-      };
+      # Trouble: A pretty list for showing errors, warnings, and LSP locations
+      trouble.enable = true;
 
       # -----------------------------------------------------------------------
       # Python, React, & Web Intelligence (LSP)
@@ -134,7 +134,7 @@
           # Content/Hugo: Marksman for Markdown link/ref intelligence
           marksman.enable = true;
         };
-        # Added LSP keymaps so you can actually use the features:
+        # LSP Specific Shortcuts
         keymaps.lspBuf = {
           "gd" = "definition";
           "gD" = "references";
@@ -153,7 +153,7 @@
       blink-cmp = {
         enable = true;
         settings = {
-          keymap.preset = "default"; # Enter to select, Arrow keys or Ctrl+n/p to navigate
+          keymap.preset = "default";
           appearance.use_nvim_cmp_as_default = true;
           sources.default = [ "lsp" "path" "snippets" "buffer" ];
         };
@@ -172,11 +172,10 @@
       todo-comments.enable = true;
 
       # AI: Avante.nvim (Cursor-like experience)
-      # Note: Requires an API key (Claude/OpenAI) in your env
       avante = {
         enable = true;
         settings = {
-          provider = "claude"; # Recommended for coding
+          provider = "claude"; 
           auto_suggestions_provider = "claude";
         };
       };
@@ -221,15 +220,21 @@
     keymaps = [
       # File Management
       { mode = "n"; key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (File System)"; }; }
-      { mode = "n"; key = "<leader>n"; action = "<cmd>Neotree toggle<CR>"; options = { desc = "Toggle Sidebar"; }; }
       
-      # Productivity
+      # Trouble (Diagnostics/Errors)
+      { mode = "n"; key = "<leader>xx"; action = "<cmd>Trouble diagnostics toggle<CR>"; options = { desc = "Toggle Trouble (Project Errors)"; }; }
+      { mode = "n"; key = "<leader>xq"; action = "<cmd>Trouble quickfix toggle<CR>"; options = { desc = "Open Quickfix List"; }; }
+
+      # Productivity & Search
       { mode = "n"; key = "<leader>z"; action = "<cmd>ZenMode<CR>"; options = { desc = "Toggle Zen Mode"; }; }
       { mode = "n"; key = "<leader>td"; action = "<cmd>TodoTelescope<CR>"; options = { desc = "Find Todos"; }; }
 
       # Tab Navigation (Bufferline)
       { mode = "n"; key = "<Tab>"; action = "<cmd>BufferLineCycleNext<CR>"; options = { desc = "Next Tab"; }; }
       { mode = "n"; key = "<S-Tab>"; action = "<cmd>BufferLineCyclePrev<CR>"; options = { desc = "Previous Tab"; }; }
+
+      # Flash (Jumping)
+      { mode = [ "n" "x" "o" ]; key = "s"; action = ''<table.insert(require("flash").jump())>''; options = { desc = "Flash Jump"; }; }
     ];
 
     # =========================================================================
