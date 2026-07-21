@@ -8,6 +8,11 @@
     vimAlias = true;
 
     # =========================================================================
+    # Global Settings
+    # =========================================================================
+    globals.mapleader = " "; # Sets the Spacebar as your leader key
+
+    # =========================================================================
     # Flake Compatibility & Warning Suppressions
     # =========================================================================
     version.enableNixpkgsReleaseCheck = false;
@@ -37,7 +42,7 @@
     # System & Clipboard Integration
     # =========================================================================
     clipboard = {
-      register = "unnamedplus";
+      register = "unnamedplus"; # Use system clipboard for all yanks/pastes
       providers.wl-copy.enable = true;
     };
 
@@ -92,6 +97,7 @@
       # Telescope remains the king of extensibility
       telescope = {
         enable = true;
+        # These keys start with Space (your new leader)
         keymaps = {
           "<leader>ff" = "find_files";
           "<leader>fg" = "live_grep";
@@ -128,6 +134,16 @@
           # Content/Hugo: Marksman for Markdown link/ref intelligence
           marksman.enable = true;
         };
+        # Added LSP keymaps so you can actually use the features:
+        keymaps.lspBuf = {
+          "gd" = "definition";
+          "gD" = "references";
+          "gt" = "type_definition";
+          "gi" = "implementation";
+          "K" = "hover";
+          "<leader>ca" = "code_action";
+          "<leader>rn" = "rename";
+        };
       };
 
       # -----------------------------------------------------------------------
@@ -137,7 +153,7 @@
       blink-cmp = {
         enable = true;
         settings = {
-          keymap.preset = "default";
+          keymap.preset = "default"; # Enter to select, Arrow keys or Ctrl+n/p to navigate
           appearance.use_nvim_cmp_as_default = true;
           sources.default = [ "lsp" "path" "snippets" "buffer" ];
         };
@@ -204,12 +220,16 @@
     # =========================================================================
     keymaps = [
       # File Management
-      { key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (File System)"; }; }
-      { key = "<leader>n"; action = "<cmd>Neotree toggle<CR>"; options = { desc = "Toggle Sidebar"; }; }
+      { mode = "n"; key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (File System)"; }; }
+      { mode = "n"; key = "<leader>n"; action = "<cmd>Neotree toggle<CR>"; options = { desc = "Toggle Sidebar"; }; }
       
       # Productivity
-      { key = "<leader>z"; action = "<cmd>ZenMode<CR>"; options = { desc = "Toggle Zen Mode"; }; }
-      { key = "<leader>td"; action = "<cmd>TodoTelescope<CR>"; options = { desc = "Find Todos"; }; }
+      { mode = "n"; key = "<leader>z"; action = "<cmd>ZenMode<CR>"; options = { desc = "Toggle Zen Mode"; }; }
+      { mode = "n"; key = "<leader>td"; action = "<cmd>TodoTelescope<CR>"; options = { desc = "Find Todos"; }; }
+
+      # Tab Navigation (Bufferline)
+      { mode = "n"; key = "<Tab>"; action = "<cmd>BufferLineCycleNext<CR>"; options = { desc = "Next Tab"; }; }
+      { mode = "n"; key = "<S-Tab>"; action = "<cmd>BufferLineCyclePrev<CR>"; options = { desc = "Previous Tab"; }; }
     ];
 
     # =========================================================================
