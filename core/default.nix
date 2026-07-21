@@ -13,6 +13,7 @@
   # Bootloader setup
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.systemd-boot.configurationLimit = 10;  # cap EFI entries so /boot can't fill up
 
   # Silence boot logs so they don't overlap with greetd (tuigreet) on TTY1.
   # Without this, systemd services and kernel messages print [ OK ] status
@@ -43,6 +44,8 @@
       automatic = true;
       dates = "weekly";
       options = "--delete-older-than 7d";
+      persistent = true;             # run missed cycles after downtime (laptop was off)
+      randomizedDelaySec = "30min";  # spread the GC load off the exact weekly mark
     };
   };
 

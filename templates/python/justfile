@@ -108,6 +108,16 @@ test: build
     docker rm -f {{dep}}-test >/dev/null
     echo "test: ok"
 
+# Lint + type-check (the image build doesn't lint). ruff is strict; mypy is
+# advisory until you add type hints / a mypy.ini. (For automatic-on-commit,
+# wrap these in git-hooks.nix / pre-commit-hooks-nix.)
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd app
+    ruff check .
+    mypy . || echo "  mypy: advisory (add type hints / mypy.ini to enforce)"
+
 # Drop into the devShell manually (direnv does this automatically on cd).
 shell:
     nix develop

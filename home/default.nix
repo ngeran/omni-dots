@@ -23,6 +23,10 @@
   home.username = "nikos";
   home.homeDirectory = "/home/nikos";
 
+  # Enable the standalone `home-manager` CLI so you can run `home-manager switch`
+  # directly. The flake still owns activation via nixos-rebuild (omni-apply).
+  programs.home-manager.enable = true;
+
   programs.bash = {
     enable = true;
     shellAliases = {

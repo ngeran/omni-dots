@@ -45,7 +45,7 @@
             pname = "react-app";
             version = "0.1.0";
             src = ./app;
-            npmDepsHash = lib.fakeHash;     # PLACEHOLDER — set via `just relock` (see ⚠️ above)
+            npmDepsHash = "sha256-fodN05n8ZXNQqb+7a7NOsB8XrN47Dmd2fVGsROLeZq8=";  # from app/package-lock.json via just relock
             dontNpmBuild = false;            # run `npm run build` (the default)
             installPhase = ''
               runHook preInstall
@@ -57,6 +57,7 @@
 
           # ── nginx config (same writable-path + docroot pattern as #hugo) ──
           nginxConf = pkgs.writeText "nginx.conf" ''
+            daemon off;              # foreground (PID 1) — daemon mode forks + the container exits
             worker_processes 1;
             error_log /dev/stderr warn;
             pid        /tmp/nginx.pid;
@@ -71,13 +72,21 @@
               include ${pkgs.nginx}/conf/mime.types;
               default_type application/octet-stream;
               server {
-                listen 80;
+                listen 8080;          # non-root can't bind <1024; 8080 is the safe high port
                 root  ${reactBuild};
                 index index.html;
                 # SPA fallback: serve index.html for client-side routes.
                 location / { try_files $uri $uri/ /index.html; }
               }
             }
+          '';
+
+          # Non-root user (UID 1000) baked in so the manifest can set
+          # runAsNonRoot + runAsUser=1000. nginx runs as this uid.
+          nonRootUser = pkgs.runCommand "non-root-user" { } ''
+            mkdir -p $out/etc
+            printf 'root:x:0:0::/root:/bin/sh\nappuser:x:1000:1000::/nonexistent:/bin/sh\n' > $out/etc/passwd
+            printf 'root:x:0:\nappuser:x:1000:\n'                                       > $out/etc/group
           '';
         in {
           default = self.packages.${system}.image;
@@ -87,12 +96,14 @@
             copyToRoot = [
               pkgs.nginx
               reactBuild
-              (pkgs.writeTextDir "etc/passwd" "root:x:0:0::/root:/bin/sh")
-              (pkgs.writeTextDir "etc/group"  "root:x:0:")
+              nonRootUser
             ];
             config = {
-              Cmd          = [ "${pkgs.nginx}/bin/nginx" "-c" nginxConf ];
-              ExposedPorts = { "80/tcp" = { }; };
+              User         = "1000:1000";
+              # -e /dev/stderr: pre-config error log to stderr (never /var/log/nginx).
+              # /tmp (pid+temp) comes from mounts: emptyDir in k3s, --tmpfs in `just test`.
+              Cmd          = [ "${pkgs.nginx}/bin/nginx" "-c" nginxConf "-e" "/dev/stderr" ];
+              ExposedPorts = { "8080/tcp" = { }; };
             };
           };
         });

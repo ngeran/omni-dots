@@ -37,9 +37,9 @@ deploy: push
       exit 1
     }
 
-# Local dev server (live reload) → http://localhost:1313.
+# Local dev server (live reload) → http://localhost:1313. Source lives in ./site.
 serve:
-    hugo server -D --buildDrafts
+    cd site && hugo server -D --buildDrafts
 
 logs:
     kubectl -n {{ns}} logs deploy/{{dep}} -f
@@ -81,6 +81,13 @@ test: build
     fi
     docker rm -f {{dep}}-test >/dev/null
     echo "test: ok"
+
+# Validate the site builds cleanly (catches broken layouts / frontmatter).
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd site
+    hugo --gc --minify --destination /tmp/hugo-check >/dev/null && rm -rf /tmp/hugo-check && echo "hugo build OK"
 
 shell:
     nix develop

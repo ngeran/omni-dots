@@ -12,7 +12,7 @@ image := "localhost:5000/react-app"
 tag   := "latest"
 ns    := "default"
 dep   := "react-app"
-port  := "80"           # nginx container listen port
+port  := "8080"          # nginx container listen port (non-root high port)
 
 # Build the Nix image (no Dockerfile, no docker).
 build:
@@ -83,6 +83,15 @@ test: build
     fi
     docker rm -f {{dep}}-test >/dev/null
     echo "test: ok"
+
+# Type-check + lint (needs `npm install` in app/ first — `vite build` also type-checks).
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd app
+    [ -d node_modules ] || { echo "run \`npm install\` first"; exit 1; }
+    npx tsc --noEmit
+    npx eslint src 2>/dev/null || echo "  eslint: advisory (configure .eslintrc as needed)"
 
 # After changing deps + `npm install` in app/, recompute npmDepsHash and write
 # it into flake.nix (buildNpmPackage needs the hash to match package-lock.json).
