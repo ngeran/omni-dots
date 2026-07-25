@@ -32,7 +32,7 @@
   # Storage Configurations
   # =========================================================================
   fileSystems."/mnt/INLAND-500GB" = {
-    device = "UUID=5acb5a34-9e8b-423e-946d-6d7d9e89f94c";
+    device = "UUID=e3fbe232-e469-489f-a4fb-72369b790171";
     fsType = "ext4";
     options = [ "defaults" "nofail" ];
   };
