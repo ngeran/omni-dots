@@ -22,6 +22,9 @@
   networking.hostName = "nixos-btw";
   # ===== LASTEST STABLE KERNEL =====
   boot.kernelPackages = pkgs.linuxPackages_latest;
+  # Modern AMD P-State EPP driver (Zen 4) — better frequency scaling than acpi-cpufreq.
+  # Concatenated with core's + NVIDIA's kernelParams.
+  boot.kernelParams = [ "amd_pstate=active" ];
 
   #  boot.kernelModules = [ "kvm-amd" ];
 
@@ -53,6 +56,16 @@
     fsType = "none"; # <-- Added
     options = [ "bind" "noauto" "x-systemd.automount" ];
   };
+  # fIX iSSUS aFTER CLEAN INSTALL 
+
+  systemd.tmpfiles.rules = [
+      "d /persist/home/nikos                       0755 nikos users -"
+      "d /persist/home/nikos/.local                0755 nikos users -"
+      "d /persist/home/nikos/.local/state          0755 nikos users -"
+      "d /persist/home/nikos/.local/state/nvim     0755 nikos users -"
+      "d /persist/home/nikos/.local/share          0755 nikos users -"
+      "d /persist/home/nikos/.local/share/nvim     0755 nikos users -"
+    ];
 
   # =========================================================================
   # Compositor Environment

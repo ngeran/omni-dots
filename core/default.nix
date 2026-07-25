@@ -36,7 +36,22 @@
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
       # From old config: Automatically links identical files in the store to save space
-      auto-optimise-store = true; 
+      auto-optimise-store = true;
+      # Parallel builds — use all 16 threads of the 7700X (was unset → effectively 1).
+      max-jobs = "auto";
+      cores = 0;
+      # Let nikos's user-level builds (just build, dev shells) use the trusted caches.
+      trusted-users = [ "root" "nikos" ];
+      # Pre-built binaries for nixvim + other nix-community packages, so omni-apply
+      # doesn't compile them from source. cache.nixos.org kept as the primary.
+      substituters = [
+        "https://cache.nixos.org"
+        "https://nix-community.cachix.org"
+      ];
+      trusted-public-keys = [
+        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fc="
+      ];
     };
     
     # From old config: Automates system cleaning
@@ -51,8 +66,32 @@
 
   # From old config: Required for proprietary drivers and many dev tools
   nixpkgs.config.allowUnfree = true;
-  # --- POWER MANAGEMENT ---
-  powerManagement.powertop.enable = true;
+  # (powertop moved to hosts/dell3440 — on an always-on-AC desktop its aggressive
+  #  USB/device autosuspend + CPU tweaks fight NVIDIA power management and can drop
+  #  USB peripherals; the laptop keeps it for battery life.)
+
+  # =========================================================================
+  # Performance + stability (desktop, always-on-AC)
+  # =========================================================================
+  # TCP BBR + fq_codel — better throughput + lower latency than the defaults
+  # (cubic / pfifo_fast). Helps the registry, k3s pulls, big downloads.
+  boot.kernelModules = [ "tcp_bbr" "sch_fq_codel" ];
+  boot.kernel.sysctl = {
+    "net.ipv4.tcp_congestion_control" = "bbr";
+    "net.core.default_qdisc" = "fq_codel";
+  };
+
+  # Kill the largest process BEFORE the kernel OOM-killer freezes the whole
+  # desktop (e.g. Ollama + a browser + a build maxing RAM). Better a killed tab
+  # than a hard reboot.
+  services.earlyoom.enable = true;
+
+  # Compressed-RAM swap (zstd) — faster than disk, a safety net for memory
+  # pressure. No disk swap needed; zram only uses CPU when actually swapping.
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+  };
 
   # =========================================================================
   # Global User Definition

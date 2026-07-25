@@ -49,9 +49,14 @@
 
   # ===== LAPTOP SPECIFIC PACKAGES & UTILS =====
   environment.systemPackages = with pkgs; [
-    brightnessctl 
-    powertop      
+    brightnessctl
+    powertop
   ];
+
+  # Powertop auto-tune at boot (moved here from core — only the laptop on battery
+  # benefits; on the always-on-AC desktop powertop fought NVIDIA PM + dropped USB
+  # peripherals, so it's desktop-off, laptop-on).
+  powerManagement.powertop.enable = true;
 
   # ===== HYPRLAND CONFIGURATION =====
   programs.hyprland = {
