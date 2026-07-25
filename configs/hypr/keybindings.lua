@@ -18,8 +18,7 @@ hl.bind(modShift .. " + F", hl.dsp.exec_cmd(FILE_MANAGER))
 hl.bind(modShift .. " + B", hl.dsp.exec_cmd("quickshell ipc -c bar call barToggle toggle"))
 hl.bind(mod .. " + P", hl.dsp.exec_cmd("quickshell ipc -c settings call powerMenu toggle"))
 hl.bind(modShift .. " + T", hl.dsp.exec_cmd("quickshell ipc -c settings call SettingsWindow openControlNetwork"))
-hl.bind(mod .. " + A",
-  hl.dsp.exec_cmd("quickshell ipc -p ~/.config/quickshell/settings/shell.qml call SettingsWindow toggle"))
+hl.bind(mod .. " + A", hl.dsp.exec_cmd("quickshell ipc -c settings call SettingsWindow toggle"))
 
 -- --- Help & Analytics --------------------------------------------------------
 hl.bind(mod .. " + K", hl.dsp.exec_cmd("quickshell ipc -c bar call keybinds toggle"))

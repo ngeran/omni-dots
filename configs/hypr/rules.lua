@@ -55,14 +55,6 @@ hl.window_rule({
   float = true,
 })
 
-hl.window_rule({
-  name        = "quickshell-wayland",
-  match       = { class = "quickshell" },
-  float       = true,
-  rounding    = 0,
-  border_size = 0,
-})
-
 -- ── 4. Floating Overlays (Shared Logic) ───────────────────────────────────────
 local overlay_base = {
   float       = true,

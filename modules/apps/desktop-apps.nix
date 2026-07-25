@@ -20,6 +20,10 @@
     grim           # screenshot grabber
     slurp          # area selector
 
+    # --- Session / hardware helpers ---
+    polkit_gnome   # polkit auth agent (launched by a systemd user unit in home/quickshell.nix)
+    brightnessctl  # backlight control (XF86MonBrightness* keys; environment.lua)
+
     # --- Media ---
     vlc
   ];
