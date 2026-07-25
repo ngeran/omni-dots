@@ -31,11 +31,11 @@
   # =========================================================================
   # Storage Configurations
   # =========================================================================
-  #fileSystems."/mnt/DATA-2T" = {
-  #  device = "UUID=1b079941-401f-430f-97e7-8eacd6b25e82";
-  #  fsType = "ext4";
-  #  options = [ "defaults" ];
-  #};
+  fileSystems."/mnt/INLAND-500GB" = {
+    device = "UUID=5acb5a34-9e8b-423e-946d-6d7d9e89f94c";
+    fsType = "ext4";
+    options = [ "defaults" "nofail" ];
+  };
 
   #fileSystems."/mnt/SSD-250" = {
   #  device = "UUID=C8057DD5A2F97C72";
