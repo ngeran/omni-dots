@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   # =========================================================================
@@ -14,6 +14,16 @@
       swtpm.enable = true;
     };
   };
+
+  # On-demand: do NOT auto-start libvirtd at boot (mirrors k3s / ollama). The
+  # libvirtd + virtlogd daemons and their sockets are boot overhead for VMs you
+  # only run occasionally. virt-manager still works — `libvirtd.socket` stays
+  # enabled, so the FIRST API call (opening virt-manager, `virsh`) socket-
+  # activates the daemon lazily. Or start it explicitly:
+  #     sudo systemctl start libvirtd
+  # (libvirt-guests.service, which resumes suspended VMs at boot, is a harmless
+  # no-op when none were running.)
+  systemd.services.libvirtd.wantedBy = lib.mkForce [ ];
 
   # Docker Configuration (Persistent Engine Layout)
   virtualisation.docker = {

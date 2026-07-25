@@ -79,6 +79,14 @@
     package = pkgs.ollama-cuda;
   };
 
+  # On-demand: do NOT auto-start ollama at boot (mirrors the k3s pattern in
+  # labs/k8s-telemetry/nix/k3s.nix). The CUDA daemon inits the GPU on startup —
+  # wasted boot time + idle GPU memory on a daily driver when you're not doing
+  # local AI. Start it when you sit down to use it:
+  #     sudo systemctl start ollama      # models load only on first request
+  #     sudo systemctl stop ollama       # frees the VRAM
+  systemd.services.ollama.wantedBy = lib.mkForce [ ];
+
   # =========================================================================
   # 4. System tools — NVIDIA/CUDA introspection
   # =========================================================================

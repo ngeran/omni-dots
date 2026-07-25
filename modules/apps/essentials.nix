@@ -11,20 +11,23 @@
     tree
     obsidian
     fastfetch
-    
-    # System Tools 
+
+    # System Tools
     btop
 
     # Application Launcher (Merged back into upstream for 26.05)
     rofi
 
-    # Creative & Engineering Suite
+    # Creative & Engineering Suite — the SINGLE source of truth for these
+    # (NOT also in modules/apps/desktop-apps.nix; dedup'd so the two layers
+    # can't drift). inkscape-with-extensions is the superset of plain inkscape.
     kicad
-    inkscape
+    inkscape-with-extensions
     krita
 
-    # Network Security
-    openssh
+    # NOTE: openssh client removed — services.openssh.enable (modules/ssh.nix)
+    # already ships `ssh`/`scp`/`sftp` in the system profile
+    # (/run/current-system/sw/bin/ssh). The home-level package was redundant.
 
   ];
 

@@ -86,8 +86,12 @@
   # than a hard reboot.
   services.earlyoom.enable = true;
 
-  # Compressed-RAM swap (zstd) — faster than disk, a safety net for memory
-  # pressure. No disk swap needed; zram only uses CPU when actually swapping.
+  # Compressed-RAM swap (zstd) — the PRIMARY swap, faster than disk. A safety
+  # net for memory pressure; uses CPU only when actually swapping. The NixOS
+  # zramSwap module gives zram a higher priority than the 4 GB disk swap
+  # partition in hardware-configuration.nix (live: zram prio 5 vs disk prio -1),
+  # so the disk partition is only touched as last-resort overflow once zram is
+  # exhausted — not "no disk swap", but zram-first.
   zramSwap = {
     enable = true;
     algorithm = "zstd";
@@ -107,7 +111,7 @@
       "docker"          # If you use docker
       "libvirtd"        # If you use virtualization
     ];
-    packages = with pkgs; [ tree ];
+    # `tree` lives in home-manager (modules/apps/essentials.nix) — single source.
   };
 
   # Essential System-Wide Packages

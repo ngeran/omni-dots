@@ -1,20 +1,26 @@
 { pkgs, ... }: {
+  # System / desktop-shell-level GUI tools ONLY. Creative + note apps
+  # (obsidian, kicad, inkscape, krita) live in home-manager
+  # (modules/apps/essentials.nix) — keep ONE source of truth per package, not
+  # both the system and home layers (they had drifted into a double-install).
+  #
+  # Removed: inkscape-with-extensions / krita / kicad / obsidian (→ home),
+  #          kitty — ghostty is the desktop's primary terminal
+  #          (configs/hypr/environment.lua sets TERMINAL="ghostty"). kitty
+  #          stays installed on the dell3440 laptop (home/dell3440.nix) and its
+  #          config is still deployed by home/dotfiles.nix, so re-adding it to
+  #          the desktop is a one-liner if you miss it.
   environment.systemPackages = with pkgs; [
-    # --- From Old Config ---
-    inkscape-with-extensions
-    krita
-    kicad
-    obsidian
+    # --- Compositor / desktop shell ---
+    ghostty        # primary terminal (Quickshell themes ~/.config/ghostty/config at runtime)
+    chromium       # browser
+    hyprlock       # screen locker
+    hypridle       # idle daemon
+    awww           # wallpaper daemon (Quickshell may drive it; real pkg, v0.12.1)
+    grim           # screenshot grabber
+    slurp          # area selector
+
+    # --- Media ---
     vlc
-    
-    # --- From Current Host File ---
-    ghostty
-    kitty
-    chromium
-    hyprlock
-    hypridle
-    awww          # Your wallpaper tool
-    grim          # Screenshot grabber
-    slurp         # Area selector
   ];
 }

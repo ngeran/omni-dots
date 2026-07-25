@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A NixOS + Home Manager **flake** that defines a single machine, `nixos-btw` (x86_64-linux, NixOS 26.05, AMD CPU/GPU desktop). It installs the OS, packages, services, **ingests application configs** (fastfetch, rofi, hypr), and seeds theme files — but the actual desktop shell is **not** here.
+A NixOS + Home Manager **flake** that defines a single machine, `nixos-btw` (x86_64-linux, NixOS 26.05, AMD Ryzen CPU + NVIDIA GPU desktop). It installs the OS, packages, services, **ingests application configs** (fastfetch, rofi, hypr), and seeds theme files — but the actual desktop shell is **not** here.
 
 **Two-repo split — understand this before editing:**
 - `~/.omni-nix/` (this repo → **`github.com/ngeran/omni-dots`**) — the Nix flake. Declares system + home config, installs Quickshell as a package, and ingests app configs.
@@ -26,14 +26,14 @@ omni-apply      # alias (defined in home/default.nix): sudo nixos-rebuild switch
 
 ## Architecture: three layers + a module pool
 
-`flake.nix` assembles one `nixosConfigurations.nixos-btw` from three layers. Hardware comes from `nixos-hardware` (common-cpu-amd, common-gpu-amd, common-pc-ssd).
+`flake.nix` assembles one `nixosConfigurations.nixos-btw` from three layers. Hardware comes from `nixos-hardware` (`common-cpu-amd` + `common-pc-ssd`) for CPU/SSD. The **GPU is not a nixos-hardware module**: NVIDIA RTX 5080 (Blackwell) + CUDA/Ollama is configured entirely in `modules/nvidiagpu-compute.nix` (open kernel modules ≥570, modesetting, NVDEC). It migrated from an AMD RX 7600 (ROCm); the old `amdgpu-compute.nix` is gone.
 
 1. **`core/default.nix`** — base system imported at the flake top level: bootloader, timezone, networking, nix settings (flakes + auto-optimise + weekly GC), the `nikos` user, `system.stateVersion`.
 2. **`hosts/desktop/`** — this machine's hardware + compositor layer. `hosts/desktop/default.nix` is the wiring hub: it imports `hardware-configuration.nix` (generated, mostly hands-off) plus the **system-level** modules, and sets up Hyprland, XDG portals, nix-ld, and mount points. **Add a new system service/module by importing it here.**
 3. **`home/`** — Home Manager config for user `nikos`. `home/default.nix` is the wiring hub: it imports the home-level siblings (`apps.nix`, `quickshell.nix`, `stylix.nix`, `git.nix`, `dotfiles.nix`) and the home modules under `modules/apps/` (`essentials.nix`, `programming.nix`, `nixvim/default.nix`). **Add a new user-space module by importing it here.**
 
 **`modules/`** — shared pool, split by which layer consumes them:
-- System modules (imported in `hosts/desktop/default.nix`): `audio.nix` (PipeWire+WirePlumber), `bluetooth.nix`, `amdgpu-compute.nix` (ROCm/Ollama), `virtualization.nix` (libvirt+docker), `greetd.nix` (tuigreet → `start-hyprland`), `file-manager.nix` (Thunar), `stylix.nix`, `fonts.nix`, `apps/desktop-apps.nix`, `apps/dev-tools.nix`.
+- System modules (imported in `hosts/desktop/default.nix`): `audio.nix` (PipeWire+WirePlumber), `bluetooth.nix`, `nvidiagpu-compute.nix` (NVIDIA driver/CUDA/Ollama), `virtualization.nix` (libvirt+docker), `greetd.nix` (tuigreet → `start-hyprland`), `file-manager.nix` (Thunar), `stylix.nix`, `fonts.nix`, `apps/desktop-apps.nix`, `apps/dev-tools.nix`.
 
 **Home-level modules (siblings under `home/`):**
 - `apps.nix` — cursor (`home.pointerCursor`, Bibata), GTK theme/icon-theme/cursor-theme, Qt platform theme, and dark mode (`dconf org/gnome/desktop/interface color-scheme = prefer-dark`). *Previously listed as orphaned — it is now imported and is what fixed cursor/icons/dark-mode.*
@@ -76,12 +76,14 @@ When adding a new secret: store the raw value in `~/.config/secrets/<name>`, rea
 
 ## Hardware specifics baked into the config
 
-- **AMD RX 7600 (gfx1101 / RDNA3):** ROCm needs `rocmOverrideGfx = "11.0.0"` + `HSA_OVERRIDE_GFX_VERSION=11.0.0` (in `modules/amdgpu-compute.nix`). Ollama uses `ollama-rocm`.
-- **Wi-Fi/Bluetooth:** MediaTek MT7922/MT7921 module — `mt7922` is force-loaded in `modules/bluetooth.nix`.
-- **Mounts** (`hosts/desktop/default.nix`): `/mnt/DATA-2T` (ext4), `/mnt/SSD-250` (ntfs), plus bind mounts mapping nvim state dirs onto `/persist` for persistence across reboots.
+- **NVIDIA RTX 5080 (Blackwell, GB203):** needs **open** kernel modules — proprietary modules have NO GB20x support at all — on driver ≥570. `modules/nvidiagpu-compute.nix` sets `hardware.nvidia.open = true` + `package = nvidiaPackages.stable` (resolves to ~595), `modesetting.enable = true`, and the Wayland-required `nvidia_drm.modeset=1` (+ `fbdev=1` for a working TTY framebuffer). Video decode goes through `nvidia-vaapi-driver` (NVDEC) with `LIBVA_DRIVER_NAME=nvidia` + `NVD_BACKEND=direct`. Ollama uses `ollama-cuda`. (Migrated from an AMD RX 7600 / ROCm — the old `gfx` override + `ollama-rocm` are gone.)
+- **AMD Ryzen 7 7700X (Zen 4):** `amd_pstate=active` kernel param (`hosts/desktop/default.nix`) selects the modern P-State EPP driver.
+- **Wi-Fi/Bluetooth:** MediaTek MT7922/MT7921 module — `mt7922` is force-loaded in `modules/bluetooth.nix`, and `btusb` autosuspend is disabled there to stop the ~20 s controller re-setup storm on reconnect.
+- **Mounts** (`hosts/desktop/default.nix`): `/mnt/INLAND-500GB` and `/mnt/WD_BLACK-500GB` (both ext4), plus bind mounts mapping nvim state dirs onto `/persist` for persistence across reboots.
 
 ## Version pins & gotchas
 
 - All inputs track **release-26.05** except **nixvim**, which uses `main` for 26.05 compatibility. Its nixpkgs release-version check is disabled (`version.enableNixpkgsReleaseCheck = false`) and `nixpkgs.source` is pinned to the flake input to silence `follows` warnings — see `modules/apps/nixvim/default.nix`.
 - `home-manager` uses `useGlobalPkgs` + `useUserPackages`, with `backupFileExtension = "backup"` (conflicting home files get `.backup` suffixes instead of blocking the switch). When you ingest a new config, HM moves the existing live `~/.config/<app>` to `<app>.backup` on first deploy — remove it after verifying the symlink.
+- **On-demand heavy daemons:** `k3s` (the telemetry lab), `ollama` (CUDA), and `libvirtd` do **not** auto-start at boot — each has `systemd.services.<name>.wantedBy = lib.mkForce [ ]`. Bring one up when you need it: `sudo systemctl start {k3s|ollama|libvirtd}` (libvirtd also socket-activates on first virt-manager use). **Docker DOES still start at boot** because the local registry container (`labs/k8s-registry.nix`) auto-starts and depends on it. Deliberate — these are heavyweight and not used every session.
 - `wallpaper.jpg` is a large binary (~6.8 MB) committed directly to the repo and is the Stylix palette source. Edit by replacing the file, not by editing in place. (It feeds Stylix at build time; live wallpaper changes go through matugen, not this file.)
