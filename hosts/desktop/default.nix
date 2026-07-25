@@ -6,6 +6,7 @@
     ../../modules/audio.nix
     ../../modules/bluetooth.nix
     ../../modules/nvidiagpu-compute.nix  # NVIDIA RTX 5080 + CUDA (was amdgpu-compute.nix)
+    ../../modules/ghost-drive.nix        # suppress MSI monitor's broken 22 KB virtual USB storage (kills sda I/O spam)
     ../../modules/apps/virtualization.nix
     ../../modules/greetd.nix
     ../../modules/apps/file-manager.nix

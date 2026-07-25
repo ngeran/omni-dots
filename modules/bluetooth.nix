@@ -10,16 +10,19 @@
   services.blueman.enable = true;
   hardware.enableRedistributableFirmware = true;
 
-  # Force-load driver for typical ASUS/MediaTek Wi-Fi+BT modules (MT7922/MT7921)
-  boot.kernelModules = [ "mt7922" ];
+  # NOTE: this previously force-loaded `mt7922` (MediaTek MT7922, WiFi 6E).
+  # Wrong twice over: (a) that module name doesn't exist in the kernel, so it
+  # errored every boot ("systemd-modules-load: Failed to find module 'mt7922'");
+  # and (b) this board's WiFi is a Realtek **RTL8922AE (WiFi 7 / 802.11be)**,
+  # driven by rtw89_8922ae — which the kernel auto-loads correctly (wlp10s0,
+  # confirmed connected). No force-load is needed or correct; the right driver
+  # loads itself. Removed 2026-07-25.
 
-  # MT7921/MT7922 Bluetooth travels over btusb, which autosuspends by default.
-  # When a device reconnects the controller often fails to wake cleanly — kernel
-  # logs "command tx timeout / failed to reset (-19)" and the controller takes
-  # ~20s to re-setup before a mouse/keyboard reconnects (sometimes needing a
-  # reboot). Disabling btusb autosuspend keeps the controller awake. This matches
-  # what was observed: btusb enable_autosuspend=Y + a 20s hci0 re-setup storm.
-  # Takes effect after reboot (or: sudo modprobe -r btusb && sudo modprobe btusb).
+  # Bluetooth on the RTL8922AE combo chip is USB-attached (btusb), which
+  # autosuspends by default. Disabling autosuspend keeps the controller awake,
+  # dodging the reconnect / re-setup delay some USB BT controllers hit. Harmless
+  # on a desktop (minor idle power). Effective after reboot, or immediately:
+  #   sudo modprobe -r btusb && sudo modprobe btusb
   boot.extraModprobeConfig = ''
     options btusb enable_autosuspend=N
   '';

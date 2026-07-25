@@ -72,6 +72,30 @@
   };
 
   # =========================================================================
+  # 2b. Disable dynamic (RTD3) GPU power management — fix for Xid 154 freezes
+  # =========================================================================
+  # On 2026-07-25 the machine hard-froze (no input, hard reset required). The
+  # frozen boot's kernel log showed an NVIDIA GSP firmware heartbeat timeout
+  # fired from the modesetting idle timer → Xid 154 → full-GPU-reset-required
+  # → frozen display:
+  #     NVRM: GPU0 _kgspIsHeartbeatTimedOut: Heartbeat timed out ... timeout 5200
+  #     NVRM: GPU0 _kgspRpcRecvPoll: LibOS heartbeat timed out
+  #     NVRM: Xid (PCI:0000:01:00): 154, GPU recovery action ... 0x1 (GPU Reset Required)
+  # The hang originated in IdleTimerProc — the GPU entered a low-power (RTD3)
+  # state and the GSP failed to wake cleanly. Disabling dynamic power management
+  # is the #1 mitigation for this class of Blackwell-open-module GSP hang. On an
+  # always-on-AC desktop the only cost is a little idle GPU wattage.
+  #
+  # powerManagement.enable above (VRAM save/restore on suspend) is unrelated and
+  # stays on — that governs sleep/resume, not idle RTD3.
+  #
+  # Verify after rebuild:  cat /sys/module/nvidia/parameters/NVreg_DynamicPowerManagement
+  # (expect 0x00 / "disabled").
+  boot.extraModprobeConfig = ''
+    options nvidia "NVreg_DynamicPowerManagement=0x00"
+  '';
+
+  # =========================================================================
   # 3. Ollama — CUDA instead of ROCm
   # =========================================================================
   services.ollama = {
