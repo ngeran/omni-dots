@@ -37,11 +37,11 @@
     options = [ "defaults" "nofail" ];
   };
 
-  #fileSystems."/mnt/SSD-250" = {
-  #  device = "UUID=C8057DD5A2F97C72";
-  #  fsType = "ntfs";
-  #  options = [ "defaults" "uid=1000" "gid=100" ];
-  #};
+  fileSystems."/mnt/WD_BLACK-500GB/" = {
+    device = "UUID=f5f52fbd-5857-45a5-8cee-5776b5b39894";
+    fsType = "ext4";
+    options = [ "defaults" "nofail" ];
+  };
 
   # Native Kernel Bind Mounts for Neovim Persistence
   # Maps your volatile home space cleanly to your persistent storage block
