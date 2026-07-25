@@ -37,7 +37,7 @@
     options = [ "defaults" "nofail" ];
   };
 
-  fileSystems."/mnt/WD_BLACK-500GB/" = {
+  fileSystems."/mnt/WD_BLACK-500GB" = {
     device = "UUID=f5f52fbd-5857-45a5-8cee-5776b5b39894";
     fsType = "ext4";
     options = [ "defaults" "nofail" ];
