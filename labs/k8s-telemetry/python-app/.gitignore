@@ -1,0 +1,14 @@
+# Nix build output (`just build --out-link result`)
+/result
+
+# Local venv — only if you `uv venv` for editor tooling; uv2nix does NOT need it
+/.venv
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Secrets / artifacts — must never ship (the image copies app/ only, but keep
+# these ignored in case app/ ever imports from the repo root later)
+.env
+.env.*

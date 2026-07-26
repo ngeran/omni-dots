@@ -1,0 +1,16 @@
+# Single source of truth for Python deps. uv2nix reads this + uv.lock to build
+# the venv for BOTH the dev shell and the image — killing the old drift between
+# requirements.txt (local) and python3.withPackages (image) that this lab used
+# to ship.
+#
+# Change deps here, then refresh the lock + rebuild:
+#     nix run nixpkgs#uv -- lock      # (or `uv lock` inside the devShell)
+#     just build
+[project]
+name = "pyapp"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "flask",
+    "gunicorn",
+]

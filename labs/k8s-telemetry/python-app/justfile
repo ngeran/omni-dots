@@ -1,21 +1,22 @@
 # =========================================================================
-# build → push → rollout for the lab pyapp (reference pipeline)
+# build -> push -> deploy  (Flask + gunicorn, uv2nix image)
 # =========================================================================
-# k3s + the local registry (127.0.0.1:5000) are provided by omni-nix.
-# k3s is on-demand — start it first:  sudo systemctl start k3s
+# Requires omni-nix's k3s cluster + the local registry (127.0.0.1:5000).
+# k3s is on-demand:  sudo systemctl start k3s   (then `just doctor` to check).
+# just/skopeo/kubectl ship in the devShell (and globally on omni-nix hosts).
 # =========================================================================
 set shell := ["bash", "-c"]
 
-image := "localhost:5000/pyapp"
+image := "localhost:5000/pyapp"   # lockstep with flake.nix + ../manifests/70-pyapp.yaml
 tag   := "latest"
-ns    := "lab"
-dep   := "pyapp"
+ns    := "lab"                    # the lab's shared namespace
+dep   := "pyapp"                  # Deployment name in ../manifests/70-pyapp.yaml
 
 # Build the Nix image (no Dockerfile, no docker).
 build:
     nix build .#image --out-link result
 
-# Push to the local registry over HTTP (no docker).
+# Push to the local registry over HTTP (no docker). `result` is the image tarball.
 push: build
     #!/usr/bin/env bash
     set -euo pipefail
@@ -23,19 +24,71 @@ push: build
       docker-archive:"$(readlink -f result)" \
       docker://"{{image}}:{{tag}}"
 
-# Apply the lab manifest + roll the Deployment so k3s pulls the new image.
+# Apply the lab manifest (shared stack at ../manifests/) + roll the Deployment.
 deploy: push
     #!/usr/bin/env bash
     set -euo pipefail
     kubectl apply -f ../manifests/70-pyapp.yaml
     kubectl -n {{ns}} rollout restart deployment/{{dep}}
-    kubectl -n {{ns}} rollout status   deployment/{{dep}}
+    kubectl -n {{ns}} rollout status   deployment/{{dep}} --timeout=120s || {
+      echo "FAIL rollout - pod status + last crash log:"
+      kubectl -n {{ns}} get pods
+      kubectl -n {{ns}} logs deployment/{{dep}} --previous --tail=40
+      exit 1
+    }
 
+# Run locally — SAME entry point the image runs (gunicorn app:app), with reload.
+run:
+    #!/usr/bin/env bash
+    cd app
+    gunicorn app:app --reload --bind 0.0.0.0:8080
+
+# Tail the Deployment logs.
 logs:
     kubectl -n {{ns}} logs deploy/{{dep}} -f
 
+# Port-forward the Service.
 forward:
     kubectl -n {{ns}} port-forward svc/{{dep}} 8080:8080
 
+# Pre-flight: k3s up, registry reachable, git index clean (nix evaluates the git
+# INDEX, not the worktree — unstaged edits to flake.nix/app are blind to the build).
+doctor:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    ok=1
+    systemctl is-active --quiet k3s && echo "  k3s        up" || { echo "  k3s        DOWN -> sudo systemctl start k3s"; ok=0; }
+    curl -sf --max-time 3 http://localhost:5000/v2/ >/dev/null && echo "  registry   localhost:5000 reachable" || { echo "  registry   UNREACHABLE"; ok=0; }
+    n=$(git status --porcelain . 2>/dev/null | wc -l)
+    [ "$n" = 0 ] && echo "  git        clean" || echo "  git        WARN - $n unstaged (nix uses the git INDEX: git add or nix build ignores them)"
+    [ "$ok" = 1 ] && echo "doctor: ready" || { echo "doctor: NOT ready"; exit 1; }
+
+# Local smoke: load the built image into docker, run it, curl /, expect 200.
+test: build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v docker >/dev/null || { echo "test needs docker (virtualization.nix)"; exit 1; }
+    img=$(docker load < "$(readlink -f result)" | sed -n 's/Loaded image: \(.*\)/\1/p')
+    echo "loaded $img"
+    docker rm -f {{dep}}-test >/dev/null 2>&1 || true
+    docker run -d --name {{dep}}-test -p 18080:8080 "$img" >/dev/null
+    sleep 2
+    if curl -sf --max-time 5 http://localhost:18080/ >/dev/null; then
+      echo "  HTTP 200 from /  OK"
+    else
+      echo "  FAIL no 200 - container logs:"; docker logs {{dep}}-test 2>&1 | tail -25; docker rm -f {{dep}}-test >/dev/null; exit 1
+    fi
+    docker rm -f {{dep}}-test >/dev/null
+    echo "test: ok"
+
+# Lint + type-check (the image build doesn't lint). ruff is strict; mypy advisory.
+check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd app
+    ruff check .
+    mypy . || echo "  mypy: advisory (add type hints / mypy.ini to enforce)"
+
+# Drop into the devShell manually (direnv does this automatically on cd).
 shell:
     nix develop
