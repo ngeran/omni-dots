@@ -171,6 +171,12 @@
       # Highlight and search for TODO, FIXME, NOTE
       todo-comments.enable = true;
 
+      # Markdown preview in browser
+      markdown-preview = {
+        enable = true;
+        autoLoad = false; # Recommended to keep false for better startup time
+      };
+
       # AI: Avante.nvim (Cursor-like experience)
       avante = {
         enable = true;
@@ -235,6 +241,11 @@
 
       # Flash (Jumping)
       { mode = [ "n" "x" "o" ]; key = "s"; action = ''<table.insert(require("flash").jump())>''; options = { desc = "Flash Jump"; }; }
+
+      # Markdown Preview
+      { mode = "n"; key = "<leader>mp"; action = "<cmd>MarkdownPreview<CR>"; options = { desc = "Open Markdown Preview"; }; }
+      { mode = "n"; key = "<leader>ms"; action = "<cmd>MarkdownPreviewStop<CR>"; options = { desc = "Stop Markdown Preview"; }; }
+      { mode = "n"; key = "<leader>mt"; action = "<cmd>MarkdownPreviewToggle<CR>"; options = { desc = "Toggle Markdown Preview"; }; }
     ];
 
     # =========================================================================
