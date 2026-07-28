@@ -25,11 +25,18 @@ hl.animation({ leaf = "fadeOut",        enabled = true, speed = 1.46, bezier = "
 hl.animation({ leaf = "fade",           enabled = true, speed = 3.03, bezier = "quick"        })
 
 -- Layers (shell surfaces, bars, popups)
-hl.animation({ leaf = "layers",         enabled = true, speed = 3.81, bezier = "easeOutQuint"             })
-hl.animation({ leaf = "layersIn",       enabled = true, speed = 4,    bezier = "easeOutQuint", style = "fade" })
-hl.animation({ leaf = "layersOut",      enabled = true, speed = 1.5,  bezier = "linear",       style = "fade" })
-hl.animation({ leaf = "fadeLayersIn",   enabled = true, speed = 1.79, bezier = "almostLinear" })
-hl.animation({ leaf = "fadeLayersOut",  enabled = true, speed = 1.39, bezier = "almostLinear" })
+-- DISABLED 2026-07-28: layer fade/slide animations drive Hyprland's
+-- makeSnapshot path on layer-surface unmap/destroy, which faults in
+-- CHyprOpenGLImpl::beginSimple (SIGABRT) on the NVIDIA Render2 path — the
+-- 2026-07-28 hard freeze. The nvidia_drm "Flip event timeout" in that boot
+-- was downstream of the compositor abort, not the cause. Disabling all layer
+-- animations removes the snapshot-on-unmap trigger. Reversible: flip enabled
+-- back to true (speeds/beziers preserved).
+hl.animation({ leaf = "layers",         enabled = false, speed = 3.81, bezier = "easeOutQuint"             })
+hl.animation({ leaf = "layersIn",       enabled = false, speed = 4,    bezier = "easeOutQuint", style = "fade" })
+hl.animation({ leaf = "layersOut",      enabled = false, speed = 1.5,  bezier = "linear",       style = "fade" })
+hl.animation({ leaf = "fadeLayersIn",   enabled = false, speed = 1.79, bezier = "almostLinear" })
+hl.animation({ leaf = "fadeLayersOut",  enabled = false, speed = 1.39, bezier = "almostLinear" })
 
 -- Workspaces
 hl.animation({ leaf = "workspaces",     enabled = true, speed = 1.94, bezier = "almostLinear", style = "fade" })
