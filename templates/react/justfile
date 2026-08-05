@@ -1,8 +1,12 @@
 # =========================================================================
 # build → push → rollout for the react app
 # =========================================================================
-# Requires omni-nix's k3s cluster + local registry (127.0.0.1:5000) running.
-# k3s is on-demand — start it first:  sudo systemctl start k3s
+# k3s (default):  requires omni-nix's k3s cluster + local registry
+#                 (127.0.0.1:5000) running — k3s is on-demand, start it first:
+#                   sudo systemctl start k3s
+# Cloudflare Pages (public URL):  `just cf` uploads the Nix-built static app.
+#   one-time:  wrangler login   (or: export CLOUDFLARE_API_TOKEN=…)
+#              wrangler pages project create react-app --production-branch main
 #
 # ⚠️ First-time only: set npmDepsHash in flake.nix (see its header comment).
 # =========================================================================
@@ -13,6 +17,7 @@ tag   := "latest"
 ns    := "default"
 dep   := "react-app"
 port  := "8080"          # nginx container listen port (non-root high port)
+cf_project := "react-app"   # Cloudflare Pages project name (create once, see header)
 
 # Build the Nix image (no Dockerfile, no docker).
 build:
@@ -103,6 +108,34 @@ relock:
     echo "computed npmDepsHash: $hash"
     sed -i -E "s|npmDepsHash = .*|npmDepsHash = \"$hash\";  # from app/package-lock.json via just relock|" flake.nix
     echo "updated flake.nix — rebuild with: just build"
+
+# ── Cloudflare Pages (public URL) ───────────────────────────────────────────
+# Builds the static app with Nix (packages.site) and uploads it directly —
+# no Dockerfile, no Git-integration build, the same bytes you'd ship to k3s.
+# SPA routes are handled by app/public/_redirects (Cloudflare serves index.html
+# for every path) — the same role the nginx `try_files … /index.html` fallback
+# plays in the k3s image.
+
+# One-time setup (wrangler login + project create) is in the header above.
+# Deploy to PRODUCTION — creates the <project>.pages.dev URL, incremental on re-run.
+cf:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v wrangler >/dev/null 2>&1 || { echo "cf needs wrangler — run from the devShell (direnv allow)"; exit 1; }
+    nix build .#site --out-link site-out
+    echo "→ uploading ./site-out to Cloudflare Pages project '{{cf_project}}' (production)"
+    wrangler pages deploy ./site-out --project-name {{cf_project}} --branch main
+
+# Override the branch:  CF_BRANCH=feat-x just cf-preview
+# Deploy a PREVIEW build (a branch-specific preview URL, not production).
+cf-preview:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v wrangler >/dev/null 2>&1 || { echo "cf-preview needs wrangler — run from the devShell (direnv allow)"; exit 1; }
+    nix build .#site --out-link site-out
+    branch="${CF_BRANCH:-preview}"
+    echo "→ uploading ./site-out to Cloudflare Pages project '{{cf_project}}' (preview branch: $branch)"
+    wrangler pages deploy ./site-out --project-name {{cf_project}} --branch "$branch"
 
 shell:
     nix develop

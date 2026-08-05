@@ -24,6 +24,7 @@ deploy it to the local k3s cluster, and drive the pods.
 3. [Create a NEW project](#3-create-a-new-project)
    - [3.1 Python (FastAPI or script, uv2nix)](#31-new-python-project-fastapi-or-script-uv2nix)
    - [3.2 Hugo](#32-new-hugo-project)
+     - [Tailwind CSS v4 custom theme](#321-custom-theme-with-tailwind-css-v4)
    - [3.3 React + Tailwind](#33-new-react--tailwind-project)
 4. [Migrate an EXISTING project](#4-migrate-an-existing-project)
 5. [Build the image + deploy to k8s](#5-build-the-image--deploy-to-k8s-the-test-loop)
@@ -67,6 +68,7 @@ Each project is a directory containing a **`flake.nix`** that declares two thing
 |---|---|
 | `devShells.default` | the dev tools — auto-loaded by `direnv` when you `cd` in |
 | `packages.image` | a **reproducible OCI image** built by Nix (`dockerTools.buildImage`) — **no Dockerfile** |
+| `packages.site` | (hugo/react) the built **static site** itself — what Cloudflare Pages uploads |
 
 `just` drives the loop between them:
 
@@ -75,6 +77,11 @@ just build   →   nix build .#image      (produces ./result, the image tarball)
 just push    →   skopeo copy …          (pushes to localhost:5000, NO docker)
 just deploy  →   kubectl apply + rollout (k3s pulls the new image)
 ```
+
+For a **public URL** instead of the local cluster, the static stacks (hugo/react)
+also ship `just cf` — it builds `packages.site` and uploads it to **Cloudflare
+Pages** (no Dockerfile, no docker, no Git-integration build). See [§3.2](#32-new-hugo-project)
+/ [§3.3](#33-new-react--tailwind-project).
 
 **Golden rules (breaking these = silent failure):**
 
@@ -199,13 +206,102 @@ hugo new content/posts/hello.md     # then edit +  just serve
 **Deploy:** `just deploy`. Hugo builds **offline** inside the image (no
 lock/hash step) — nixpkgs ships the extended Hugo (SCSS / asset pipeline).
 
-If your theme uses a Node asset pipeline (Tailwind/PostCSS):
+**Deploy to Cloudflare Pages (public URL):** Hugo's output is a plain static
+site, so it uploads directly from the same Nix build (`packages.site` — no
+Dockerfile, no Git-integration build). `wrangler` is in the devShell:
 
 ```bash
-npm install        # one-time, inside the devShell (nodejs_22 is provided) — run in site/
+wrangler login                                            # one-time (or: export CLOUDFLARE_API_TOKEN=…)
+wrangler pages project create hugo-site --production-branch main   # one-time
+just cf                                                   # builds .#site → uploads → <name>.pages.dev
+just cf-preview                                           # preview URL  (CF_BRANCH=feat-x just cf-preview)
 ```
 
+Change the project name via the `cf_project` var in the `justfile` if you don't
+want `hugo-site`.
+
 `just check` validates the site builds cleanly (`hugo --gc --minify` to a temp dir).
+
+#### 3.2.1 Custom theme with Tailwind CSS v4
+
+Hugo's built-in `css.TailwindCSS` pipe **shells out to a `tailwindcss` binary** at
+build time, but the Nix image build runs **only `hugo`** — so for this repo you
+build Tailwind **manually, in the devShell**, and commit the compiled CSS as a
+static file that Hugo serves verbatim. This keeps the image build offline (no
+Node, no `npmDepsHash`) and leaves `just build` / `just cf` untouched. (nixpkgs
+does ship a `tailwindcss` CLI, but it's **v3** — for v4 `@theme` theming use the
+npm CLI below.)
+
+**Install (one-time; the Hugo devShell already has `nodejs_22`):**
+
+```bash
+cd site
+npm install -D tailwindcss @tailwindcss/cli
+```
+
+**Directory layout this adds under `site/`:**
+
+```text
+site/
+├── hugo.toml
+├── package.json           # dev-only (tailwindcss, @tailwindcss/cli)
+├── package-lock.json      # dev-only
+├── src/
+│   └── input.css          # ★ Tailwind SOURCE — your @theme theme lives here
+├── static/
+│   └── css/
+│       └── main.css       # ★ compiled OUTPUT (committed; Hugo serves it verbatim)
+└── layouts/
+    └── index.html         # <link href="/css/main.css"> + utility classes
+```
+
+(`node_modules/` is gitignored — dev-only, never present in the Nix build.)
+
+**1. Author the theme** — `site/src/input.css`. The `@theme` block **is** your
+custom theme; `@source` tells Tailwind which templates to scan for used classes
+(so only those utilities ship):
+
+```css
+@import "tailwindcss";
+@source "../layouts/**/*.html";
+
+@theme {
+  --color-brand-500: #3b82f6;
+  --color-brand-900: #1e3a8a;
+  --font-display: "Inter", sans-serif;
+  --radius-card: 1rem;
+}
+```
+
+**2. Compile** the CSS into Hugo's `static/`:
+
+```bash
+npx @tailwindcss/cli -i src/input.css -o static/css/main.css --minify
+npx @tailwindcss/cli -i src/input.css -o static/css/main.css --watch   # dev: live rebuild
+```
+
+**3. Use it** in a layout (`site/layouts/index.html`) — every `@theme` token
+becomes a utility (`bg-brand-500`, `text-brand-900`, `font-display`,
+`rounded-card`):
+
+```html
+<link rel="stylesheet" href="/css/main.css" />
+<h1 class="text-3xl font-bold text-brand-500 font-display">{{ .Site.Title }}</h1>
+```
+
+**4. Commit** `src/input.css`, `static/css/main.css`, `package.json`, and
+`package-lock.json`. Then `just build` / `just cf` work unchanged — Hugo copies
+`static/` verbatim, with no Node anywhere in the image build.
+
+> [!important] Rebuild when you change classes or `@theme`
+> Adding a utility to a template or editing `@theme` does **not** update
+> `static/css/main.css` on its own — re-run the compile (step 2), or keep
+> `--watch` running while you develop, then commit the new output.
+
+> [!note] Verified
+> Tested with Hugo **0.163.3** + Tailwind **4.3.3**: `@theme` tokens and
+> `@source` class-detection both land in the compiled CSS, and Hugo builds +
+> serves it with no Node in the build.
 
 ---
 
@@ -244,13 +340,23 @@ Create `app/src/index.css` and import it from `main.tsx`:
 
 ```css
 @import "tailwindcss";
+
+/* custom theme — the same @theme block as Hugo (§3.2.1). Vite compiles it
+   automatically via the plugin above, so there's no manual CLI step here. */
+@theme {
+  --color-brand-500: #3b82f6;
+  --color-brand-900: #1e3a8a;
+  --font-display: "Inter", sans-serif;
+}
 ```
 ```ts
 // app/src/main.tsx — add at the top:
 import "./index.css";
 ```
 
-Now use Tailwind classes in `App.tsx`, e.g. `<h1 className="text-3xl font-bold">`.
+Now use Tailwind classes in `App.tsx`, e.g.
+`<h1 className="text-3xl font-bold text-brand-500 font-display">`. Each `@theme`
+token becomes a utility (`bg-brand-500`, `text-brand-900`, `font-display`).
 
 **Run locally:**
 
@@ -271,9 +377,25 @@ just build         # succeeds
 (The template ships `npmDepsHash = lib.fakeHash` as a placeholder; `just relock`
 replaces it. Re-run `just relock` whenever `package.json`/lockfile changes.)
 
-**Deploy — two targets:**
+**Deploy — three targets:**
 
 - **Local k3s** (default; file storage works natively): `just deploy`.
+- **Cloudflare Pages** (public URL, static frontend): uploads the same Nix-built
+  `packages.site` via `wrangler` (no Dockerfile, no Git-integration build). SPA
+  routing is already wired — the template ships `app/public/_redirects`
+  (`/* /index.html 200`), which Vite copies into the build and Cloudflare honors
+  (the same role nginx's `try_files … /index.html` fallback plays in the k3s
+  image). Frontend-only here — Cloudflare Pages Functions run JS/WASM, not Python.
+
+  ```bash
+  wrangler login                                                  # one-time
+  wrangler pages project create react-app --production-branch main  # one-time
+  just cf                                                         # → <name>.pages.dev
+  just cf-preview                                                 # preview URL
+  ```
+
+  Change the project name via `cf_project` in the `justfile` if you don't want
+  `react-app`.
 - **Vercel** (public URL): add a root `vercel.json` and set the project's
   **Root Directory to the repo root** (not `app/` — Vercel auto-detects
   `app/package.json` and points there, which hides root `vercel.json` and
@@ -299,7 +421,8 @@ replaces it. Re-run `just relock` whenever `package.json`/lockfile changes.)
   `DATABASE_URL` in Vercel env vars (all environments) + redeploy. Full recipe,
   the `/api` rewrite, the schema, and the gotchas: `references/vercel.md`.
 
-  Rule of thumb: **file-based data → k3s; public URL → Vercel + a DB.**
+  Rule of thumb: **file-based data → k3s; static public URL → Cloudflare Pages
+  (`just cf`) or Vercel; full-stack public URL → Vercel + a DB.**
 
 ---
 
@@ -378,6 +501,8 @@ surfaces immediately instead of hanging.
 | **`just test`** | local smoke: `docker load` + `docker run` (non-root) + `curl` → expect HTTP 200 |
 | **`just check`** | lint/type/build check the build doesn't: py `ruff`+`mypy`, react `tsc`+`eslint`, hugo `--gc --minify` |
 | **`just relock`** (react only) | recompute `npmDepsHash` from `package-lock.json` + write it into `flake.nix` |
+| `just cf` (hugo/react) | build `.#site` → `wrangler pages deploy` to **Cloudflare Pages** (public URL) |
+| `just cf-preview` (hugo/react) | same, to a preview branch (preview URL, not production) |
 
 ### Test the Nix-built image locally (`just test`)
 
@@ -579,6 +704,9 @@ device. The lab already does this via Pi-hole.)
 > [!warning] Home lab only — not the open internet
 > All three serve **plain HTTP with no auth**. Fine on a trusted home network;
 > do **not** expose them to the internet without TLS (Ingress + real certs) and auth.
+> For a real public URL, use the static deploy path instead — `just cf` (Cloudflare
+> Pages, TLS on a managed CDN) or Vercel. See [§3.2](#32-new-hugo-project) /
+> [§3.3](#33-new-react--tailwind-project).
 
 ---
 

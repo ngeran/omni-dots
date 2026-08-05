@@ -1,8 +1,12 @@
 # =========================================================================
 # build → push → rollout for the hugo static site
 # =========================================================================
-# Requires omni-nix's k3s cluster + local registry (127.0.0.1:5000) running.
-# k3s is on-demand — start it first:  sudo systemctl start k3s
+# k3s (default):  requires omni-nix's k3s cluster + local registry
+#                 (127.0.0.1:5000) running — k3s is on-demand, start it first:
+#                   sudo systemctl start k3s
+# Cloudflare Pages (public URL):  `just cf` uploads the Nix-built static site.
+#   one-time:  wrangler login   (or: export CLOUDFLARE_API_TOKEN=…)
+#              wrangler pages project create hugo-site --production-branch main
 # =========================================================================
 set shell := ["bash", "-c"]
 
@@ -11,6 +15,7 @@ tag   := "latest"
 ns    := "default"
 dep   := "hugo-site"
 port  := "8080"          # nginx container listen port (non-root high port)
+cf_project := "hugo-site"   # Cloudflare Pages project name (create once, see header)
 
 # Build the Nix image (no Dockerfile, no docker).
 build:
@@ -88,6 +93,31 @@ check:
     set -euo pipefail
     cd site
     hugo --gc --minify --destination /tmp/hugo-check >/dev/null && rm -rf /tmp/hugo-check && echo "hugo build OK"
+
+# ── Cloudflare Pages (public URL) ───────────────────────────────────────────
+# Builds the static site with Nix (packages.site) and uploads it directly —
+# no Dockerfile, no Git-integration build, the same bytes you'd ship to k3s.
+
+# One-time setup (wrangler login + project create) is in the header above.
+# Deploy to PRODUCTION — creates the <project>.pages.dev URL, incremental on re-run.
+cf:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v wrangler >/dev/null 2>&1 || { echo "cf needs wrangler — run from the devShell (direnv allow)"; exit 1; }
+    nix build .#site --out-link site-out
+    echo "→ uploading ./site-out to Cloudflare Pages project '{{cf_project}}' (production)"
+    wrangler pages deploy ./site-out --project-name {{cf_project}} --branch main
+
+# Override the branch:  CF_BRANCH=feat-x just cf-preview
+# Deploy a PREVIEW build (a branch-specific preview URL, not production).
+cf-preview:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    command -v wrangler >/dev/null 2>&1 || { echo "cf-preview needs wrangler — run from the devShell (direnv allow)"; exit 1; }
+    nix build .#site --out-link site-out
+    branch="${CF_BRANCH:-preview}"
+    echo "→ uploading ./site-out to Cloudflare Pages project '{{cf_project}}' (preview branch: $branch)"
+    wrangler pages deploy ./site-out --project-name {{cf_project}} --branch "$branch"
 
 shell:
     nix develop
