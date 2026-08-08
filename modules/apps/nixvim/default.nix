@@ -313,7 +313,7 @@
       })
 
       -- ── Oil sidebar toggle (<leader>e) ────────────────────────────────────
-      -- Opens Oil in a 30-column right-hand vertical split (a side panel),
+      -- Opens Oil in a 30-column left-hand vertical split (a side panel),
       -- jumps to it if already open, or closes it when invoked from the Oil
       -- window. (Oil has no native sidebar; this approximates one.)
       local function oil_sidebar_toggle()
@@ -330,7 +330,7 @@
         end
         local dir = vim.fn.expand("%:p:h")
         if dir == "" then dir = "." end
-        vim.cmd("botright 30vnew")
+        vim.cmd("topleft 30vnew")
         require("oil").open(dir)
       end
       vim.keymap.set("n", "<leader>e", oil_sidebar_toggle, { desc = "Toggle Oil (sidebar)" })
