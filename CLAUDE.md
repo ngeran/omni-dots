@@ -78,7 +78,7 @@ When adding a new secret: store the raw value in `~/.config/secrets/<name>`, rea
 
 - **NVIDIA RTX 5080 (Blackwell, GB203):** needs **open** kernel modules — proprietary modules have NO GB20x support at all — on driver ≥570. `modules/nvidiagpu-compute.nix` sets `hardware.nvidia.open = true` + `package = nvidiaPackages.stable` (resolves to ~595), `modesetting.enable = true`, and the Wayland-required `nvidia_drm.modeset=1` (+ `fbdev=1` for a working TTY framebuffer). Video decode goes through `nvidia-vaapi-driver` (NVDEC) with `LIBVA_DRIVER_NAME=nvidia` + `NVD_BACKEND=direct`. Ollama uses `ollama-cuda`. (Migrated from an AMD RX 7600 / ROCm — the old `gfx` override + `ollama-rocm` are gone.)
 - **AMD Ryzen 7 7700X (Zen 4):** `amd_pstate=active` kernel param (`hosts/desktop/default.nix`) selects the modern P-State EPP driver.
-- **Wi-Fi/Bluetooth:** MediaTek MT7922/MT7921 module — `mt7922` is force-loaded in `modules/bluetooth.nix`, and `btusb` autosuspend is disabled there to stop the ~20 s controller re-setup storm on reconnect.
+- **Wi-Fi/Bluetooth:** Realtek RTL8922AE (Wi-Fi 7) — driven by `rtw89_8922ae`, which **auto-loads** (no force-load; the old `mt7922` force-load was removed — that name never existed in-kernel and errored every boot). `btusb` autosuspend is disabled in `modules/bluetooth.nix` to stop the ~20 s controller re-setup storm on reconnect.
 - **Mounts** (`hosts/desktop/default.nix`): `/mnt/INLAND-500GB` and `/mnt/WD_BLACK-500GB` (both ext4), plus bind mounts mapping nvim state dirs onto `/persist` for persistence across reboots.
 
 ## Version pins & gotchas

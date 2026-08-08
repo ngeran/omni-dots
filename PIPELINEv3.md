@@ -374,8 +374,9 @@ git add app/package-lock.json flake.nix   # golden rule 1 — both must be track
 just build         # succeeds
 ```
 
-(The template ships `npmDepsHash = lib.fakeHash` as a placeholder; `just relock`
-replaces it. Re-run `just relock` whenever `package.json`/lockfile changes.)
+(The template ships the **real** `npmDepsHash` matching the committed
+`app/package-lock.json`, so `just build` works first try. Re-run `just relock`
+whenever `package.json`/lockfile changes — it recomputes and rewrites the hash.)
 
 **Deploy — three targets:**
 
@@ -418,8 +419,8 @@ replaces it. Re-run `just relock` whenever `package.json`/lockfile changes.)
   the ASGI `app`, with `sys.path.insert` for sibling imports), back it with a
   persistent store selected by env (Neon Postgres via `DATABASE_URL` works
   well; `psycopg[binary]`), seed from bundled `api/seed/*.md`, and set
-  `DATABASE_URL` in Vercel env vars (all environments) + redeploy. Full recipe,
-  the `/api` rewrite, the schema, and the gotchas: `references/vercel.md`.
+  `DATABASE_URL` in Vercel env vars (all environments) + redeploy. (The essentials
+  are above; there is no separate `references/vercel.md` — iterate from this section.)
 
   Rule of thumb: **file-based data → k3s; static public URL → Cloudflare Pages
   (`just cf`) or Vercel; full-stack public URL → Vercel + a DB.**

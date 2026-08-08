@@ -18,6 +18,10 @@
     version.enableNixpkgsReleaseCheck = false;
     nixpkgs.source = inputs.nixpkgs;
 
+    # Binaries made available to the wrapped nvim's $PATH. lazygit is needed by
+    # plugins.lazygit below (the plugin shells out to the `lazygit` binary).
+    extraPackages = [ pkgs.lazygit ];
+
     # =========================================================================
     # Core Editor Options
     # =========================================================================
@@ -57,6 +61,15 @@
       web-devicons.enable = true;
       which-key.enable = true;
       bufferline.enable = true;
+
+      # Replaces the built-in ':' command line with a stylized input — the
+      # command_palette preset floats it at the TOP of the screen (the "input
+      # field at the top" you'd seen). Handles cmdline/messages; snacks.notifier
+      # stays responsible for notifications.
+      noice = {
+        enable = true;
+        settings.presets.command_palette = true;
+      };
       
       # Modern notifications and UI "snacks" (replaces older notify/noice setups)
       snacks = {
@@ -218,15 +231,18 @@
       ts-autotag.enable = true; # JSX/HTML tag renaming
       comment.enable = true;    # Toggle with `gcc`
       gitsigns.enable = true;   # Git status in gutter
+      lazygit.enable = true;    # Full git TUI inside nvim (<leader>gg); needs pkgs.lazygit (extraPackages)
     };
 
     # =========================================================================
     # Keymaps
     # =========================================================================
     keymaps = [
-      # File Management
-      { mode = "n"; key = "<leader>e"; action = "<cmd>Oil<CR>"; options = { desc = "Open Oil (File System)"; }; }
-      
+      # Git
+      { mode = "n"; key = "<leader>gg"; action = "<cmd>LazyGit<CR>"; options = { desc = "Open LazyGit"; }; }
+
+      # File Management: <leader>e is bound in extraConfigLua (Oil sidebar toggle).
+
       # Trouble (Diagnostics/Errors)
       { mode = "n"; key = "<leader>xx"; action = "<cmd>Trouble diagnostics toggle<CR>"; options = { desc = "Toggle Trouble (Project Errors)"; }; }
       { mode = "n"; key = "<leader>xq"; action = "<cmd>Trouble quickfix toggle<CR>"; options = { desc = "Open Quickfix List"; }; }
@@ -295,6 +311,29 @@
       vim.api.nvim_create_autocmd({ "FocusGained", "VimResume" }, {
         callback = apply_qs_theme,
       })
+
+      -- ── Oil sidebar toggle (<leader>e) ────────────────────────────────────
+      -- Opens Oil in a 30-column right-hand vertical split (a side panel),
+      -- jumps to it if already open, or closes it when invoked from the Oil
+      -- window. (Oil has no native sidebar; this approximates one.)
+      local function oil_sidebar_toggle()
+        if vim.bo.filetype == "oil" then
+          vim.cmd("close")
+          return
+        end
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+          local ok, ft = pcall(vim.api.nvim_get_option_value, "filetype", { buf = vim.api.nvim_win_get_buf(win) })
+          if ok and ft == "oil" then
+            vim.api.nvim_set_current_win(win)
+            return
+          end
+        end
+        local dir = vim.fn.expand("%:p:h")
+        if dir == "" then dir = "." end
+        vim.cmd("botright 30vnew")
+        require("oil").open(dir)
+      end
+      vim.keymap.set("n", "<leader>e", oil_sidebar_toggle, { desc = "Toggle Oil (sidebar)" })
     '';
   };
 }

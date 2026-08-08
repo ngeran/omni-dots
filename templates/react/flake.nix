@@ -9,11 +9,12 @@
 #   3. packages.site     — the built static app itself (Cloudflare Pages upload).
 #
 # ⚠️ DEPS HASH (inherent to reproducible JS builds in Nix): buildNpmPackage
-# needs `npmDepsHash` matching app/package-lock.json. This template ships
-# lib.fakeHash as a PLACEHOLDER — set the real one with:
+# needs `npmDepsHash` matching app/package-lock.json. This template SHIPS the
+# real hash (it matches the committed app/package-lock.json), so `just build`
+# works out of the box. When you change deps:
 #   1. enter the shell:       direnv allow   (or `nix develop`)
-#   2. generate the lockfile: (cd app && npm install)
-#   3. just relock            # computes the hash + writes it into npmDepsHash below
+#   2. refresh the lockfile:  (cd app && npm install)
+#   3. just relock            # recomputes the hash + writes it into npmDepsHash below
 #   4. just build
 # (Re-run `just relock` whenever deps change — it runs prefetch-npm-deps for you.)
 #

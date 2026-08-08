@@ -7,7 +7,7 @@ Nix flake + direnv dev-shell workflow, and how to start fresh ones.
 > tools it needs; `direnv` auto-loads them on `cd`. Nothing is installed
 > globally — the system and `~/.config` stay clean.
 
-> **Related docs:** [README.md](README.md) (overview) · [PIPELINE.md](PIPELINE.md) (build Nix images + deploy to k3s) · [WORKFLOW.md](WORKFLOW.md) (editing the flake itself).
+> **Related docs:** [README.md](README.md) (overview) · [PIPELINEv3.md](PIPELINEv3.md) (build Nix images + deploy to k3s) · [WORKFLOW.md](WORKFLOW.md) (editing the flake itself).
 
 ---
 
@@ -34,7 +34,7 @@ image with Nix** (no Dockerfile) and deploy it to the local k3s cluster.
 ```bash
 mkdir my-app && cd my-app && git init
 nix flake init -t ~/.omni-nix#python    # or #react / #hugo / #dev
-git add flake.nix .envrc justfile app manifests
+git add flake.nix .envrc justfile app manifests   # #python/#react. #hugo → use `site/` (no app/); #dev → just flake.nix .envrc
 direnv allow
 
 # build → push (skopeo, no docker) → k3s rollout:

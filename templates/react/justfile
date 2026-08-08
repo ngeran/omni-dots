@@ -46,7 +46,7 @@ deploy: push
 
 # Local dev server (HMR) → http://localhost:5173.
 serve:
-    npm run dev
+    cd app && npm run dev
 
 logs:
     kubectl -n {{ns}} logs deploy/{{dep}} -f

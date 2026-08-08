@@ -4,6 +4,13 @@ Step-by-step: wipe + reinstall NixOS on the new **ASUS X870E-PLUS TUF**
 (AMD AM5 / X870E chipset) and restore the full `omni-nix` flake desktop —
 Hyprland + Quickshell bar/settings + the Claude/z.ai gateway.
 
+> ⚠️ **Host: this guide is for the DESKTOP — `nixos-btw`** (ASUS X870E-PLUS TUF,
+> AMD Ryzen / NVIDIA RTX 5080, `hosts/desktop/`). The flake also defines a second
+> host, **`dell3440`** (Dell Latitude 3440 laptop — Intel CPU, integrated graphics,
+> `hosts/dell3440/`), with completely different hardware. This doc does **not**
+> cover it; for the Dell, adapt the partitioning + `hardware-configuration.nix` to
+> its hardware and install with `--flake ~/.omni-nix#dell3440`.
+
 > This doc is committed to the repo, so it's on GitHub (`ngeran/omni-dots`) and
 > readable from your phone / the live ISO / another machine **after** you wipe.
 > Open it there while you install.
@@ -17,7 +24,7 @@ Hyprland + Quickshell bar/settings + the Claude/z.ai gateway.
 | **CPU** | AMD Ryzen 7 7700X (AM5) | still AM5 (7700X drops in, or newer AM5) | **none** — `nixos-hardware common-cpu-amd` still correct |
 | **GPU** | NVIDIA RTX 5080 | unchanged | **none** — `modules/nvidiagpu-compute.nix` still correct |
 | **Storage** | (your drives) | same drives / new layout | **regenerate `hardware-configuration.nix`** (new UUIDs) |
-| **Wifi/BT** | MediaTek MT7922 (force-loaded) | Wi-Fi 7 (likely MediaTek MT7925) | **verify after boot** — may need to update `modules/bluetooth.nix` (mt7922 → new module) |
+| **Wifi/BT** | Realtek RTL8922AE (Wi-Fi 7) | same board | **none** — `rtw89_8922ae` auto-loads at boot; `modules/bluetooth.nix` only sets `btusb` autosuspend=off |
 | **Ethernet** | — | Realtek 2.5GbE (RTL8125) | works out of the box |
 
 **Bottom line:** no CPU/GPU module edits needed. Just regenerate the hardware
@@ -33,8 +40,8 @@ after the wipe:
 
 | Back up | From | Why |
 |---|---|---|
-| **Secrets** | `~/.config/secrets/` → `zai_key`, `zai_usage_key` | The Claude/z.ai gateway + ZAI usage service read these. **Copy to a USB stick / password manager.** Without them the gateway won't authenticate. |
-| **SSH keys** | `~/.ssh/` (private key `id_*`, `config`, `known_hosts`) | Needed to `git clone` your **private** repos on the new box. (Or `ssh-keygen` a new key + add the pubkey to GitHub.) |
+| **Secrets** | `~/.config/secrets/` → `zai_key` | The Claude/z.ai gateway reads this (the `configure-claude` activation script writes `~/.claude/settings.json` from it). **Copy to a USB stick / password manager.** Without it the gateway won't authenticate. |
+| **SSH keys** | `~/.ssh/` (private key `id_github`, `config`, `known_hosts`) | Needed to `git clone` your **private** repos on the new box. (Or `ssh-keygen` a new key + add the pubkey to GitHub.) |
 | **The two repo dirs** (optional but easiest) | `~/.omni-nix/` and `~/.config/quickshell/` | Copy to USB too → lets you restore **without** network during install. GitHub stays as the fallback. |
 | Personal/untracked | `~/` project work, `~/.config/chromium`, shell history, GPG keys | Your call. (Mind the old `~/.config/chromium` leak — never commit browser profiles.) |
 
@@ -48,7 +55,7 @@ git -C ~/.config/quickshell status
 
 ## §2 — Know which drive you're wiping
 
-The flake mounts `/mnt/DATA-2T` (ext4) + `/mnt/SSD-250` (ntfs) — if those are
+The flake mounts `/mnt/INLAND-500GB` + `/mnt/WD_BLACK-500GB` (both ext4) — if those are
 **separate physical drives** from the OS drive, they survive an OS-wipe untouched.
 Confirm the OS drive + `/persist` location:
 ```bash
@@ -86,7 +93,7 @@ sudo mkdir -p /mnt/boot && sudo mount /dev/nvme0n1p1 /mnt/boot
 ## §5 — Generate hardware config + get the flake + install
 
 ```bash
-sudo nixos-generate-config --root /mnt     # → /mnt/etc/nixos/hardware-configuration.nfig (NEW board's UUIDs/filesystems)
+sudo nixos-generate-config --root /mnt     # → /mnt/etc/nixos/hardware-configuration.nix (NEW board's UUIDs/filesystems)
 ```
 
 Get the flake into its final location and **swap in the new hardware config**
@@ -121,7 +128,7 @@ Log in as `nikos`. Then:
 ```bash
 # 1. Restore secrets (the activation script reads these to write ~/.claude/settings.json):
 mkdir -p ~/.config/secrets
-cp /run/media/usb/{zai_key,zai_usage_key} ~/.config/secrets/
+cp /run/media/usb/zai_key ~/.config/secrets/
 chmod 600 ~/.config/secrets/*
 
 # 2. Restore SSH keys (or ssh-keygen + add new pubkey to GitHub):
@@ -140,17 +147,18 @@ Then verify (re-login if needed for the desktop to come up):
   `configure-claude` activation script from `~/.config/secrets/zai_key`). If empty,
   confirm the secret is present + `omni-apply` again.
 - **Theme:** `~/.cache/theme/colors.json` reseeded by activation; bar shows the theme.
-- **Data mounts:** `ls /mnt/DATA-2T /mnt/SSD-250` (auto-mounted per the flake — only
+- **Data mounts:** `ls /mnt/INLAND-500GB /mnt/WD_BLACK-500GB` (auto-mounted per the flake — only
   if those drives are connected).
 - **`/persist`:** the flake bind-mounts nvim state onto `/persist` and k3s/docker use
   `/persist/var/lib/...`. If a boot stalls on a `/persist` mount, `sudo mkdir -p`
   the target dir (see `hosts/desktop/default.nix`) + `omni-apply`.
 
-**Wifi on the X870E (verify):** if you use the board's Wi-Fi 7 (not the old MT7922
-card) and it's not detected, check `ip link` + `lspci -nnk | grep -iA3 net`. The
-flake force-loads `mt7922` in `modules/bluetooth.nix`; the new chipset (likely
-MediaTek **MT7925**) needs `mt7925` instead. Edit that module + `omni-apply`.
-(Ethernet works regardless, so this never blocks the install.)
+**Wifi on the X870E (verify):** the board's Wi-Fi 7 is a **Realtek RTL8922AE**,
+driven by the `rtw89_8922ae` kernel module which **auto-loads** — no flake wifi
+config to touch. If it's not detected, check `ip link` +
+`lspci -nnk | grep -iA3 net`. Bluetooth comes up on `btusb`; the flake only
+disables `btusb` autosuspend in `modules/bluetooth.nix` (to avoid the reconnect
+storm). Ethernet (RTL8125 2.5GbE) works regardless, so wifi never blocks the install.
 
 ## §7 — Done checklist
 
@@ -172,6 +180,6 @@ MediaTek **MT7925**) needs `mt7925` instead. Edit that module + `omni-apply`.
 | Boot fails / can't mount root | `hardware-configuration.nix` UUIDs/filesystems are wrong — re-check §5 (regenerate, don't reuse the old one). |
 | Blank display after boot | RTX 5080 needs the NVIDIA driver (`modules/nvidiagpu-compute.nix`). Boot the ISO, re-check `nixos-install` built it; the `nvidia` driver must be in the toplevel. |
 | `omni-apply`: "would be clobbered" / `.backup` files | the flake's `backupFileExtension = "backup"` moves conflicting live files aside; if still stuck, move the live file out of the way and re-run. |
-| `/persist` mount fails at boot | `sudo mkdir -p /persist/<subdir>` for each bind target in `hosts/desktop/default.nix`, then `omni-apply`. |
-| Wifi (MT7925) not detected | update the wifi module in `modules/bluetooth.nix` (mt7922 → mt7925), `omni-apply`. Ethernet works meanwhile. |
+| `/persist` mount fails at boot | `sudo mkdir -p /persist/<subdir>` for each bind target in `hosts/desktop/default.nix`, then `omni-apply`. (k3s specifically needs `sudo mkdir -p /persist/var/lib/rancher/k3s` before its first start.) |
+| Wifi not detected | the board uses Realtek RTL8922AE (`rtw89_8922ae`, auto-loads). Check `ip link` / `lspci -nnk` — there's no flake wifi module to edit. Ethernet (RTL8125) works meanwhile. |
 | Can't clone private repos on the ISO | restore the repo dirs from the USB backup (§5 Option A), or copy the SSH key onto the ISO, or clone over HTTPS with a GitHub PAT. |

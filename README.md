@@ -8,9 +8,10 @@ Deep-dive guides (this README is the overview):
 
 | Guide | Covers |
 |---|---|
-| [**PIPELINE.md**](PIPELINE.md) | Dev → Nix image → k8s: scaffold or migrate Python / Hugo / React+Tailwind, build a reproducible OCI image with Nix (no Dockerfile), deploy to the local k3s cluster, and drive pods (start/stop/kill/destroy). |
+| [**PIPELINEv3.md**](PIPELINEv3.md) | Dev → Nix image → k8s: scaffold or migrate Python / Hugo / React+Tailwind, build a reproducible OCI image with Nix (no Dockerfile), deploy to the local k3s cluster, and drive pods (start/stop/kill/destroy). |
 | [**DEV-ENVIRONMENTS.md**](DEV-ENVIRONMENTS.md) | The per-project direnv + flake dev-shell workflow in detail — migrate existing projects, everyday use, troubleshooting. |
 | [**WORKFLOW.md**](WORKFLOW.md) | Making changes to THIS flake — the `git add → omni-apply → commit` cycle, where packages/configs/modules belong, the two-repo reload asymmetry, and common workflows + troubleshooting. |
+| [**CLEAN-INSTALL.md**](CLEAN-INSTALL.md) | Wipe + reinstall NixOS on the **desktop** host (`nixos-btw`) — backup, partition, regenerate hardware config, restore secrets, `omni-apply`. (The `dell3440` laptop host is separate.) |
 
 ## Two repos
 
@@ -128,7 +129,7 @@ git push
 
 ## 🧑‍💻 Development environments (per-project shells)
 
-> **Pipeline guide (start here): [`PIPELINE.md`](PIPELINE.md)** — create/migrate Python / Hugo / React+Tailwind projects, build a Nix image, deploy to k3s, and drive pods (start/stop/kill/destroy).
+> **Pipeline guide (start here): [`PIPELINEv3.md`](PIPELINEv3.md)** — create/migrate Python / Hugo / React+Tailwind projects, build a Nix image, deploy to k3s, and drive pods (start/stop/kill/destroy).
 >
 > **direnv deep-dive: [`DEV-ENVIRONMENTS.md`](DEV-ENVIRONMENTS.md)** — the per-project dev-shell workflow in detail.
 

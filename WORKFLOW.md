@@ -496,7 +496,7 @@ git -C ~/.omni-nix push
 ## 📖 Additional Resources
 
 - **[README.md](README.md)** — high-level architecture overview + docs index
-- **[PIPELINE.md](PIPELINE.md)** — dev → Nix image → k8s (scaffold/migrate Python/Hugo/React, build images, deploy to k3s)
+- **[PIPELINEv3.md](PIPELINEv3.md)** — dev → Nix image → k8s (scaffold/migrate Python/Hugo/React, build images, deploy to k3s)
 - **[DEV-ENVIRONMENTS.md](DEV-ENVIRONMENTS.md)** — per-project direnv + flake dev shells in detail
 - **CLAUDE.md** — guidance for the Claude Code AI assistant
 - **NixOS Search** — https://search.nixos.org (find packages)
