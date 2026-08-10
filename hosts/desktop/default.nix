@@ -15,6 +15,7 @@
     ../../modules/fonts.nix
     ../../modules/apps/desktop-apps.nix
     ../../modules/apps/dev-tools.nix
+    ../../modules/apps/sniffnet.nix    # network traffic monitor (cap-wrapped, runs unprivileged)
     ../../modules/ssh.nix
     ../../labs/k8s-telemetry/nix/k3s.nix  # opt-in: single-node k3s cluster (telemetry lab)
     ../../labs/k8s-registry.nix           # opt-in: local registry for fast dev->k3s deploys (nutils etc.)
