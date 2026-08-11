@@ -60,7 +60,16 @@
       lualine.enable = true;
       web-devicons.enable = true;
       which-key.enable = true;
-      bufferline.enable = true;
+      # Bufferline tabline. custom_filter hides the Oil sidebar buffer so the
+      # tabline lists only real files (Oil is a navigator, not a "tab").
+      bufferline = {
+        enable = true;
+        settings.options.custom_filter.__raw = ''
+          function(buf)
+            return vim.bo[buf].filetype ~= "oil"
+          end
+        '';
+      };
 
       # Replaces the built-in ':' command line with a stylized input — the
       # command_palette preset floats it at the TOP of the screen (the "input
@@ -118,7 +127,8 @@
         };
       };
 
-      # Oil: Edit your file system like a normal buffer
+      # Oil: filesystem editor. Wired as a left sidebar (<leader>e) whose <CR>
+      # opens files in the main right window — see extraConfigLua below.
       oil.enable = true;
 
       # Flash: The fastest way to jump around the screen
@@ -334,6 +344,48 @@
         require("oil").open(dir)
       end
       vim.keymap.set("n", "<leader>e", oil_sidebar_toggle, { desc = "Toggle Oil (sidebar)" })
+
+      -- ── Oil sidebar: <CR> opens files on the RIGHT, Oil stays on the left ─
+      -- Oil's default <CR> (actions.select) opens the file IN the oil window,
+      -- so the sidebar is replaced by the file inside the narrow left split —
+      -- the "Oil disappears, file opens on the left" bug. Instead we read the
+      -- entry's path, target a non-oil "main" window on the right (creating one
+      -- if none exists yet), and :edit the file there. Oil stays put as the
+      -- navigator; bufferline lists every opened file as a tab (<Tab>/<S-Tab>).
+      -- Directories still navigate in place within the sidebar.
+      local function oil_open_in_main()
+        local oil = require("oil")
+        local entry = oil.get_cursor_entry()
+        if not entry then return end
+        if entry.type == "directory" then
+          oil.select()          -- step into the directory, inside the sidebar
+          return
+        end
+        local dir = oil.get_current_dir() or ""
+        local path = dir .. (dir:sub(-1) == "/" and "" or "/") .. entry.name
+        local oil_win = vim.api.nvim_get_current_win()
+        local target = nil
+        for _, w in ipairs(vim.api.nvim_list_wins()) do
+          if w ~= oil_win then
+            local ok, ft = pcall(vim.api.nvim_get_option_value, "filetype", { buf = vim.api.nvim_win_get_buf(w) })
+            if ok and ft ~= "oil" then target = w end
+          end
+        end
+        if not target then      -- first file: create the main window on the right
+          vim.cmd("botright vnew")
+          target = vim.api.nvim_get_current_win()
+        end
+        vim.api.nvim_set_current_win(target)
+        vim.cmd("edit " .. vim.fn.fnameescape(path))  -- focus lands on the file
+      end
+
+      -- Apply the keymap to every oil buffer (covers the toggle, :Oil, etc.).
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "oil",
+        callback = function(args)
+          vim.keymap.set("n", "<CR>", oil_open_in_main, { buffer = args.buf, desc = "Open in main window (keep Oil)" })
+        end,
+      })
     '';
   };
 }
