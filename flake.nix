@@ -42,6 +42,18 @@
       # Use the same nixpkgs version as the rest of the system
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # -- NETWATCH (real-time network diagnostics TUI) --
+    # matthart1983/netwatch: Rust+libpcap "htop for your network" — per-process
+    # connections, protocol decode (TLS/QUIC/HTTP/DNS), JA4 fingerprinting,
+    # C2-beaconing/port-scan detection. Consumed via its UPSTREAM flake (it
+    # ships its own buildRustPackage + committed Cargo.lock), pinned to a release
+    # tag. NOT in nixpkgs. modules/apps/netwatch.nix cap-wraps the binary with
+    # cap_net_raw,cap_bpf,cap_perfmon so the full tool runs without sudo.
+    netwatch = {
+      url = "github:matthart1983/netwatch/v0.29.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, matugen, claude-code, ... }@inputs: {
