@@ -58,6 +58,41 @@
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2e8a", ATTR{idProduct}=="0013", ATTR{bConfigurationValue}="2"
   '';
 
+  # ── Keep WiFi as the only internet path while the pwni is plugged in ────
+  # The pwni's DHCP hands out ITSELF as gateway+DNS. NM prefers wired routes
+  # (metric 100) over wifi (600), so when the gadget link is up its default
+  # route wins and all internet traffic drowns in a Pi with no uplink —
+  # "connected to pwnagotchi = lose the internet". This dispatcher marks any
+  # USB-gadget-ethernet connection (by DRIVER, since the interface name and
+  # MAC change on every enumeration) as never-default + ignore-auto-dns.
+  # The on-link 10.12.x subnet route is untouched — ssh to the pwni still works.
+  networking.networkmanager.dispatcherScripts = [
+    {
+      type = "basic";
+      source = pkgs.writeText "pwnagotchi-never-default" ''
+        if [ "$2" = "up" ] || [ "$2" = "dhcp4-change" ]; then
+          DEV="$1"
+          if [ -e "/sys/class/net/$DEV/device/driver" ]; then
+            DRV=$(basename "$(readlink "/sys/class/net/$DEV/device/driver")")
+            case "$DRV" in
+              cdc_ether|rndis_host|cdc_ncm)
+                CONN=$(nmcli -g GENERAL.CONNECTION device show "$DEV" 2>/dev/null)
+                if [ -n "$CONN" ]; then
+                  nmcli connection modify id "$CONN" \
+                    ipv4.never-default yes \
+                    ipv6.never-default yes \
+                    ipv4.ignore-auto-dns yes \
+                    ipv6.ignore-auto-dns yes
+                fi
+                ;;
+            esac
+          fi
+        fi
+        exit 0
+      '';
+    }
+  ];
+
   # mDNS runs over multicast UDP 5353 — open it so discovery works in both
   # directions (no-op if the firewall is disabled).
   networking.firewall.allowedUDPPorts = [ 5353 ];
