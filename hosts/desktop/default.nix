@@ -18,6 +18,7 @@
     ../../modules/apps/sniffnet.nix    # network traffic monitor (cap-wrapped, runs unprivileged)
     ../../modules/apps/hashcat.nix     # GPU password cracker (CUDA backend wrapped for the RTX 5080)
     ../../modules/apps/netwatch.nix    # network diagnostics TUI (eBPF/cap-wrapped, runs unprivileged)
+    ../../modules/pwnagotchi.nix       # USB OTG gadget ethernet + avahi/mDNS host-side for the pwni
     ../../modules/ssh.nix
     ../../labs/k8s-telemetry/nix/k3s.nix  # opt-in: single-node k3s cluster (telemetry lab)
     ../../labs/k8s-registry.nix           # opt-in: local registry for fast dev->k3s deploys (nutils etc.)
