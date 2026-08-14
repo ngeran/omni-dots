@@ -80,12 +80,25 @@
         IPT=${pkgs.iptables}/bin/iptables
 
         mark_gadget_connection() {
-          # never-default + ignore-auto-dns: keep WiFi as the only internet path
-          nmcli connection modify id "$CONN" \
-            ipv4.never-default yes \
-            ipv6.never-default yes \
-            ipv4.ignore-auto-dns yes \
-            ipv6.ignore-auto-dns yes
+          CONN=$(nmcli -g GENERAL.CONNECTION device show "$DEV" 2>/dev/null)
+          [ -n "$CONN" ] || return 0
+          # Only modify+reapply when the flag isn't set yet (guard: reapply can
+          # re-fire dhcp4-change — without this we'd loop).
+          CUR=$(nmcli -g ipv4.never-default connection show id "$CONN" 2>/dev/null)
+          if [ "$CUR" != "yes" ]; then
+            nmcli connection modify id "$CONN" \
+              ipv4.never-default yes \
+              ipv6.never-default yes \
+              ipv4.ignore-auto-dns yes \
+              ipv6.ignore-auto-dns yes
+            nmcli device reapply "$DEV" >/dev/null 2>&1 || true
+          fi
+          # IMMEDIATE fix, not just for next activation: NM installs the pwni's
+          # DHCP route BEFORE this dispatcher runs, and a profile edit alone
+          # doesn't remove it. Kill any default route out of the gadget NOW —
+          # this closes the hijack window where "From 10.12.194.1: Destination
+          # Net Unreachable" steals the internet for the first seconds.
+          ip route del default dev "$DEV" 2>/dev/null || true
         }
 
         nat_setup() {
@@ -117,8 +130,7 @@
             DRV=$(basename "$(readlink "/sys/class/net/$DEV/device/driver")")
             case "$DRV" in
               cdc_ether|rndis_host|cdc_ncm)
-                CONN=$(nmcli -g GENERAL.CONNECTION device show "$DEV" 2>/dev/null)
-                [ -n "$CONN" ] && mark_gadget_connection
+                mark_gadget_connection
                 nat_setup
                 ;;
             esac
