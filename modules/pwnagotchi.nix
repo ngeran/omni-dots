@@ -44,6 +44,20 @@
     };
   };
 
+  # ── Force the RNDIS USB configuration (the Windows path) ────────────────
+  # The pwni gadget exposes TWO configurations:
+  #   config 1 = CDC-ECM  — Linux's default choice (cdc_ether). WEDGES on the
+  #                         Pi side after seconds-to-minutes: NETDEV WATCHDOG
+  #                         tx timeouts, dead ARP, control transfers time out.
+  #   config 2 = RNDIS    — what Windows binds (rndis_host). ROCK SOLID.
+  # (Verified 2026-08-14: config 2 pinged 0% loss, sshd reachable.)
+  # This rule flips every enumeration of 2e8a:0013 (Raspberry Pi USB Gadget)
+  # to config 2 BEFORE any driver binds, so the wedged CDC-ECM path is never
+  # taken — no more manual sysfs writes after replug or reboot.
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="2e8a", ATTR{idProduct}=="0013", ATTR{bConfigurationValue}="2"
+  '';
+
   # mDNS runs over multicast UDP 5353 — open it so discovery works in both
   # directions (no-op if the firewall is disabled).
   networking.firewall.allowedUDPPorts = [ 5353 ];
