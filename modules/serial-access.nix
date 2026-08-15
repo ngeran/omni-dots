@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 # =============================================================================
 # Browser-based firmware flashers (Web Serial) — device-node access
@@ -14,18 +14,31 @@
 #
 # Fix: tag the nodes with `uaccess` — systemd-logind grants the currently
 # seated user a rw ACL when the device appears, so it takes effect on REPLUG
-# with no logout/login (unlike a dialout group add, which only applies to new
-# login sessions). nikos is also in `dialout` for CLI tools (esptool,
-# stm32flash, minicom…) — see core/default.nix.
+# with no logout/login (unlike the dialout group add in core/default.nix,
+# which only reaches processes started after the next login).
+#
+# WHY services.udev.packages AND NOT extraRules: extraRules lands in
+# /etc/udev/rules.d/99-local.rules, which sorts AFTER systemd's
+# 73-seat-late.rules — the rule that converts the uaccess tag into an ACL.
+# Tagged too late = no ACL is ever applied (first attempt failed exactly like
+# that). Shipping the rule as a package with a 70- filename makes it sort
+# before 73-seat-late.rules, so the ACL lands at enumeration time.
 #
 # Note: Firefox has no Web Serial support at all; these flashers require a
 # Chromium-based browser.
 # =============================================================================
 
 {
-  services.udev.extraRules = ''
-    # Grant the active seat user rw access to USB-serial devices (Web Serial
-    # flashers). Runs in 00-local.rules, before 73-seat-late.rules applies ACLs.
-    SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*|ttyUSB[0-9]*", TAG+="uaccess"
-  '';
+  services.udev.packages = [
+    (pkgs.writeTextFile {
+      name = "serial-uaccess-udev-rules";
+      destination = "/lib/udev/rules.d/70-serial-uaccess.rules";
+      text = ''
+        # Grant the active seat user rw access to USB-serial devices
+        # (browser firmware flashers via Web Serial). Must run before
+        # 73-seat-late.rules applies the ACL — hence the 70- filename.
+        SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*|ttyUSB[0-9]*", TAG+="uaccess"
+      '';
+    })
+  ];
 }
