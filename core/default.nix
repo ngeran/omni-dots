@@ -110,6 +110,8 @@
       "video"           # GPU Display
       "docker"          # If you use docker
       "libvirtd"        # If you use virtualization
+      "dialout"         # USB-serial ports (ttyACM/ttyUSB) — CLI flash tools;
+                        # browsers get in via the uaccess rule in modules/serial-access.nix
     ];
     # `tree` lives in home-manager (modules/apps/essentials.nix) — single source.
   };
