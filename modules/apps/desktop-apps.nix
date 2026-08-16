@@ -14,10 +14,11 @@
   #          the bare package could never unlock).
   #          hypridle — owned by home/hypridle.nix (package + supervised
   #          systemd user unit; started by environment.lua).
+  #          chromium — owned by home/chromium.nix (programs.chromium, so its
+  #          keyring/NVDEC/Wayland launch flags are declarative).
   environment.systemPackages = with pkgs; [
     # --- Compositor / desktop shell ---
     ghostty        # primary terminal (Quickshell themes ~/.config/ghostty/config at runtime)
-    chromium       # browser
     awww           # wallpaper daemon (Quickshell may drive it; real pkg, v0.12.1)
     grim           # screenshot grabber
     slurp          # area selector

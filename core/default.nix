@@ -52,6 +52,12 @@
         "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "nix-community.cachix.org-1:mB9FSh9qfPWdQMj6QzdK7H6YhKSpexVfOlIVS+gzrfY="
       ];
+
+      # Emergency disk valve: if free space on / ever drops below this, the
+      # next nix build automatically deletes old garbage instead of filling
+      # the disk mid-build. On a ~1 TB disk this should never fire — it exists
+      # for runaway builds (CUDA/Ollama closures are tens of GB at a time).
+      min-free = "20G";
     };
     
     # Desktop smoothness during builds: run the nix daemon (the worker that
@@ -63,11 +69,17 @@
     daemonCPUSchedPolicy = "idle";   # only use CPU that nothing else wants
     daemonIOSchedClass = "idle";     # same for disk I/O
 
-    # From old config: Automates system cleaning
+    # From old config: Automates system cleaning.
+    # NOTE on the window: `--delete-older-than` also deletes old SYSTEM
+    # GENERATIONS — i.e. your rollback points (boot-menu entries / --rollback).
+    # 30d means you can always roll back to a system from the last month.
+    # Storage cost is small because generations share almost all store paths —
+    # only the changed packages accumulate. With ~750 GB free, a short window
+    # would save nothing but risk losing the last-known-good system.
     gc = {
       automatic = true;
       dates = "weekly";
-      options = "--delete-older-than 7d";
+      options = "--delete-older-than 30d";
       persistent = true;             # run missed cycles after downtime (laptop was off)
       randomizedDelaySec = "30min";  # spread the GC load off the exact weekly mark
     };

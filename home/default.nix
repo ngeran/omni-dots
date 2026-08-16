@@ -9,6 +9,7 @@
     ./apps.nix
     ./quickshell.nix
     ./hypridle.nix              # ★ idle daemon as a supervised systemd user unit
+    ./chromium.nix              # ★ browser with keyring + NVDEC + native-Wayland flags
     ./stylix.nix
     ./notifications.nix
     ./git.nix
@@ -32,7 +33,17 @@
     enable = true;
     shellAliases = {
       btw = "echo I use nixos btw";
+      # Rebuild from the EXACT locked inputs — this never pulls anything new.
       omni-apply = "sudo nixos-rebuild switch --flake ~/.omni-nix/#nixos-btw";
+      # Update everything, MANUALLY, when you decide (~monthly is plenty).
+      # Moves flake.lock to the latest commit of each input branch
+      # (nixos-26.05, nixos-hardware master, nixvim main, ...) and rebuilds.
+      # Afterwards, commit flake.lock so the repo records what you run.
+      # Rollback if an update misbehaves:
+      #   sudo nixos-rebuild switch --rollback   (or older entry in boot menu)
+      # Bisect a bad update per-input:
+      #   nix flake lock --update-input <name>   (e.g. nixpkgs, nixvim)
+      omni-update = "nix flake update --flake ~/.omni-nix/ && sudo nixos-rebuild switch --flake ~/.omni-nix/#nixos-btw";
     };
   };
 

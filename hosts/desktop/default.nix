@@ -101,6 +101,21 @@
   # the package itself).
   programs.hyprlock.enable = true;
 
+  # =========================================================================
+  # Secrets — gnome-keyring, unlocked automatically at login
+  # =========================================================================
+  # Without a keyring daemon, Chromium silently falls back to storing saved
+  # passwords in PLAINTEXT inside ~/.config/chromium. Enabling gnome-keyring
+  # gives apps (Chromium via the gnome-libsecret flag in home/chromium.nix,
+  # seahorse, network secrets) an encrypted store on disk, held in memory
+  # after unlock.
+  #
+  # The PAM piece comes for free: NixOS's greetd module defaults
+  # security.pam.services.greetd.enableGnomeKeyring to this same switch, so
+  # the keyring unlocks with your login password at the tuigreet prompt —
+  # no extra prompt after login.
+  services.gnome.gnome-keyring.enable = true;
+
   # NOTE: user groups live in ONE place — core/default.nix (users.users.nikos).
   # A second extraGroups list here used to re-add networkmanager/render/video;
   # NixOS merges lists, so it was harmless but misleading (two places to check

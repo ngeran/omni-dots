@@ -30,7 +30,7 @@ omni-apply      # alias (defined in home/default.nix): sudo nixos-rebuild switch
 
 1. **`core/default.nix`** — base system imported at the flake top level: bootloader, timezone, networking, nix settings (flakes + auto-optimise + weekly GC), the `nikos` user, `system.stateVersion`.
 2. **`hosts/desktop/`** — this machine's hardware + compositor layer. `hosts/desktop/default.nix` is the wiring hub: it imports `hardware-configuration.nix` (generated, mostly hands-off) plus the **system-level** modules, and sets up Hyprland, XDG portals, nix-ld, and mount points. **Add a new system service/module by importing it here.**
-3. **`home/`** — Home Manager config for user `nikos`. `home/default.nix` is the wiring hub: it imports the home-level siblings (`apps.nix`, `quickshell.nix`, `stylix.nix`, `git.nix`, `dotfiles.nix`) and the home modules under `modules/apps/` (`essentials.nix`, `programming.nix`, `nixvim/default.nix`). **Add a new user-space module by importing it here.**
+3. **`home/`** — Home Manager config for user `nikos`. `home/default.nix` is the wiring hub: it imports the home-level siblings (`apps.nix`, `quickshell.nix`, `hypridle.nix`, `chromium.nix`, `stylix.nix`, `notifications.nix`, `git.nix`, `dotfiles.nix`, `devshell.nix`, `claude.nix`) and the home modules under `modules/apps/` (`essentials.nix`, `programming.nix`, `nixvim/default.nix`, `video-editing.nix`). **Add a new user-space module by importing it here.**
 
 **`modules/`** — shared pool, split by which layer consumes them:
 - System modules (imported in `hosts/desktop/default.nix`): `audio.nix` (PipeWire+WirePlumber), `bluetooth.nix`, `nvidiagpu-compute.nix` (NVIDIA driver/CUDA/Ollama), `virtualization.nix` (libvirt+docker), `greetd.nix` (tuigreet → `start-hyprland`), `file-manager.nix` (Thunar), `stylix.nix`, `fonts.nix`, `apps/desktop-apps.nix`, `apps/dev-tools.nix`.
@@ -40,8 +40,8 @@ omni-apply      # alias (defined in home/default.nix): sudo nixos-rebuild switch
 - `git.nix` — git identity via `programs.git.settings`. HM owns `~/.config/git/config` as a read-only store symlink, so **`git config --global` fails by design** ("Read-only file system"). Edit `home/git.nix` and rebuild instead.
 - `dotfiles.nix` — the ingested-configs hub (see below).
 - `stylix.nix` / `quickshell.nix` — theme seed bridge / installs the quickshell package.
-
-**Orphaned (not imported; safe to delete):** `home/rofi.nix` — superseded by `configs/rofi` + `dotfiles.nix`.
+- `hypridle.nix` — owns the hypridle package + its supervised systemd user unit (started explicitly by `configs/hypr/environment.lua`; NO Install section — see the file header). **Never** start hypridle as a bare `&` process again: unsupervised, and a `cp -n` cache copy would go stale.
+- `chromium.nix` — `programs.chromium` with keyring (`gnome-libsecret`), NVDEC (`VaapiVideoDecodeLinuxGL`) and native-Wayland (`ozone-platform-hint=auto`) flags. The hyprlock PAM service and gnome-keyring (auto-unlocked at greetd login via PAM) live in `hosts/desktop/default.nix`.
 
 ## Ingested application configs (`configs/` + `home/dotfiles.nix`)
 
