@@ -88,8 +88,23 @@
     config.common.default = [ "hyprland" "gtk" ];
   };
 
-  # Add hardware permissions for the user
-  users.users.nikos.extraGroups = [ "networkmanager" "render" "video" ];
+  # =========================================================================
+  # Screen Locking (hyprlock) — MUST be enabled via this module, not a package
+  # =========================================================================
+  # hyprlock authenticates your password through Linux-PAM. Installing the
+  # `hyprlock` PACKAGE alone does not create /etc/pam.d/hyprlock, so PAM falls
+  # back to /etc/pam.d/other, which on NixOS DENIES everything — the screen
+  # locks and NO password can ever unlock it (lockout until you switch to a
+  # TTY and kill the process). Enabling the NixOS module installs hyprlock AND
+  # wires the PAM service. This is why `hyprlock` was removed from
+  # modules/apps/desktop-apps.nix — one source of truth (the module installs
+  # the package itself).
+  programs.hyprlock.enable = true;
+
+  # NOTE: user groups live in ONE place — core/default.nix (users.users.nikos).
+  # A second extraGroups list here used to re-add networkmanager/render/video;
+  # NixOS merges lists, so it was harmless but misleading (two places to check
+  # when auditing permissions). Removed — edit groups in core only.
 
   # Enable unpatched dynamic binaries to run seamlessly
   programs.nix-ld.enable = true;

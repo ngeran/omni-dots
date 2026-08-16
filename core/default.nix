@@ -54,6 +54,15 @@
       ];
     };
     
+    # Desktop smoothness during builds: run the nix daemon (the worker that
+    # does ALL compiling/copying for nixos-rebuild and dev shells) at the
+    # LOWEST CPU and I/O priority. The kernel then always schedules the
+    # compositor, browser and games first — an `omni-apply` in the background
+    # no longer makes the desktop stutter. Builds get slightly slower under
+    # load; on an idle 16-thread 7700X you won't notice.
+    daemonCPUSchedPolicy = "idle";   # only use CPU that nothing else wants
+    daemonIOSchedClass = "idle";     # same for disk I/O
+
     # From old config: Automates system cleaning
     gc = {
       automatic = true;

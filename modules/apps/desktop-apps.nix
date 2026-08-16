@@ -6,16 +6,18 @@
   #
   # Removed: inkscape-with-extensions / krita / kicad / obsidian (→ home),
   #          kitty — ghostty is the desktop's primary terminal
-  #          (configs/hypr/environment.lua sets TERMINAL="ghostty"). kitty
-  #          stays installed on the dell3440 laptop (home/dell3440.nix) and its
-  #          config is still deployed by home/dotfiles.nix, so re-adding it to
-  #          the desktop is a one-liner if you miss it.
+  #          (configs/hypr/environment.lua sets TERMINAL="ghostty"). kitty's
+  #          config is still deployed by home/dotfiles.nix, so re-adding the
+  #          package to the desktop is a one-liner if you miss it.
+  #          hyprlock — installed by `programs.hyprlock.enable` in
+  #          hosts/desktop/default.nix (the module also wires its PAM service;
+  #          the bare package could never unlock).
   environment.systemPackages = with pkgs; [
     # --- Compositor / desktop shell ---
     ghostty        # primary terminal (Quickshell themes ~/.config/ghostty/config at runtime)
     chromium       # browser
-    hyprlock       # screen locker
-    hypridle       # idle daemon
+    hypridle       # idle daemon (STAYS a bare package until its systemd user
+                   #   unit lands in home/hypridle.nix — removed in that batch)
     awww           # wallpaper daemon (Quickshell may drive it; real pkg, v0.12.1)
     grim           # screenshot grabber
     slurp          # area selector

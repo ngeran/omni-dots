@@ -10,7 +10,7 @@
     size = 24;
   };
 
-  # ── 2. GTK Configuration (Reddit-Inspired Fix) ──────────────────────────────
+  # ── 2. GTK Configuration ────────────────────────────────────────────────────
   gtk = {
     enable = true;
     theme = {
@@ -21,30 +21,23 @@
       name = "Papirus-Dark";
       package = pkgs.papirus-icon-theme;
     };
-    cursorTheme = {
-      name = "Bibata-Modern-Classic";
-      package = pkgs.bibata-cursors;
-      size = 24;
-    };
-
-    # Specific fixes for GTK3 and GTK4 consistent cursor rendering
-    gtk3.extraConfig = {
-      "gtk-cursor-theme-name" = "Bibata-Modern-Classic";
-      "gtk-cursor-theme-size" = 24;
-    };
-    gtk4.extraConfig = {
-      "gtk-cursor-theme-name" = "Bibata-Modern-Classic";
-      "gtk-cursor-theme-size" = 24;
-    };
+    # NOTE: no `cursorTheme` here, and no gtk3/gtk4 extraConfig cursor blocks
+    # (there used to be three copies of the cursor setting in this file).
+    # `home.pointerCursor` above with gtk.enable=true already injects
+    # gtk.cursorTheme AND writes gtk-cursor-theme-name/-size into the GTK3 and
+    # GTK4 settings.ini files — verified in Home Manager's
+    # modules/config/home-cursor.nix. One source of truth: the block above.
   };
 
   # ── 2b. Dark mode for GTK4 / libadwaita + Chromium ──────────────────────────
   dconf.settings."org/gnome/desktop/interface".color-scheme = "prefer-dark";
 
-  # ── 3. Force Environment Variables ──────────────────────────────────────────
+  # ── 3. Cursor environment variables for Hyprland ────────────────────────────
+  # XCURSOR_THEME/SIZE are deliberately NOT repeated here — home.pointerCursor
+  # (section 1) exports both automatically for every session. HYPRCURSOR_* is
+  # Hyprland-specific and Home Manager does not know about it, so it needs the
+  # manual export for hyprcursor-based apps inside the compositor.
   home.sessionVariables = {
-    XCURSOR_THEME = "Bibata-Modern-Classic";
-    XCURSOR_SIZE = "24";
     HYPRCURSOR_THEME = "Bibata-Modern-Classic";
     HYPRCURSOR_SIZE = "24";
   };

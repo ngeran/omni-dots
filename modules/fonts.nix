@@ -15,9 +15,13 @@
       # DaVinci's Qt UI requests Arial/Verdana/Helvetica (Microsoft core
       # fonts); without them it falls back to an ugly default → "horrible"
       # UI text. corefonts is unfree (allowed via core/default.nix → allowUnfree).
+      #
+      # NOTE: dejavu_fonts and liberation_ttf used to be listed here as the
+      # Arial/Times fallback + broad coverage — but `enableDefaultPackages =
+      # true` above ALREADY ships both (plus freefont, gyre, unifont and
+      # Noto CJK — see nixpkgs nixos/modules/config/fonts/packages.nix).
+      # Listing them again just duplicated packages in the closure.
       corefonts
-      liberation_ttf   # free, metric-compatible Arial/Times/Courier fallback
-      dejavu_fonts     # broad sans/serif/mono coverage
     ];
 
     # Optional: Set default fonts for the system
