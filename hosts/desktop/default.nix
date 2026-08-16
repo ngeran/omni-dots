@@ -26,6 +26,19 @@
   ];
 
   networking.hostName = "nixos-btw";
+
+  # =========================================================================
+  # Boot speed — stop waiting for the network at boot
+  # =========================================================================
+  # `systemd-analyze blame` showed NetworkManager-wait-online.service eating
+  # 14.5 s of the ~18 s userspace boot: it blocks boot completion until EVERY
+  # interface (Wi-Fi + Ethernet) reports "online". Nothing on this machine
+  # needs the network before the desktop appears — the registry container
+  # only LISTENS on :5000, and k3s/ollama are on-demand. This removes the
+  # service from network-online.target's wants, so boot no longer waits on
+  # link state. The network still comes up in the background exactly as
+  # before; NM itself is untouched.
+  systemd.services.NetworkManager-wait-online.wantedBy = lib.mkForce [ ];
   # ===== LASTEST STABLE KERNEL =====
   boot.kernelPackages = pkgs.linuxPackages_latest;
   # Modern AMD P-State EPP driver (Zen 4) — better frequency scaling than acpi-cpufreq.
