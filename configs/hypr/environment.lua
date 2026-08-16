@@ -35,14 +35,18 @@ hl.env("GTK_APPLICATION_PREFER_DARK_THEME", "1")
 -- ── Autostart Daemons ─────────────────────────────────────────────────────────
 hl.on("hyprland.start", function()
   -- 1. Propagate Wayland vars to D-Bus and the systemd user session, then
-  --    start the bar/settings Quickshell instances deterministically once the
-  --    environment is imported. Both are systemd user services (see
-  --    home/quickshell.nix); chaining with && guarantees ordering without
+  --    start the session services deterministically once the environment is
+  --    imported. All three are systemd user services (see home/quickshell.nix
+  --    and home/hypridle.nix); chaining with && guarantees ordering without
   --    racing the import. exec_cmd is async, so this is a single shell chain.
+  --    HYPRLAND_INSTANCE_SIGNATURE is included so services can find the
+  --    compositor's IPC socket under $XDG_RUNTIME_DIR/hypr/<signature>/.
+  --    Starting an already-running unit is a no-op, which also prevents
+  --    duplicate instances across Hyprland restarts.
   hl.exec_cmd(
-    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER"
-      .. " && systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER"
-      .. " && systemctl --user start quickshell-bar quickshell-settings")
+    "dbus-update-activation-environment --systemd WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER"
+      .. " && systemctl --user import-environment WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER"
+      .. " && systemctl --user start quickshell-bar quickshell-settings hypridle")
 
   -- 2. Dark mode: set GTK color-scheme via gsettings
   hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
@@ -51,7 +55,4 @@ hl.on("hyprland.start", function()
 
   -- 3. Wallpaper daemon
   hl.exec_cmd("awww-daemon")
-
-  -- 4. Start Hypridle LAST
-  hl.exec_cmd("sleep 2 && mkdir -p $HOME/.cache/hypr $HOME/.local/state/hypr && cp -n $HOME/.config/hypr/hypridle.conf $HOME/.cache/hypr/hypridle.conf && hypridle -c $HOME/.cache/hypr/hypridle.conf >> $HOME/.local/state/hypr/hypridle.log 2>&1 &")
 end)

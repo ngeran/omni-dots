@@ -12,12 +12,12 @@
   #          hyprlock — installed by `programs.hyprlock.enable` in
   #          hosts/desktop/default.nix (the module also wires its PAM service;
   #          the bare package could never unlock).
+  #          hypridle — owned by home/hypridle.nix (package + supervised
+  #          systemd user unit; started by environment.lua).
   environment.systemPackages = with pkgs; [
     # --- Compositor / desktop shell ---
     ghostty        # primary terminal (Quickshell themes ~/.config/ghostty/config at runtime)
     chromium       # browser
-    hypridle       # idle daemon (STAYS a bare package until its systemd user
-                   #   unit lands in home/hypridle.nix — removed in that batch)
     awww           # wallpaper daemon (Quickshell may drive it; real pkg, v0.12.1)
     grim           # screenshot grabber
     slurp          # area selector

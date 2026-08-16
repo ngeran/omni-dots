@@ -8,6 +8,7 @@
      
     ./apps.nix
     ./quickshell.nix
+    ./hypridle.nix              # ★ idle daemon as a supervised systemd user unit
     ./stylix.nix
     ./notifications.nix
     ./git.nix
