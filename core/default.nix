@@ -92,6 +92,20 @@
   #  USB peripherals; the laptop keeps it for battery life.)
 
   # =========================================================================
+  # Journal reliability — keep crash evidence out of the lost-write window
+  # =========================================================================
+  # journald keeps recent entries in memory and only fsyncs the journal files
+  # every 5 minutes (the SyncIntervalSec default). A HARD freeze or power
+  # loss silently destroys everything written since the last sync — exactly
+  # what happened on 2026-08-17: the machine died in a GPU-induced hard
+  # freeze and the journal just stopped, with none of the final kernel/NVIDIA
+  # error lines that would have named the culprit. Syncing every 15 s bounds
+  # the evidence loss to ~15 s. Cost: one tiny fsync on the NVMe every 15 s.
+  services.journald.extraConfig = ''
+    SyncIntervalSec=15s
+  '';
+
+  # =========================================================================
   # Performance + stability (desktop, always-on-AC)
   # =========================================================================
   # TCP BBR + fq_codel — better throughput + lower latency than the defaults
