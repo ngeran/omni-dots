@@ -90,7 +90,21 @@
   # stays on — that governs sleep/resume, not idle RTD3.
   #
   # Verify after rebuild:  cat /sys/module/nvidia/parameters/NVreg_DynamicPowerManagement
-  # (expect 0x00 / "disabled").
+  # (expect 0x00 / "disabled"). NOTE (driver 595): that sysfs path no longer
+  # exists — the authoritative read is now:  grep DynamicPowerManagement
+  # /proc/driver/nvidia/params  (confirmed "0" on 2026-08-17).
+  #
+  # RECURRENCE 2026-08-17 (~19:30): hard freeze DESPITE the RTD3 disable —
+  # black screen, GPU fans racing to 100%, power-button recovery. Zero kernel
+  # or journal evidence: journald's 5-min sync window lost the final lines
+  # (fixed same day — SyncIntervalSec=15s in core/default.nix) and pstore was
+  # empty (no kernel panic; the GPU locked the whole host first). Symptom set
+  # matches the documented GB203 open-module GSP-firmware-crash class
+  # (open-gpu-kernel-modules issues #1151 / #1111), reported by others across
+  # drivers 580/595/610 AND Windows on some cards. Escalation path if it
+  # recurs: try a different driver branch (nvidiaPackages.beta / production),
+  # and if it persists across drivers, treat the CARD as the suspect
+  # (warranty/RMA), not the driver.
   boot.extraModprobeConfig = ''
     options nvidia "NVreg_DynamicPowerManagement=0x00"
   '';
