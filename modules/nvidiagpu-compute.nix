@@ -94,17 +94,23 @@
   # exists — the authoritative read is now:  grep DynamicPowerManagement
   # /proc/driver/nvidia/params  (confirmed "0" on 2026-08-17).
   #
-  # RECURRENCE 2026-08-17 (~19:30): hard freeze DESPITE the RTD3 disable —
-  # black screen, GPU fans racing to 100%, power-button recovery. Zero kernel
-  # or journal evidence: journald's 5-min sync window lost the final lines
-  # (fixed same day — SyncIntervalSec=15s in core/default.nix) and pstore was
-  # empty (no kernel panic; the GPU locked the whole host first). Symptom set
-  # matches the documented GB203 open-module GSP-firmware-crash class
-  # (open-gpu-kernel-modules issues #1151 / #1111), reported by others across
-  # drivers 580/595/610 AND Windows on some cards. Escalation path if it
-  # recurs: try a different driver branch (nvidiaPackages.beta / production),
-  # and if it persists across drivers, treat the CARD as the suspect
-  # (warranty/RMA), not the driver.
+  # RECURRENCE 2026-08-17 — twice in one day, and the second one was CAUGHT
+  # by the journald SyncIntervalSec=15s hardening (core/default.nix):
+  #     NVRM: Xid (PCI:0000:01:00): 79 ... GPU has fallen off the bus.
+  # Xid 79 = the GPU dropped off the PCIe BUS — a hardware-layer fault
+  # (card / slot / power delivery / link), not a driver setting. Observed
+  # trigger: heavy CPU+IO load (`just test` in a project: nix build + docker
+  # image load/run) while the GPU idled on display duty; both crashes showed
+  # black screen + fans at 100%. Others report the same Xid 79 on RTX 5080s
+  # across driver branches 580/595/610 AND Windows (open-gpu-kernel-modules
+  # #1151) — i.e. not fixable from this config. The BIOS slot setting ("Auto")
+  # was capping the link at PCIe Gen3 x16 despite Gen5 card+board; changed to
+  # x16 (unlocked) on 2026-08-17 — verify with `nvidia-smi -q` GPU Link Info
+  # (Max should be 5; Current drops to Gen1/2 at idle, that's power saving).
+  # Escalation: reproduce the trigger → if Xid 79 recurs, set the slot to
+  # Gen4 (known Xid-79 mitigation, ~1% perf cost) → reseat the card + check
+  # power cables → RMA the card with the logged Xid lines as evidence.
+  # After any crash: journalctl -b -1 -k | grep -iE "xid|nvrm"
   boot.extraModprobeConfig = ''
     options nvidia "NVreg_DynamicPowerManagement=0x00"
   '';
