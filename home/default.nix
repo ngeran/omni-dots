@@ -20,6 +20,7 @@
     ../modules/apps/nixvim/default.nix
     ../modules/apps/video-editing.nix
     ../modules/apps/claude.nix
+    ../modules/apps/opencode.nix    # ★ opencode CLI wired to local ollama (qwen2.5-coder:32b)
   ];
 
   home.username = "nikos";
