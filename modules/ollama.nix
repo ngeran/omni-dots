@@ -99,22 +99,40 @@
   # =========================================================================
   # Storage plumbing for the INLAND models dir
   # =========================================================================
-  # /mnt/INLAND-500GB is owned by nikos — systemd-tmpfiles REFUSES to create
-  # ollama-owned dirs under a non-root-owned parent ("Detected unsafe path
-  # transition": anti-dir-planting guard; the models dir silently never got
-  # created and the unit then died with 226/NAMESPACE because ReadWritePaths
-  # pointed at a missing path). So NO tmpfiles rule here. Instead ExecStartPre
-  # with the "+" prefix runs OUTSIDE the unit's mount namespace as full root —
-  # the documented escape hatch for preparing exactly such paths. Idempotent,
-  # and ordered after the mount by RequiresMountsFor above.
-  # (Threat model note: mkdir/chown through a nikos-planted symlink would
-  # redirect the blob store — irrelevant on this single-admin box, where the
-  # only user is wheel.)
-  systemd.services.ollama.serviceConfig.ExecStartPre = [
-    "+${pkgs.coreutils}/bin/mkdir -p /mnt/INLAND-500GB/ollama/models"
-    "+${pkgs.coreutils}/bin/chown ollama:ollama /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models"
-    "+${pkgs.coreutils}/bin/chmod 0750 /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models"
-  ];
+  # Two traps, both hit in practice while wiring this up:
+  #  1) /mnt/INLAND-500GB is owned by nikos — systemd-tmpfiles REFUSES to
+  #     create ollama-owned dirs under a non-root-owned parent ("Detected
+  #     unsafe path transition": anti-dir-planting guard), so tmpfiles rules
+  #     can't build this chain.
+  #  2) ollama.service names this path in ReadWritePaths, and systemd builds
+  #     (and validates!) the unit's mount namespace BEFORE running ANY of its
+  #     commands — even "+"-prefixed ExecStartPre died with 226/NAMESPACE
+  #     while the path was missing. Nothing inside the unit can create it.
+  # => a SEPARATE sandbox-free oneshot unit. `systemctl start ollama` pulls
+  #    it in via the ollama.service.wants symlink and ordering (before=)
+  #    makes it complete first, so the path exists by the time ollama's
+  #    namespace is validated. Idempotent; self-heals after a disk wipe.
+  #    (mkdir/chown through a nikos-planted symlink would redirect the blob
+  #    store — irrelevant on this single-admin box, where the only user is
+  #    wheel.)
+  systemd.services.ollama-models-dir = {
+    description = "Prepare /mnt/INLAND-500GB/ollama/models for ollama.service";
+    wantedBy = [ "ollama.service" ];
+    before = [ "ollama.service" ];
+    # Don't run (and don't create a shadow dir on the root fs) if INLAND
+    # isn't mounted — same nofail rationale as ollama.service's own gate.
+    unitConfig.RequiresMountsFor = [ "/mnt/INLAND-500GB" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    path = with pkgs; [ coreutils ];
+    script = ''
+      mkdir -p /mnt/INLAND-500GB/ollama/models
+      chown ollama:ollama /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models
+      chmod 0750 /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models
+    '';
+  };
 
   # INLAND mounts with `nofail` (hosts/desktop/default.nix) — if the disk is
   # ever absent, don't let ollama start and write into the empty mountpoint

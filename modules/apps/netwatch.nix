@@ -23,7 +23,9 @@
 # Why a system module: security.wrappers is NIXOS-only (not home-manager).
 
 let
-  netwatchPkg = inputs.netwatch.packages.${pkgs.system}.default;
+  # pkgs.system is the deprecated alias (fires an evaluation warning every
+  # rebuild) — stdenv.hostPlatform.system is the canonical spelling.
+  netwatchPkg = inputs.netwatch.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   # Pull the package in (binary, completions) and cap-wrap the executable so the

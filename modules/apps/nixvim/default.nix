@@ -164,28 +164,33 @@
       # Structural text objects + jumps: `af`/`if` select a whole/inner
       # function, `]f`/`[f` jump between functions, `]c`/`[c` between classes
       # — the treesitter-powered motions LazyVim ships.
+      # NOTE: options live under `settings.*` (snake_case) since the nixvim
+      # rename — the old flat camelCase paths were auto-migrated with
+      # evaluation warnings on every rebuild.
       treesitter-textobjects = {
         enable = true;
-        select = {
-          enable = true;
-          lookahead = true; # jump to the text object if not on it yet
-          keymaps = {
-            "af" = "@function.outer";
-            "if" = "@function.inner";
-            "ac" = "@class.outer";
-            "ic" = "@class.inner";
+        settings = {
+          select = {
+            enable = true;
+            lookahead = true; # jump to the text object if not on it yet
+            keymaps = {
+              "af" = "@function.outer";
+              "if" = "@function.inner";
+              "ac" = "@class.outer";
+              "ic" = "@class.inner";
+            };
           };
-        };
-        move = {
-          enable = true;
-          setJumps = true; # populate the jumplist so C-o/C-i work
-          gotoNextStart = {
-            "]f" = "@function.outer";
-            "]c" = "@class.outer";
-          };
-          gotoPreviousStart = {
-            "[f" = "@function.outer";
-            "[c" = "@class.outer";
+          move = {
+            enable = true;
+            set_jumps = true; # populate the jumplist so C-o/C-i work
+            goto_next_start = {
+              "]f" = "@function.outer";
+              "]c" = "@class.outer";
+            };
+            goto_previous_start = {
+              "[f" = "@function.outer";
+              "[c" = "@class.outer";
+            };
           };
         };
       };
