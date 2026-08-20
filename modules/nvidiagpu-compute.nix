@@ -2,7 +2,8 @@
 # NVIDIA GPU + CUDA compute  (replaces modules/amdgpu-compute.nix)
 # =========================================================================
 # Migrated AMD RX 7600 XT (ROCm) → NVIDIA RTX 5080 Blackwell (CUDA).
-# Mirrors the previous module's 4-part structure: kernel/driver → Ollama → tools.
+# Driver/kernel/tools only — the Ollama service lives in modules/ollama.nix
+# (still CUDA, still on this GPU; split out for model-specific tuning).
 #
 # The 5080 (Blackwell GB203) needs driver >= 570 with OPEN kernel modules —
 # proprietary modules have NO Blackwell support at all (not just "not recommended").
@@ -116,23 +117,7 @@
   '';
 
   # =========================================================================
-  # 3. Ollama — CUDA instead of ROCm
-  # =========================================================================
-  services.ollama = {
-    enable = true;
-    package = pkgs.ollama-cuda;
-  };
-
-  # On-demand: do NOT auto-start ollama at boot (mirrors the k3s pattern in
-  # labs/k8s-telemetry/nix/k3s.nix). The CUDA daemon inits the GPU on startup —
-  # wasted boot time + idle GPU memory on a daily driver when you're not doing
-  # local AI. Start it when you sit down to use it:
-  #     sudo systemctl start ollama      # models load only on first request
-  #     sudo systemctl stop ollama       # frees the VRAM
-  systemd.services.ollama.wantedBy = lib.mkForce [ ];
-
-  # =========================================================================
-  # 4. System tools — NVIDIA/CUDA introspection
+  # 3. System tools — NVIDIA/CUDA introspection
   # =========================================================================
   environment.systemPackages = with pkgs; [
     nvtopPackages.nvidia   # GPU monitor

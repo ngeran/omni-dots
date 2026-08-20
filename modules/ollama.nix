@@ -1,0 +1,116 @@
+# =========================================================================
+# Ollama — local LLM inference (CUDA, RTX 5080)
+# =========================================================================
+# Extracted from modules/nvidiagpu-compute.nix (which keeps only the driver /
+# CUDA-tooling half). Tuned for ONE target workload:
+#     Qwen2.5-Coder-32B (quantized) as a local coding assistant.
+# Model blobs live on /mnt/INLAND-500GB (root SSD stays lean) — see the
+# storage plumbing section at the bottom for why that needs a static user.
+#
+# VRAM budget reality check (RTX 5080 = 16 GB):
+#   qwen2.5-coder:32b           Q4_K_M  ≈ 20 GB weights — the registry default
+#                               tag ("32b" IS instruct + Q4_K_M). Does NOT fully
+#                               fit; Ollama auto-offloads some layers to system
+#                               RAM (fast DDR5 here) and still gives usable
+#                               tokens/s. Best quality-per-bit quantization.
+#   32b-instruct-q3_K_M         ≈ 16 GB — more layers on-GPU (faster), but a
+#                               noticeably weaker quant for CODE (Q3 starts
+#                               breaking indentation/bracket discipline).
+#   If speed ever matters more than 32B quality: qwen2.5-coder:14b (Q4_K_M ≈ 9 GB)
+#   fits ENTIRELY in VRAM and flies.
+# The env vars below are what make a 32B workable on 16 GB — don't drop them.
+# =========================================================================
+{ config, lib, pkgs, ... }:
+
+{
+  services.ollama = {
+    enable = true;
+    package = pkgs.ollama-cuda;   # CUDA build (unfree) — Blackwell sm_120 works on 0.32.x
+
+    # --- Model storage lives on INLAND, not the root SSD -------------------
+    # A 32B quant is ~20 GB of blobs; /var/lib (root nvme) shouldn't carry that.
+    # The module auto-adds this path to the unit's ReadWritePaths.
+    models = "/mnt/INLAND-500GB/ollama/models";
+
+    # --- Static user — REQUIRED for the custom models path ------------------
+    # Upstream runs the daemon as a DynamicUser (transient UID from the
+    # recyclable 61184-65519 range, UMask 0077). That's safe only for paths
+    # systemd manages via StateDirectory= (/var/lib/ollama). Blobs written to
+    # a path OUTSIDE it would be owned by a UID that may belong to a DIFFERENT
+    # unit after the next reboot (explicitly warned about in systemd.exec(5)).
+    # Naming a user makes it static: the module creates `ollama`/`ollama` in
+    # the user db, and per systemd "if a statically allocated user of the
+    # configured name already exists, it is used and no dynamic user/group is
+    # allocated" — stable UID, stable ownership on the INLAND ext4 disk.
+    user = "ollama";
+    group = "ollama";
+
+    # Pulled automatically by `ollama-model-loader.service` the first time
+    # ollama.service starts (~20 GB download; afterwards it's a no-op check).
+    loadModels = [ "qwen2.5-coder:32b" ];
+    # syncModels stays false — we only DECLARATIVELY pull, never auto-delete
+    # models that were `ollama pull`-ed by hand.
+
+    environmentVariables = {
+      # Flash attention: faster long-context attention on CUDA, and REQUIRED
+      # for the KV-cache quantization below to take effect.
+      OLLAMA_FLASH_ATTENTION = "1";
+
+      # 8-bit KV cache: halves KV VRAM vs f16 with negligible quality loss.
+      # For this model KV costs ≈ 128 KB/token → ~2 GB @ 16k context instead
+      # of ~4 GB. This is the single biggest "fits on the card" lever.
+      OLLAMA_KV_CACHE_TYPE = "q8_0";
+
+      # Qwen2.5-Coder natively supports 32k (128k with YaRN). 16k is the
+      # sweet spot: roomy enough for real files in context, while KV stays
+      # ~2 GB so more weight layers stay on-GPU. Raise to 32768 only if you
+      # accept more CPU offload (≈ +2 GB KV).
+      OLLAMA_CONTEXT_LENGTH = "16384";
+
+      # One request slot, one resident model: each parallel slot duplicates
+      # the KV cache, and a second model can never co-fit next to a 32B.
+      OLLAMA_NUM_PARALLEL = "1";
+      OLLAMA_MAX_LOADED_MODELS = "1";
+
+      # Default is 5m — too eager for an on-demand daemon you start
+      # deliberately. Keep the model resident for a working session instead
+      # of re-loading ~20 GB from disk after every coffee break.
+      OLLAMA_KEEP_ALIVE = "1h";
+    };
+  };
+
+  # On-demand: do NOT auto-start ollama at boot (mirrors the k3s pattern in
+  # labs/k8s-telemetry/nix/k3s.nix). The CUDA daemon inits the GPU on startup —
+  # wasted boot time + idle GPU memory on a daily driver when you're not doing
+  # local AI. Start it when you sit down to use it:
+  #     sudo systemctl start ollama      # also pulls/verifies the model (loader unit)
+  #     sudo systemctl stop ollama       # frees the VRAM
+  systemd.services.ollama.wantedBy = lib.mkForce [ ];
+
+  # The upstream module wires ollama-model-loader with
+  #   wantedBy = [ "multi-user.target" "ollama.service" ]  +  bindsTo ollama
+  # and bindsTo PULLS ollama.service into the boot transaction via the
+  # multi-user.target alias — silently re-enabling autostart. Drop the
+  # multi-user alias so the loader fires only when ollama itself is started.
+  # (The loader only runs the `ollama` CLI against 127.0.0.1:11434 — the
+  # SERVER does all blob writes, so it needs no INLAND access of its own.)
+  systemd.services.ollama-model-loader.wantedBy = lib.mkForce [ "ollama.service" ];
+
+  # =========================================================================
+  # Storage plumbing for the INLAND models dir
+  # =========================================================================
+  # The mountpoint's parent is root-owned — the (non-root) ollama user can't
+  # mkdir there. Pre-create the chain with correct ownership; idempotent.
+  systemd.tmpfiles.rules = [
+    "d /mnt/INLAND-500GB/ollama 0750 ollama ollama -"
+    "d /mnt/INLAND-500GB/ollama/models 0750 ollama ollama -"
+  ];
+
+  # INLAND mounts with `nofail` (hosts/desktop/default.nix) — if the disk is
+  # ever absent, don't let ollama start and write into the empty mountpoint
+  # hole on the root fs. RequiresMountsFor derives the mnt-INLAND\x2d500GB
+  # .mount unit from the path and adds Requires= + After= for it: with the
+  # disk missing, `systemctl start ollama` fails cleanly instead.
+  systemd.services.ollama.unitConfig.RequiresMountsFor =
+    [ "/mnt/INLAND-500GB/ollama/models" ];
+}
