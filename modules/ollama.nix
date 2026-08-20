@@ -99,11 +99,21 @@
   # =========================================================================
   # Storage plumbing for the INLAND models dir
   # =========================================================================
-  # The mountpoint's parent is root-owned — the (non-root) ollama user can't
-  # mkdir there. Pre-create the chain with correct ownership; idempotent.
-  systemd.tmpfiles.rules = [
-    "d /mnt/INLAND-500GB/ollama 0750 ollama ollama -"
-    "d /mnt/INLAND-500GB/ollama/models 0750 ollama ollama -"
+  # /mnt/INLAND-500GB is owned by nikos — systemd-tmpfiles REFUSES to create
+  # ollama-owned dirs under a non-root-owned parent ("Detected unsafe path
+  # transition": anti-dir-planting guard; the models dir silently never got
+  # created and the unit then died with 226/NAMESPACE because ReadWritePaths
+  # pointed at a missing path). So NO tmpfiles rule here. Instead ExecStartPre
+  # with the "+" prefix runs OUTSIDE the unit's mount namespace as full root —
+  # the documented escape hatch for preparing exactly such paths. Idempotent,
+  # and ordered after the mount by RequiresMountsFor above.
+  # (Threat model note: mkdir/chown through a nikos-planted symlink would
+  # redirect the blob store — irrelevant on this single-admin box, where the
+  # only user is wheel.)
+  systemd.services.ollama.serviceConfig.ExecStartPre = [
+    "+${pkgs.coreutils}/bin/mkdir -p /mnt/INLAND-500GB/ollama/models"
+    "+${pkgs.coreutils}/bin/chown ollama:ollama /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models"
+    "+${pkgs.coreutils}/bin/chmod 0750 /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models"
   ];
 
   # INLAND mounts with `nofail` (hosts/desktop/default.nix) — if the disk is
