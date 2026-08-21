@@ -47,17 +47,26 @@ in
         npm = "@ai-sdk/openai-compatible";
         name = "Ollama (local)";
         options.baseURL = ollamaBase;
-        models."${model}" = {
-          name = "Qwen2.5 Coder 32B (local)";
-          # Qwen2.5-Coder-instruct does native tool calls — required for
-          # opencode's agentic edits/shell tools.
-          tool_call = true;
-          # Keep the agent honest about the server-side window
-          # (OLLAMA_CONTEXT_LENGTH=16384 in modules/ollama.nix; Qwen2.5
-          # generates up to 8k tokens per response).
-          limit = {
-            context = 16384;
-            output = 8192;
+        # BOTH local coders, so /models can switch between them:
+        #   32b — deep work (partially CPU-offloaded, slow agent rounds)
+        #   14b — mechanical edits (fits fully in VRAM, ~7x faster rounds)
+        models = {
+          "qwen2.5-coder:32b" = {
+            name = "Qwen2.5 Coder 32B (local, deep)";
+            # Qwen2.5-Coder-instruct does native tool calls — required for
+            # opencode's agentic edits/shell tools.
+            tool_call = true;
+            # Keep the agent honest about the server-side window
+            # (OLLAMA_CONTEXT_LENGTH=16384 in modules/ollama.nix; Qwen2.5
+            # generates up to 8k tokens per response).
+            limit.context = 16384;
+            limit.output = 8192;
+          };
+          "qwen2.5-coder:14b" = {
+            name = "Qwen2.5 Coder 14B (local, fast)";
+            tool_call = true;
+            limit.context = 16384;
+            limit.output = 8192;
           };
         };
       };
