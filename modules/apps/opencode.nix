@@ -58,18 +58,18 @@ in
         # BOTH local coders, so /models can switch between them:
         #   32b — deep work (partially CPU-offloaded, slow agent rounds)
         #   14b — mechanical edits (fits fully in VRAM, ~7x faster rounds)
-        # temperature: agent loops with local models degenerate into
-        # deterministic tool-call replays (measured: identical request
-        # durations, ~9k tokens of opencode harness context). Decoding
-        # slightly above greedy lets the model escape its own fixed point.
-        # This is the opencode+Ollama community's documented mitigation.
+        # NOTE: no `temperature` here — opencode 1.15 validates per-model
+        # temperature as BOOLEAN (a newer schema allows numbers, the
+        # installed one doesn't — deploying 0.5 broke opencode startup with
+        # SchemaError). The anti-loop decoding params (temperature +
+        # repeat_penalty) live server-side in the 14b-agent Modelfile
+        # variant, see ollama-model-variants.service in modules/ollama.nix.
         models = {
           "qwen2.5-coder:32b" = {
             name = "Qwen2.5 Coder 32B (local, deep)";
             # Qwen2.5-Coder-instruct does native tool calls — required for
             # opencode's agentic edits/shell tools.
             tool_call = true;
-            temperature = 0.5;
             # Keep the agent honest about the server-side window
             # (OLLAMA_CONTEXT_LENGTH in modules/ollama.nix; Qwen2.5
             # generates up to 8k tokens per response).
@@ -79,17 +79,16 @@ in
           "qwen2.5-coder:14b" = {
             name = "Qwen2.5 Coder 14B (local, fast)";
             tool_call = true;
-            temperature = 0.5;
             limit.context = 32768;
             limit.output = 8192;
           };
-          # Anti-loop variant: same weights + repeat_penalty 1.15 baked in
-          # via Modelfile (ollama-model-variants.service in modules/ollama.nix
-          # keeps it existing). Use this one for agent work, not the base 14b.
+          # Anti-loop variant: same weights + temperature 0.6 +
+          # repeat_penalty 1.15 baked in via Modelfile
+          # (ollama-model-variants.service in modules/ollama.nix keeps it
+          # existing). Use this one for agent work, not the base 14b.
           "qwen2.5-coder:14b-agent" = {
             name = "Qwen2.5 Coder 14B (local, anti-loop)";
             tool_call = true;
-            temperature = 0.5;
             limit.context = 32768;
             limit.output = 8192;
           };

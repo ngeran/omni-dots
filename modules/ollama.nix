@@ -110,14 +110,14 @@
 
   # Parameter-baked model variant for agent harnesses (opencode). The
   # community-documented anti-loop mitigation for opencode+Ollama is
-  # temperature + context + repeat_penalty; the first two live in
-  # modules/apps/opencode.nix and OLLAMA_CONTEXT_LENGTH above, but
-  # repeat_penalty is NOT reachable through opencode's config schema or
-  # Ollama's OpenAI endpoint — a Modelfile re-bake is the only door. The
-  # variant shares blobs with the base model (zero disk cost, instant).
-  # `ollama create` over HTTP is idempotent, so this self-heals after an
-  # INLAND wipe or on a fresh machine. Races the first-ever base pull →
-  # restart-on-failure covers it.
+  # temperature + context + repeat_penalty. Context lives in
+  # OLLAMA_CONTEXT_LENGTH above; temperature and repeat_penalty are NOT
+  # reachable through opencode's config schema (1.15 validates per-model
+  # temperature as boolean) nor Ollama's OpenAI endpoint — a Modelfile
+  # re-bake is the only door. The variant shares blobs with the base model
+  # (zero disk cost, instant). `ollama create` over HTTP is idempotent, so
+  # this self-heals after an INLAND wipe or on a fresh machine. Races the
+  # first-ever base pull → restart-on-failure covers it.
   systemd.services.ollama-model-variants = {
     description = "Create decoding-parameter model variants (anti-loop)";
     wantedBy = [ "ollama.service" ];
@@ -130,7 +130,7 @@
     };
     path = [ pkgs.ollama-cuda ];
     script = ''
-      printf 'FROM qwen2.5-coder:14b\nPARAMETER repeat_penalty 1.15\n' > /tmp/qwen-14b-agent.Modelfile
+      printf 'FROM qwen2.5-coder:14b\nPARAMETER temperature 0.6\nPARAMETER repeat_penalty 1.15\n' > /tmp/qwen-14b-agent.Modelfile
       ollama create qwen2.5-coder:14b-agent -f /tmp/qwen-14b-agent.Modelfile
     '';
   };
