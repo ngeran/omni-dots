@@ -35,11 +35,19 @@ in
       # Nix owns the binary — never let it self-update underneath the profile.
       autoupdate = false;
 
-      # Default model for the agent AND the small background tasks (titles,
-      # summaries). Same model on purpose: MAX_LOADED_MODELS=1 on the server,
-      # so a second "small" model would just evict the big one.
+      # Default model for the agent: the local 32B (switch per-session with
+      # /models — 14B for mechanics, zai-coding-plan/glm-5.x for judgment).
       model = "ollama/${model}";
-      small_model = "ollama/${model}";
+
+      # Background housekeeping (titles, anchored session summaries) goes to
+      # a cheap CLOUD model on purpose: opencode runs a summarizer subagent
+      # after every turn, and on a local model that meta-task is slow AND
+      # flaky (observed: the 14B re-summarizing in circles after the real
+      # answer already landed — turns look "hung"). glm-5-turbo does it in
+      # ~1s on the coding plan. NOTE: this means even local-model sessions
+      # send a derived summary to Z.ai — fine here (cloud is already in the
+      # ladder), flip to an ollama model if a session must stay fully local.
+      small_model = "zai-coding-plan/glm-5-turbo";
 
       provider.ollama = {
         # OpenAI-compatible provider shim from the AI SDK — the documented
