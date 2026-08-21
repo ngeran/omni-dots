@@ -68,11 +68,13 @@
       # of ~4 GB. This is the single biggest "fits on the card" lever.
       OLLAMA_KV_CACHE_TYPE = "q8_0";
 
-      # Qwen2.5-Coder natively supports 32k (128k with YaRN). 16k is the
-      # sweet spot: roomy enough for real files in context, while KV stays
-      # ~2 GB so more weight layers stay on-GPU. Raise to 32768 only if you
-      # accept more CPU offload (≈ +2 GB KV).
-      OLLAMA_CONTEXT_LENGTH = "16384";
+      # Qwen2.5-Coder natively supports 32k (128k with YaRN). 32k because
+      # agent harnesses (opencode) send ~9k tokens of system prompt + tool
+      # schemas BEFORE any work — at 16k the conversation window filled
+      # within a few tool results and local models looped (the documented
+      # opencode+Ollama failure mode). KV at q8_0 ≈ 2→4 GB; the 14b stays
+      # fully in VRAM (10 + 3.2 GB), the 32b spills a few more layers to CPU.
+      OLLAMA_CONTEXT_LENGTH = "32768";
 
       # One request slot: each parallel slot duplicates the KV cache.
       OLLAMA_NUM_PARALLEL = "1";

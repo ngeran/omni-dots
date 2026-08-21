@@ -58,22 +58,29 @@ in
         # BOTH local coders, so /models can switch between them:
         #   32b — deep work (partially CPU-offloaded, slow agent rounds)
         #   14b — mechanical edits (fits fully in VRAM, ~7x faster rounds)
+        # temperature: agent loops with local models degenerate into
+        # deterministic tool-call replays (measured: identical request
+        # durations, ~9k tokens of opencode harness context). Decoding
+        # slightly above greedy lets the model escape its own fixed point.
+        # This is the opencode+Ollama community's documented mitigation.
         models = {
           "qwen2.5-coder:32b" = {
             name = "Qwen2.5 Coder 32B (local, deep)";
             # Qwen2.5-Coder-instruct does native tool calls — required for
             # opencode's agentic edits/shell tools.
             tool_call = true;
+            temperature = 0.5;
             # Keep the agent honest about the server-side window
-            # (OLLAMA_CONTEXT_LENGTH=16384 in modules/ollama.nix; Qwen2.5
+            # (OLLAMA_CONTEXT_LENGTH in modules/ollama.nix; Qwen2.5
             # generates up to 8k tokens per response).
-            limit.context = 16384;
+            limit.context = 32768;
             limit.output = 8192;
           };
           "qwen2.5-coder:14b" = {
             name = "Qwen2.5 Coder 14B (local, fast)";
             tool_call = true;
-            limit.context = 16384;
+            temperature = 0.5;
+            limit.context = 32768;
             limit.output = 8192;
           };
         };
