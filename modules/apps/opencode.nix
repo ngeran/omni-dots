@@ -12,7 +12,6 @@ let
   # binds 127.0.0.1:11434 only, and on this box `localhost` may resolve to
   # ::1 first, which would refuse the connection.
   ollamaBase = "http://127.0.0.1:11434/v1";
-  model = "qwen2.5-coder:32b";
 in
 {
   config = lib.mkIf isSupported {
@@ -35,9 +34,13 @@ in
       # Nix owns the binary — never let it self-update underneath the profile.
       autoupdate = false;
 
-      # Default model for the agent: the local 32B (switch per-session with
-      # /models — 14B for mechanics, zai-coding-plan/glm-5.x for judgment).
-      model = "ollama/${model}";
+      # Default agent model: the anti-loop 14B variant. The qwen2.5-CODER
+      # models (14b/32b) are deliberately NOT declared here — they cannot
+      # emit structured tool_calls through this Ollama build (probed
+      # 2026-08-21: bare JSON as text) and will narrate tool calls forever
+      # instead of executing them. Base qwen2.5:14b tool-calls correctly.
+      # Judgment-heavy work: switch per-session to zai-coding-plan/glm-5.x.
+      model = "ollama/qwen2.5:14b-agent";
 
       # Background housekeeping (titles, anchored session summaries) goes to
       # a cheap CLOUD model on purpose: opencode runs a summarizer subagent
@@ -64,20 +67,12 @@ in
         # SchemaError). The anti-loop decoding params (temperature +
         # repeat_penalty) live server-side in the 14b-agent Modelfile
         # variant, see ollama-model-variants.service in modules/ollama.nix.
+        # Only tool-CAPABLE models declared (see the coder caveat above the
+        # default `model` setting) — opencode agents are useless without
+        # structured tool_calls.
         models = {
-          "qwen2.5-coder:32b" = {
-            name = "Qwen2.5 Coder 32B (local, deep)";
-            # Qwen2.5-Coder-instruct does native tool calls — required for
-            # opencode's agentic edits/shell tools.
-            tool_call = true;
-            # Keep the agent honest about the server-side window
-            # (OLLAMA_CONTEXT_LENGTH in modules/ollama.nix; Qwen2.5
-            # generates up to 8k tokens per response).
-            limit.context = 32768;
-            limit.output = 8192;
-          };
-          "qwen2.5-coder:14b" = {
-            name = "Qwen2.5 Coder 14B (local, fast)";
+          "qwen2.5:14b" = {
+            name = "Qwen2.5 14B (local, base)";
             tool_call = true;
             limit.context = 32768;
             limit.output = 8192;
@@ -85,9 +80,9 @@ in
           # Anti-loop variant: same weights + temperature 0.6 +
           # repeat_penalty 1.15 baked in via Modelfile
           # (ollama-model-variants.service in modules/ollama.nix keeps it
-          # existing). Use this one for agent work, not the base 14b.
-          "qwen2.5-coder:14b-agent" = {
-            name = "Qwen2.5 Coder 14B (local, anti-loop)";
+          # existing; probed: structured tool_calls survive the params).
+          "qwen2.5:14b-agent" = {
+            name = "Qwen2.5 14B (local, anti-loop agent)";
             tool_call = true;
             limit.context = 32768;
             limit.output = 8192;

@@ -47,12 +47,20 @@
 
     # Pulled automatically by `ollama-model-loader.service` the first time
     # ollama.service starts (~20 GB download; afterwards it's a no-op check).
-    #   • qwen2.5-coder:32b — the main model (agent/deep work)
+    #   • qwen2.5-coder:32b — deep codegen CHAT model (Open WebUI). NOTE:
+    #     the qwen2.5-CODER variants cannot emit structured tool_calls
+    #     through this Ollama build (probed 2026-08-21: bare JSON as text,
+    #     both 14b and 32b, any temperature/prompt) — they must NOT be used
+    #     as opencode agent models; every "agent loop" that day was the
+    #     model narrating tool calls that never executed.
+    #   • qwen2.5:14b — base Qwen, proven structured tool-caller = the
+    #     local AGENT model (see the -agent variant unit below).
     #   • nomic-embed-text — 274 MB embedding model for Open WebUI RAG
     #     (RAG_EMBEDDING_ENGINE=ollama in modules/open-webui.nix). Runs
     #     mostly on CPU-class compute; ~0.5 GB VRAM while resident.
     loadModels = [
       "qwen2.5-coder:32b"
+      "qwen2.5:14b"
       "nomic-embed-text"
     ];
     # syncModels stays false — we only DECLARATIVELY pull, never auto-delete
@@ -130,8 +138,8 @@
     };
     path = [ pkgs.ollama-cuda ];
     script = ''
-      printf 'FROM qwen2.5-coder:14b\nPARAMETER temperature 0.6\nPARAMETER repeat_penalty 1.15\n' > /tmp/qwen-14b-agent.Modelfile
-      ollama create qwen2.5-coder:14b-agent -f /tmp/qwen-14b-agent.Modelfile
+      printf 'FROM qwen2.5:14b\nPARAMETER temperature 0.6\nPARAMETER repeat_penalty 1.15\n' > /tmp/qwen-agent.Modelfile
+      ollama create qwen2.5:14b-agent -f /tmp/qwen-agent.Modelfile
     '';
   };
 
