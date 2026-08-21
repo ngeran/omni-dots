@@ -108,6 +108,33 @@
   # SERVER does all blob writes, so it needs no INLAND access of its own.)
   systemd.services.ollama-model-loader.wantedBy = lib.mkForce [ "ollama.service" ];
 
+  # Parameter-baked model variant for agent harnesses (opencode). The
+  # community-documented anti-loop mitigation for opencode+Ollama is
+  # temperature + context + repeat_penalty; the first two live in
+  # modules/apps/opencode.nix and OLLAMA_CONTEXT_LENGTH above, but
+  # repeat_penalty is NOT reachable through opencode's config schema or
+  # Ollama's OpenAI endpoint — a Modelfile re-bake is the only door. The
+  # variant shares blobs with the base model (zero disk cost, instant).
+  # `ollama create` over HTTP is idempotent, so this self-heals after an
+  # INLAND wipe or on a fresh machine. Races the first-ever base pull →
+  # restart-on-failure covers it.
+  systemd.services.ollama-model-variants = {
+    description = "Create decoding-parameter model variants (anti-loop)";
+    wantedBy = [ "ollama.service" ];
+    after = [ "ollama.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      Restart = "on-failure";
+      RestartSec = "30s";
+    };
+    path = [ pkgs.ollama-cuda ];
+    script = ''
+      printf 'FROM qwen2.5-coder:14b\nPARAMETER repeat_penalty 1.15\n' > /tmp/qwen-14b-agent.Modelfile
+      ollama create qwen2.5-coder:14b-agent -f /tmp/qwen-14b-agent.Modelfile
+    '';
+  };
+
   # =========================================================================
   # Storage plumbing for the INLAND models dir
   # =========================================================================

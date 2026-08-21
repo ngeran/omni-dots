@@ -41,8 +41,14 @@
   # link state. The network still comes up in the background exactly as
   # before; NM itself is untouched.
   systemd.services.NetworkManager-wait-online.wantedBy = lib.mkForce [ ];
-  # ===== LASTEST STABLE KERNEL =====
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # ===== KERNEL — 7.1 series, NOT latest =====
+  # 2026-08-21: `nix flake update` bumped linuxPackages_latest to 7.2, which
+  # the NVIDIA open module (595.71.05) does not compile against yet
+  # (os-interface.c missing `#include <string.h>` under 7.2's tightened
+  # headers). nvidiaPackages.beta is OLDER (595.45), so pinning the kernel
+  # is the only fix. Revisit after a driver release builds against 7.2:
+  # flip back to pkgs.linuxPackages_latest and dry-activate first.
+  boot.kernelPackages = pkgs.linuxPackages_7_1;
   # Modern AMD P-State EPP driver (Zen 4) — better frequency scaling than acpi-cpufreq.
   # Concatenated with core's + NVIDIA's kernelParams.
   boot.kernelParams = [ "amd_pstate=active" ];

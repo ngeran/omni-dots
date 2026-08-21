@@ -83,6 +83,16 @@ in
             limit.context = 32768;
             limit.output = 8192;
           };
+          # Anti-loop variant: same weights + repeat_penalty 1.15 baked in
+          # via Modelfile (ollama-model-variants.service in modules/ollama.nix
+          # keeps it existing). Use this one for agent work, not the base 14b.
+          "qwen2.5-coder:14b-agent" = {
+            name = "Qwen2.5 Coder 14B (local, anti-loop)";
+            tool_call = true;
+            temperature = 0.5;
+            limit.context = 32768;
+            limit.output = 8192;
+          };
         };
       };
     };
