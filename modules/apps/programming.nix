@@ -40,4 +40,15 @@
     # file). See labs/k8s-telemetry/CHEATSHEET.md.
     KUBECONFIG = "$HOME/.kube/config";
   };
+
+  # Context7 (docs MCP, modules/apps/opencode.nix) raises its free-tier rate
+  # limits with an API key. The MCP server reads CONTEXT7_API_KEY from its
+  # inherited environment — and since sessionVariables values are baked into
+  # the world-readable store, the KEY ITSELF must never go there: it lives in
+  # ~/.config/secrets/context7_key (same convention as zai_key) and is read
+  # at shell startup. opencode → npx → context7 all inherit it.
+  programs.bash.initExtra = ''
+    [ -f "$HOME/.config/secrets/context7_key" ] && \
+      export CONTEXT7_API_KEY="$(cat "$HOME/.config/secrets/context7_key")"
+  '';
 }
