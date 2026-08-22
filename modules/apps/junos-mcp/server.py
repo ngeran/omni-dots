@@ -22,7 +22,11 @@ import os
 import pathlib
 import re
 
-from fastmcp import FastMCP
+# Official MCP SDK's FastMCP (not the `fastmcp` package): nixpkgs' pydantic
+# 2.12 breaks fastmcp 3.2.3's tools/call dispatch (JSONRPCMessage validation
+# errors); the SDK and pydantic are pinned together in nixpkgs, so they
+# always match.
+from mcp.server.fastmcp import FastMCP
 from jnpr.junos import Device
 from jnpr.junos.exception import ConnectError
 
@@ -106,7 +110,7 @@ def _text(obj) -> str:
 mcp = FastMCP("junos")
 
 
-@mcp.tool
+@mcp.tool()
 def list_routers() -> str:
     """List the inventory (name, host:port). Call this first to get names."""
     inv = _inventory()
@@ -120,19 +124,19 @@ def list_routers() -> str:
     )
 
 
-@mcp.tool
+@mcp.tool()
 def get_facts(router: str) -> str:
     """Device identity + software (equivalent to: show version)."""
     return _rpc(router, lambda dev: _text(dev.rpc.get_software_information()))
 
 
-@mcp.tool
+@mcp.tool()
 def get_bgp_summary(router: str) -> str:
     """BGP neighbor state (equivalent to: show bgp summary)."""
     return _rpc(router, lambda dev: _text(dev.rpc.get_bgp_summary_information()))
 
 
-@mcp.tool
+@mcp.tool()
 def get_interfaces_terse(router: str) -> str:
     """Interface table (equivalent to: show interfaces terse)."""
     return _rpc(
@@ -141,7 +145,7 @@ def get_interfaces_terse(router: str) -> str:
     )
 
 
-@mcp.tool
+@mcp.tool()
 def get_config(router: str, fmt: str = "set") -> str:
     """Running configuration (equivalent to: show configuration | display set).
 
@@ -158,7 +162,7 @@ def get_config(router: str, fmt: str = "set") -> str:
     return _rpc(router, call)
 
 
-@mcp.tool
+@mcp.tool()
 def run_op(router: str, command: str) -> str:
     """Run a READ-ONLY operational command (must start with `show` or `op`).
 

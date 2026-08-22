@@ -44,7 +44,7 @@ let
   };
 
   env = pkgs.python3.withPackages (p: [
-    p.fastmcp
+    p.mcp # official MCP SDK (includes FastMCP); see server.py import note
     pyez
   ]);
 
