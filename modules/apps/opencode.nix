@@ -15,8 +15,13 @@ let
 in
 {
   config = lib.mkIf isSupported {
-    # 1. Install the CLI (nixpkgs — pinned with the rest of the system).
-    home.packages = [ pkgs.opencode ];
+    # 1. Install the CLI (nixpkgs — pinned with the rest of the system),
+    #    plus node — the MCP servers below are npm-distributed and launch
+    #    through npx by absolute store path (no PATH dependence).
+    home.packages = [
+      pkgs.opencode
+      pkgs.nodejs
+    ];
 
     # 2. Shell alias, mirroring `c`/`cc` for claude.
     home.shellAliases = {
@@ -88,6 +93,28 @@ in
             limit.output = 8192;
           };
         };
+
+      # ── Free-tier MCP servers ─────────────────────────────────────────
+      # (local = opencode spawns the command; first call npx-downloads the
+      # package into ~/.npm — a few seconds once, cached after)
+      #
+      # context7: current library docs (FastAPI, Tailwind, PyEZ…) injected
+      # into prompts — attacks the stale-training-data hallucinations that
+      # small local models are worst at. Keyless on the free tier
+      # (rate-limited; set an API key via `environment` if ever needed).
+      mcp.context7 = {
+        type = "local";
+        command = [ "${pkgs.nodejs}/bin/npx" "-y" "@upstash/context7-mcp" ];
+        enabled = true;
+      };
+      # sequential-thinking: structured plan-then-act scaffold — reported
+      # to help small models commit to an action sequence instead of
+      # orbiting. Official reference server, no config.
+      mcp.sequential-thinking = {
+        type = "local";
+        command = [ "${pkgs.nodejs}/bin/npx" "-y" "@modelcontextprotocol/server-sequential-thinking" ];
+        enabled = true;
+      };
       };
     };
   };
