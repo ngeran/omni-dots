@@ -20,7 +20,8 @@
     ../modules/apps/nixvim/default.nix
     ../modules/apps/video-editing.nix
     ../modules/apps/claude.nix
-    ../modules/apps/opencode.nix    # ★ opencode CLI wired to local ollama (qwen2.5-coder:32b)
+    ../modules/apps/opencode.nix    # ★ opencode CLI — model ladder + free MCP servers
+    ../modules/apps/junos-mcp       # ★ read-only Junos MCP server (FastMCP + PyEZ)
   ];
 
   home.username = "nikos";

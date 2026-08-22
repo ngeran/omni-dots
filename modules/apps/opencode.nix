@@ -115,6 +115,15 @@ in
         command = [ "${pkgs.nodejs}/bin/npx" "-y" "@modelcontextprotocol/server-sequential-thinking" ];
         enabled = true;
       };
+      # junos: read-only live lab state (show bgp summary, interfaces,
+      # config, allowlisted ops) from modules/apps/junos-mcp. Name-launched —
+      # resolves via the HM profile PATH (same shell that launched opencode).
+      # Inventory: ~/.config/junos-mcp/routers.json · creds: ~/.config/secrets/junos.env
+      mcp.junos = {
+        type = "local";
+        command = [ "junos-mcp" ];
+        enabled = true;
+      };
       };
     };
   };
