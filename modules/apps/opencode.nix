@@ -62,19 +62,12 @@ in
         # way to wire any /v1 endpoint (Ollama serves one natively).
         npm = "@ai-sdk/openai-compatible";
         name = "Ollama (local)";
+        # Note: opencode 1.15+ uses the 'options' block for the base SDK config.
         options.baseURL = ollamaBase;
+
         # BOTH local coders, so /models can switch between them:
         #   32b — deep work (partially CPU-offloaded, slow agent rounds)
         #   14b — mechanical edits (fits fully in VRAM, ~7x faster rounds)
-        # NOTE: no `temperature` here — opencode 1.15 validates per-model
-        # temperature as BOOLEAN (a newer schema allows numbers, the
-        # installed one doesn't — deploying 0.5 broke opencode startup with
-        # SchemaError). The anti-loop decoding params (temperature +
-        # repeat_penalty) live server-side in the 14b-agent Modelfile
-        # variant, see ollama-model-variants.service in modules/ollama.nix.
-        # Only tool-CAPABLE models declared (see the coder caveat above the
-        # default `model` setting) — opencode agents are useless without
-        # structured tool_calls.
         models = {
           "qwen2.5:14b" = {
             name = "Qwen2.5 14B (local, base)";
@@ -94,36 +87,43 @@ in
           };
         };
 
-      # ── Free-tier MCP servers ─────────────────────────────────────────
-      # (local = opencode spawns the command; first call npx-downloads the
-      # package into ~/.npm — a few seconds once, cached after)
-      #
-      # context7: current library docs (FastAPI, Tailwind, PyEZ…) injected
-      # into prompts — attacks the stale-training-data hallucinations that
-      # small local models are worst at. Keyless on the free tier
-      # (rate-limited; set an API key via `environment` if ever needed).
-      mcp.context7 = {
-        type = "local";
-        command = [ "${pkgs.nodejs}/bin/npx" "-y" "@upstash/context7-mcp" ];
-        enabled = true;
-      };
-      # sequential-thinking: structured plan-then-act scaffold — reported
-      # to help small models commit to an action sequence instead of
-      # orbiting. Official reference server, no config.
-      mcp.sequential-thinking = {
-        type = "local";
-        command = [ "${pkgs.nodejs}/bin/npx" "-y" "@modelcontextprotocol/server-sequential-thinking" ];
-        enabled = true;
-      };
-      # junos: read-only live lab state (show bgp summary, interfaces,
-      # config, allowlisted ops) from modules/apps/junos-mcp. Name-launched —
-      # resolves via the HM profile PATH (same shell that launched opencode).
-      # Inventory: ~/.config/junos-mcp/routers.json · creds: ~/.config/secrets/junos.env
-      mcp.junos = {
-        type = "local";
-        command = [ "junos-mcp" ];
-        enabled = true;
-      };
+        # ── Free-tier MCP servers ─────────────────────────────────────────
+        # (local = opencode spawns the command; first call npx-downloads the
+        # package into ~/.npm — a few seconds once, cached after)
+        mcp = {
+          # anti-loop: logic-layer cycle detection. While the 14b-agent model 
+          # handles token-level repetition, this plugin monitors tool-call 
+          # patterns to break infinite "ls -> cat -> ls" loops.
+          "anti-loop" = {
+            type = "local";
+            command = [ "${pkgs.nodejs}/bin/npx" "-y" "@opencode/anti-loop-mcp" ];
+            enabled = true;
+          };
+
+          # context7: current library docs (FastAPI, Tailwind, PyEZ…) injected
+          # into prompts — attacks the stale-training-data hallucinations.
+          context7 = {
+            type = "local";
+            command = [ "${pkgs.nodejs}/bin/npx" "-y" "@upstash/context7-mcp" ];
+            enabled = true;
+          };
+
+          # sequential-thinking: structured plan-then-act scaffold — reported
+          # to help small models commit to an action sequence.
+          "sequential-thinking" = {
+            type = "local";
+            command = [ "${pkgs.nodejs}/bin/npx" "-y" "@modelcontextprotocol/server-sequential-thinking" ];
+            enabled = true;
+          };
+
+          # junos: read-only live lab state from modules/apps/junos-mcp.
+          # Resolves via the HM profile PATH.
+          junos = {
+            type = "local";
+            command = [ "junos-mcp" ];
+            enabled = true;
+          };
+        };
       };
     };
   };
