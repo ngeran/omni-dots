@@ -63,7 +63,7 @@ hl.config({
 
   -- ── Input ─────────────────────────────────────────────────────────────────
   input = {
-    kb_layout    = "us",
+    kb_layout    = "us,gr",
     follow_mouse = 1,
     sensitivity  = 0, 
     touchpad     = {

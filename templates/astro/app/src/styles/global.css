@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/* Tailwind v4: theme tokens live IN CSS (no tailwind.config.js). Example:
+@theme {
+  --color-accent: oklch(0.7 0.15 197);
+  --font-display: "JetBrains Mono", monospace;
+}
+→ generates utilities like text-accent / font-display automatically. */

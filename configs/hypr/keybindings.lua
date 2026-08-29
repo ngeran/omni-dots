@@ -20,6 +20,7 @@ hl.bind(mod .. " + P", hl.dsp.exec_cmd("quickshell ipc -c settings call powerMen
 hl.bind(modShift .. " + T", hl.dsp.exec_cmd("quickshell ipc -c settings call SettingsWindow openControlNetwork"))
 hl.bind(mod .. " + A", hl.dsp.exec_cmd("quickshell ipc -c settings call SettingsWindow toggle"))
 hl.bind(mod .. " + T", hl.dsp.exec_cmd("quickshell ipc -c bar call logs toggle"))
+hl.bind(modShift .. " + SPACE", hl.dsp.exec_cmd("quickshell ipc -c bar call keyboard next"))
 
 -- --- Help & Analytics --------------------------------------------------------
 hl.bind(mod .. " + K", hl.dsp.exec_cmd("quickshell ipc -c bar call keybinds toggle"))

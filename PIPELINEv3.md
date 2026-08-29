@@ -24,6 +24,7 @@ deploy it to the local k3s cluster, and drive the pods.
 3. [Create a NEW project](#3-create-a-new-project)
    - [3.1 Python (FastAPI or script, uv2nix)](#31-new-python-project-fastapi-or-script-uv2nix)
    - [3.2 Hugo](#32-new-hugo-project)
+   - [3.4 Astro + Tailwind](#34-new-astro--tailwind-project)
      - [Tailwind CSS v4 custom theme](#321-custom-theme-with-tailwind-css-v4)
    - [3.3 React + Tailwind](#33-new-react--tailwind-project)
 4. [Migrate an EXISTING project](#4-migrate-an-existing-project)
@@ -68,7 +69,7 @@ Each project is a directory containing a **`flake.nix`** that declares two thing
 |---|---|
 | `devShells.default` | the dev tools — auto-loaded by `direnv` when you `cd` in |
 | `packages.image` | a **reproducible OCI image** built by Nix (`dockerTools.buildImage`) — **no Dockerfile** |
-| `packages.site` | (hugo/react) the built **static site** itself — what Cloudflare Pages uploads |
+| `packages.site` | (hugo/react/astro) the built **static site** itself — what Cloudflare Pages uploads |
 
 `just` drives the loop between them:
 
@@ -78,7 +79,7 @@ just push    →   skopeo copy …          (pushes to localhost:5000, NO docker
 just deploy  →   kubectl apply + rollout (k3s pulls the new image)
 ```
 
-For a **public URL** instead of the local cluster, the static stacks (hugo/react)
+For a **public URL** instead of the local cluster, the static stacks (hugo/react/astro)
 also ship `just cf` — it builds `packages.site` and uploads it to **Cloudflare
 Pages** (no Dockerfile, no docker, no Git-integration build). See [§3.2](#32-new-hugo-project)
 / [§3.3](#33-new-react--tailwind-project).
@@ -424,6 +425,54 @@ whenever `package.json`/lockfile changes — it recomputes and rewrites the hash
 
   Rule of thumb: **file-based data → k3s; static public URL → Cloudflare Pages
   (`just cf`) or Vercel; full-stack public URL → Vercel + a DB.**
+
+
+### 3.4 New Astro + Tailwind project
+
+Content-driven sites (marketing, docs, blogs) where React is heavier than
+needed — islands of interactivity on a file-per-route static build. Same dual
+deploy as Hugo/React: k3s nginx image locally, **GitHub → Cloudflare Pages**
+publicly (`just cf` direct-uploads the same Nix-built bytes — the repo pushes
+to GitHub as usual; Cloudflare's Git-integration builder is deliberately NOT
+used, so there's one build story, not two that drift).
+
+```bash
+mkdir ~/mysite && cd ~/mysite && git init
+nix flake init -t ~/.omni-nix#astro
+git add -A && direnv allow
+```
+
+You get `app/` with `src/pages/index.astro`, Tailwind v4 wired as a Vite
+plugin, and a **real `npmDepsHash` matching the committed lock** — `just
+build` works immediately.
+
+```bash
+just serve        # astro dev → http://localhost:4321 (HMR)
+just build && just push && just deploy    # k3s (nginx serving dist/ on :8080)
+just cf                                 # Cloudflare Pages → <name>.pages.dev
+```
+
+**Tailwind v4 differences** (unlearn the v3 habits): no `tailwind.config.js`,
+no `postcss.config.js` — the plugin is declared in `app/astro.config.mjs`,
+global CSS starts with `@import "tailwindcss";`, and theme tokens live in CSS
+(`@theme { --color-accent: … }`) generating utilities automatically.
+
+**Routing difference from React:** Astro static output is **file-per-route**
+(`dist/about/index.html`), not an SPA — nginx falls back to `=404` (real 404s,
+like Cloudflare Pages by default), NOT `/index.html`. Only add
+`app/public/_redirects` if you switch to a client-router SPA or a server
+adapter (a server adapter also makes nginx the wrong runtime — revisit then).
+
+**Deps changes** (the one recurring chore, same as React):
+
+```bash
+cd app && npm install          # refresh package-lock.json
+cd .. && just relock           # recompute npmDepsHash into flake.nix
+just build
+```
+
+⚠️ `git add -A` before `just build` — Nix evaluates the git index; an unstaged
+lockfile silently builds the OLD deps. Generated `app/.astro/` is gitignored.
 
 ---
 

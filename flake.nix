@@ -64,7 +64,7 @@
     # home/devshell.nix) PLUS a Nix-built container image and a `justfile`
     # driving build → push (skopeo) → k3s rollout. See templates/<name>/.
     #
-    #   #python / #react / #hugo  — purpose-built per stack (Nix image + deploy)
+    #   #python / #react / #hugo / #astro — purpose-built per stack (Nix image + deploy)
     #   #dev                      — kitchen-sink devShell only (no image/deploy)
     templates.python = {
       path = ./templates/python;
@@ -77,6 +77,10 @@
     templates.react = {
       path = ./templates/react;
       description = "React (Vite) static build → nginx image, just → push → k3s rollout";
+    };
+    templates.astro = {
+      path = ./templates/astro;
+      description = "Astro + Tailwind v4 static site → nginx image, just → k3s / Cloudflare Pages";
     };
     templates.dev = {
       path = ./templates/dev;
