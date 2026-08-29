@@ -73,9 +73,9 @@ hl.config({
 
   -- ── Misc / OLED power management ──────────────────────────────────────────
   misc = {
-    force_default_wallpaper = -1,    
-    disable_hyprland_logo   = true,  
-    vrr                     = 2,     
+    force_default_wallpaper = -1,
+    disable_hyprland_logo   = true,
+    vrr                     = 2,     -- fullscreen-only VRR (0 off / 1 always / 2 fullscreen)
     focus_on_activate       = false, 
     mouse_move_enables_dpms = false, 
     key_press_enables_dpms  = false,
@@ -84,5 +84,14 @@ hl.config({
   -- ── Animations enabled globally (curves in animations.lua) ───────────────
   animations = {
     enabled = true,
+  },
+
+  -- ── Colour management (QD-OLED burn-in policy) ───────────────────────────
+  -- Desktop stays SDR (cm unset in monitors.lua = srgb) so static UI pixels
+  -- never ride the PQ curve; fullscreen games/video switch to HDR on their
+  -- own. Explicit (vs relying on Hyprland's default) so the policy survives
+  -- upstream default changes. Toggle live in Settings → Control → Display.
+  render = {
+    cm_auto_hdr = 1,
   },
 })
