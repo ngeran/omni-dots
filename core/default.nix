@@ -121,6 +121,13 @@
   # than a hard reboot.
   services.earlyoom.enable = true;
 
+  # UPower daemon — event-driven battery/power state over DBus (no polling).
+  # The quickshell bar's BatteryService uses Quickshell's native UPower client
+  # on top of this instead of forking a sysfs-walk shell loop. Desktop today,
+  # but this also classifies peripheral batteries (hidpp mouse) correctly and
+  # unlocks power-profiles support later without another system change.
+  services.upower.enable = true;
+
   # Compressed-RAM swap (zstd) — the PRIMARY swap, faster than disk. A safety
   # net for memory pressure; uses CPU only when actually swapping. The NixOS
   # zramSwap module gives zram a higher priority than the 4 GB disk swap
