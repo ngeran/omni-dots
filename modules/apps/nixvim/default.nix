@@ -29,6 +29,8 @@
       nixfmt         # Nix formatter (conform)
       ruff           # Python formatter + the ruff LSP binary
       stylua         # Lua formatter (conform) — for hypr/quickshell lua files
+      glib           # `gio trash` — trash-delete for oil/snacks (checkhealth)
+      imagemagick    # `magick` — snacks.image converts non-PNG images (checkhealth)
     ];
 
     # =========================================================================
@@ -79,7 +81,6 @@
         enable = true;
         settings.spec.__raw = ''
           {
-            { "<leader>a", group = "ai" },
             { "<leader>b", group = "buffers" },
             { "<leader>c", group = "code" },
             { "<leader>f", group = "find" },
@@ -116,20 +117,25 @@
       };
 
       # Modern notifications and UI "snacks".
-      # NOTE: `notifier` is OFF on purpose — noice (above) already renders
-      # notifications; enabling both was the double-popup bug.
-      # `indent` and `scroll` are the two signature LazyVim looks: scope-aware
-      # indent guides and smooth scrolling.
+      # NOTE: snacks reads `enabled`, NOT `enable`. nixvim passes `settings`
+      # through verbatim, so an `enable` key is a SILENT NO-OP — `notifier`
+      # was stuck ON and double-rendered every notification with noice.
+      # The `enabled = true` lines below match snacks' own defaults; they're
+      # spelled out so a future snacks default change can't silently flip the
+      # look. `indent` and `scroll` are the two signature LazyVim looks:
+      # scope-aware indent guides and smooth scrolling.
       snacks = {
         enable = true;
         settings = {
-          bigfile.enable = true;
-          notifier.enable = false;   # noice owns notifications (see above)
-          quickfile.enable = true;
-          statuscolumn.enable = true;
-          words.enable = true;       # Highlights other usage of word under cursor
-          indent.enable = true;      # Indent guides, current scope highlighted
-          scroll.enable = true;      # Smooth scrolling
+          bigfile.enabled = true;
+          notifier.enabled = false;  # noice owns notifications (see above)
+          quickfile.enabled = true;
+          statuscolumn.enabled = true;
+          words.enabled = true;      # Highlights other usage of word under cursor
+          indent.enabled = true;     # Indent guides, current scope highlighted
+          scroll.enabled = true;     # Smooth scrolling
+          image.enabled = true;      # Inline images (ghostty kitty-protocol OK);
+                                     # needs `imagemagick` in extraPackages above.
         };
       };
 
@@ -158,6 +164,8 @@
           gotmpl                # Hugo / Go templates ({{ ... }} blocks)
           go                    # plain Go source (used by Hugo tooling)
           bash diff regex
+          scss svelte vue       # web stack beyond css/tsx
+          latex                 # math blocks inside markdown ($...$)
         ];
       };
 
@@ -315,26 +323,6 @@
       };
 
       # -----------------------------------------------------------------------
-      # AI: Avante.nvim (Cursor-like experience)
-      # -----------------------------------------------------------------------
-      # The default `claude` provider points at api.anthropic.com with
-      # ANTHROPIC_API_KEY — neither exists here. This machine routes Anthropic
-      # API traffic through the z.ai gateway using ANTHROPIC_AUTH_TOKEN (set
-      # session-wide in modules/apps/essentials.nix), so point avante there.
-      avante = {
-        enable = true;
-        settings = {
-          provider = "claude";
-          auto_suggestions_provider = "claude";
-          claude = {
-            endpoint = "https://api.z.ai/api/anthropic";
-            api_key_name = "ANTHROPIC_AUTH_TOKEN";
-            model = "glm-5.2";   # z.ai model id — bump when you switch models
-          };
-        };
-      };
-
-      # -----------------------------------------------------------------------
       # Session restore (persistence.nvim)
       # -----------------------------------------------------------------------
       # Reopen nvim where you left off: <leader>qs restores the session for
@@ -447,12 +435,6 @@
       { mode = "n"; key = "<leader>qs"; action = "<cmd>lua require('persistence').load()<CR>"; options = { desc = "Restore session"; }; }
       { mode = "n"; key = "<leader>ql"; action = "<cmd>lua require('persistence').load({ last = true })<CR>"; options = { desc = "Restore last session"; }; }
       { mode = "n"; key = "<leader>qd"; action = "<cmd>lua require('persistence').stop()<CR>"; options = { desc = "Don't save session"; }; }
-
-      # ── AI (Avante) ────────────────────────────────────────────────────────
-      { mode = "n"; key = "<leader>aa"; action = "<cmd>AvanteAsk<CR>"; options = { desc = "Avante ask"; }; }
-      { mode = "n"; key = "<leader>ac"; action = "<cmd>AvanteChat<CR>"; options = { desc = "Avante chat"; }; }
-      { mode = "n"; key = "<leader>ae"; action = "<cmd>AvanteEdit<CR>"; options = { desc = "Avante edit"; }; }
-      { mode = "n"; key = "<leader>ar"; action = "<cmd>AvanteRefresh<CR>"; options = { desc = "Avante refresh"; }; }
 
       # ── Git ────────────────────────────────────────────────────────────────
       { mode = "n"; key = "<leader>gg"; action = "<cmd>LazyGit<CR>"; options = { desc = "Open LazyGit"; }; }
