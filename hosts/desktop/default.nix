@@ -18,6 +18,7 @@
     ../../modules/apps/desktop-apps.nix
     ../../modules/apps/dev-tools.nix
     ../../modules/apps/imagemagick.nix
+    ../../modules/apps/ghostscript.nix
     ../../modules/apps/sniffnet.nix    # network traffic monitor (cap-wrapped, runs unprivileged)
     ../../modules/apps/hashcat.nix     # GPU password cracker (CUDA backend wrapped for the RTX 5080)
     ../../modules/apps/netwatch.nix    # network diagnostics TUI (eBPF/cap-wrapped, runs unprivileged)
