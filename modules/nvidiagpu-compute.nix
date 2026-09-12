@@ -62,7 +62,8 @@
   services.xserver.videoDrivers = [ "nvidia" ];
 
   hardware.nvidia = {
-    # Match the driver to the running kernel (boot.kernelPackages = linuxPackages_latest).
+    # Match the driver to the running kernel (boot.kernelPackages = pkgs.linuxPackages —
+    # the channel default; see the KERNEL block in hosts/desktop/default.nix for why).
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     modesetting.enable = true;     # REQUIRED for Wayland compositors
     open = true;                   # MANDATORY on Blackwell — proprietary modules do not

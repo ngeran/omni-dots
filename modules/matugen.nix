@@ -18,16 +18,27 @@
 # matugen (or preset/custom/manual) theme is active, Quickshell's clobber-guard
 # (ThemeService.qml loadStylixSeed) skips the Stylix seed on later boots.
 #
-# Why a flake input and not pkgs.matugen: nixpkgs matugen 4.0.0's `image`
-# subcommand is broken (cannot decode images). github:InioX/matugen works.
+# Why from UNSTABLE (2026-09-12, was github:InioX/matugen): the channel's
+# matugen is still 4.0.0 with the broken `image` subcommand, but
+# nixpkgs-unstable ships 4.2.0 where it works — binary-cached on
+# cache.nixos.org, so no local Rust build. Same package the upstream flake
+# was fetching, minus a whole flake input and its crate-vendoring. If
+# unstable's version ever regresses, the old input was
+# `github:InioX/matugen` (pattern: modules/apps/video-editing.nix).
 # =========================================================================
 { inputs, pkgs, ... }:
 
+let
+  # Same unstable-package pattern as modules/apps/video-editing.nix.
+  # NOTE: stdenv.hostPlatform.system, not the deprecated pkgs.system.
+  pkgs-unstable = import inputs.nixpkgs-unstable {
+    system = pkgs.stdenv.hostPlatform.system;
+    config.allowUnfree = true;
+  };
+in
+
 {
-  # NOTE: use pkgs.stdenv.hostPlatform.system, not the deprecated pkgs.system
-  # (which emits the "'system' has been renamed to stdenv.hostPlatform.system"
-  # evaluation warning).
   environment.systemPackages = [
-    inputs.matugen.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs-unstable.matugen
   ];
 }

@@ -43,14 +43,28 @@
   # link state. The network still comes up in the background exactly as
   # before; NM itself is untouched.
   systemd.services.NetworkManager-wait-online.wantedBy = lib.mkForce [ ];
-  # ===== KERNEL — 7.1 series, NOT latest =====
-  # 2026-08-21: `nix flake update` bumped linuxPackages_latest to 7.2, which
-  # the NVIDIA open module (595.71.05) does not compile against yet
-  # (os-interface.c missing `#include <string.h>` under 7.2's tightened
-  # headers). nvidiaPackages.beta is OLDER (595.45), so pinning the kernel
-  # is the only fix. Revisit after a driver release builds against 7.2:
-  # flip back to pkgs.linuxPackages_latest and dry-activate first.
-  boot.kernelPackages = pkgs.linuxPackages_7_1;
+  # ===== KERNEL — channel DEFAULT (6.18 LTS), NOT latest =====
+  # History: we used to track linuxPackages_latest, but on 2026-08-21 an
+  # update bumped it to 7.2, which the NVIDIA open module (595.71.05) could
+  # not compile against (missing `#include <string.h>` under 7.2's headers)
+  # — so we pinned 7.1. Then on 2026-09-12 the channel REMOVED linux 7.1
+  # (end-of-life upstream) and the build broke again.
+  #
+  # Fix: stop chasing kernels. `pkgs.linuxPackages` is the channel's DEFAULT
+  # kernel — the exact one the NixOS release CI builds and tests the NVIDIA
+  # driver against (verified 2026-09-12: `nvidia-open-595.71.05-6.18.50`
+  # is a cache.nixos.org binary hit, while the 7.2.4 module build still
+  # fails with the same strncpy/string.h error). As a channel default it
+  # also stays put for the release's lifetime instead of getting
+  # EOL-removed. It is a version step DOWN from 7.1.9, but every device
+  # here (RTX 5080 open modules, Wi-Fi 7 rtw89_8922ae, amd_pstate) is
+  # long-supported on 6.18.
+  #
+  # Revisit only if some hardware needs a newer kernel: at that point the
+  # real unlock is a NEWER NVIDIA DRIVER (one that builds on 7.2+), not
+  # pinning another kernel — nvidiaPackages.beta is currently OLDER
+  # (595.45), so there is nothing newer to switch to within this channel.
+  boot.kernelPackages = pkgs.linuxPackages;
   # Modern AMD P-State EPP driver (Zen 4) — better frequency scaling than acpi-cpufreq.
   # Concatenated with core's + NVIDIA's kernelParams.
   boot.kernelParams = [ "amd_pstate=active" ];
