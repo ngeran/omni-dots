@@ -9,7 +9,8 @@
       nerd-fonts.jetbrains-mono
       nerd-fonts.fira-code
       noto-fonts
-      noto-fonts-color-emoji # <-- Renamed from noto-fonts-emoji
+      # (noto-fonts-color-emoji deliberately NOT listed — it is part of the
+      # enableDefaultPackages set above; listing it again just duplicated it.)
 
       # ── DaVinci Resolve UI fonts ───────────────────────────────────────
       # DaVinci's Qt UI requests Arial/Verdana/Helvetica (Microsoft core

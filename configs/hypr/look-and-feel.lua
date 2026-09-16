@@ -5,7 +5,7 @@
 --   - rounding = 0: no anti-aliased corner glow on OLED sub-pixels
 --   - active_opacity = 0.92: reduces peak luminance on static windows
 --   - inactive_opacity = 0.75: meaningful dim on unfocused windows
---   - vrr = 2: VRR always-on reduces static refresh stress on OLED
+--   - vrr = 2: fullscreen-only VRR reduces static refresh stress on OLED
 -- =============================================================================
 
 hl.config({

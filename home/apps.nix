@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, lib, ... }:
 
 {
   # ── 1. The Pointer Engine (The "Source of Truth") ──────────────────────────

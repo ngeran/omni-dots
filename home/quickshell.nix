@@ -76,10 +76,10 @@ in
     });
   };
 
-  # House keeping other companion runtime components
-  home.packages = with pkgs; [
-    qt6.qt5compat
-  ];
+  # (no qt5compat home.packages entry — the override above already puts
+  # kdePackages.qt5compat on QML2_IMPORT_PATH, and qt6.qt5compat resolves to
+  # the same store path in current nixpkgs; listing it here suggested a
+  # separate package was needed when it isn't.)
 
   # ── Quickshell instances ─────────────────────────────────────────────────────
   # Run as systemd user services. This replaces the old `systemd.enable = true`,

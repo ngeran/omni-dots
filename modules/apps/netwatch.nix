@@ -14,7 +14,8 @@
 # minimal capability set for running the FULL tool (live packet capture + eBPF
 # health probes + perf-event monitoring) without sudo is:
 #     cap_net_raw  — raw sockets / libpcap capture
-#     cap_bpf      — load eBPF programs (kernel >= 5.8; we run linuxPackages_latest)
+#     cap_bpf      — load eBPF programs (kernel >= 5.8; satisfied by the
+#                    channel-default linuxPackages, 6.18)
 #     cap_perfmon  — perf-event monitoring
 # granted once on the binary via a setcap wrapper. Non-capture features
 # (interface stats, the connection list, config) work with NO caps at all; the

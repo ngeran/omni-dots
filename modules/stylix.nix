@@ -6,7 +6,8 @@ let
   # flake tree as wallpaper.jpg, then rebuilds so Stylix regenerates the palette
   # seed. Paths are derived from config (not hardcoded) so the same module works
   # on every host. pkexec runs it as root, where $HOME is /root — hence the
-  # absolute, config-derived paths.
+  # absolute, config-derived paths. (`user` is the one literal here — both
+  # hosts use the same username.)
   user     = "nikos";
   home     = config.users.users.${user}.home;     # /home/nikos
   flakeDir = "${home}/.omni-nix";

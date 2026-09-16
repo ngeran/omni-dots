@@ -49,7 +49,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, nixvim, claude-code, ... }@inputs: {
+  outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, claude-code, ... }@inputs: {
     # =========================================================================
     # PROJECT TEMPLATES — `nix flake init -t ~/.omni-nix#<name>`
     # =========================================================================

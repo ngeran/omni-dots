@@ -10,7 +10,6 @@
     ../../modules/ssh.nix
     ../../modules/fonts.nix
     ../../modules/apps/desktop-apps.nix
-    ../../modules/apps/desktop-apps.nix
     ../../modules/apps/file-manager.nix
     ../../modules/apps/dev-tools.nix
   ];
@@ -19,7 +18,11 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # ===== LASTEST STABLE KERNEL =====
+  # ===== LATEST STABLE KERNEL =====
+  # Intentionally OPPOSITE of hosts/desktop: latest-tracking is safe here
+  # because the laptop has no out-of-tree NVIDIA module to break on new
+  # kernels (Intel i915 is in-tree). Do not copy the desktop's
+  # pkgs.linuxPackages pin here, or vice versa.
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
   boot.initrd.kernelModules = [ "i915" ];

@@ -33,7 +33,7 @@
 {
   programs.chromium = {
     enable = true;
-    package = pkgs.chromium;
+    # (no `package` line — the module default IS pkgs.chromium)
 
     commandLineArgs = [
       "--password-store=gnome-libsecret"

@@ -21,7 +21,12 @@
   fileSystems."/boot" =
     { device = "/dev/disk/by-uuid/AE55-B96F";
       fsType = "vfat";
-      options = [ "fmask=0022" "dmask=0022" ];
+      # 0077 (root-only) instead of the generated 0022 (world-readable):
+      # silences bootctl's "random seed file is world accessible" warning on
+      # every boot and stops other local users from reading/tampering with
+      # the ESP (kernel + initrd live there). Firmware ignores POSIX perms,
+      # and systemd-boot runs as root, so booting is unaffected.
+      options = [ "fmask=0077" "dmask=0077" ];
     };
 
   swapDevices =

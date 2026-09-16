@@ -4,7 +4,7 @@
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
-    package = pkgs.bluez;
+    # (no `package` line — the module default IS pkgs.bluez)
   };
 
   services.blueman.enable = true;

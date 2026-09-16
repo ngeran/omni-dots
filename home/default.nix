@@ -36,7 +36,11 @@
     shellAliases = {
       btw = "echo I use nixos btw";
       # Rebuild from the EXACT locked inputs — this never pulls anything new.
-      omni-apply = "sudo nixos-rebuild switch --flake ~/.omni-nix/#nixos-btw";
+      # The host is derived from /etc/hostname, NOT hardcoded: this flake
+      # defines TWO hosts (nixos-btw desktop + dell3440 laptop) and this
+      # home config is shared by both — a hardcoded host would apply the
+      # desktop's NVIDIA/CUDA stack to the Intel laptop (or vice versa).
+      omni-apply = "sudo nixos-rebuild switch --flake ~/.omni-nix/#$(cat /etc/hostname)";
       # Update everything, MANUALLY, when you decide (~monthly is plenty).
       # Moves flake.lock to the latest commit of each input branch
       # (nixos-26.05, nixos-hardware master, nixvim main, ...) and rebuilds.
@@ -45,7 +49,7 @@
       #   sudo nixos-rebuild switch --rollback   (or older entry in boot menu)
       # Bisect a bad update per-input:
       #   nix flake lock --update-input <name>   (e.g. nixpkgs, nixvim)
-      omni-update = "nix flake update --flake ~/.omni-nix/ && sudo nixos-rebuild switch --flake ~/.omni-nix/#nixos-btw";
+      omni-update = "nix flake update --flake ~/.omni-nix/ && sudo nixos-rebuild switch --flake ~/.omni-nix/#$(cat /etc/hostname)";
     };
   };
 

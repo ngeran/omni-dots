@@ -1,8 +1,10 @@
 # modules/apps/junos-mcp — read-only Junos MCP server (FastMCP + PyEZ)
 #
-# Lets opencode / Claude Code SEE live lab state ("show bgp summary on p3")
-# through typed tools instead of raw SSH. READ-ONLY by design: show/op only;
-# config changes belong to restor8's connector (confirmed commits + JSNAPy).
+# Lets opencode SEE live lab state ("show bgp summary on p3") through typed
+# tools instead of raw SSH — wired in modules/apps/opencode.nix (the `junos`
+# MCP entry). Claude Code does NOT have this server wired yet. READ-ONLY by
+# design: show/op only; config changes belong to restor8's connector
+# (confirmed commits + JSNAPy).
 #
 # Runtime files (user-owned, NOT nix-managed):
 #   ~/.config/junos-mcp/routers.json   inventory (an example is deployed

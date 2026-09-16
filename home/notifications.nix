@@ -97,7 +97,16 @@ let
 
           @method()
           def CloseNotification(self, id: "u") -> "":
-              return
+              # Spec: a daemon MUST emit NotificationClosed when an app asks it
+              # to close a card (notify-send --close, Chromium's replace flow).
+              # Mirrors dismiss() — same reason code, same map cleanup — so the
+              # owning app's state machine unblocks. (The bar removes its own
+              # card when IT dismisses via NotifyBridge; bar-side handling of
+              # app-initiated closes would need a velocity-side listener.)
+              if id in self._actions:
+                  self.NotificationClosed(id, 3)  # 3 = dismissed by the user
+                  del self._actions[id]
+                  print("[quickshell-notify] NotificationClosed id=" + str(id) + " (CloseNotification)", flush=True)
 
           # --- click-to-open support (called by the bar via NotifyBridge) ---
           def invoke(self, nid):

@@ -69,8 +69,6 @@
   # Concatenated with core's + NVIDIA's kernelParams.
   boot.kernelParams = [ "amd_pstate=active" ];
 
-  #  boot.kernelModules = [ "kvm-amd" ];
-
   # =========================================================================
   # Storage Configurations
   # =========================================================================

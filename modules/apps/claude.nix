@@ -17,15 +17,15 @@ in
     ];
 
     # 2. Universal Shell Aliases
-    # This automatically handles Bash, Zsh, and Fish. 
+    # This automatically handles Bash, Zsh, and Fish.
     # This replaces the 'initExtra' code that was causing your error.
     home.shellAliases = {
       c = "claude";
       cc = "claude --continue";
     };
 
-    # 3. Terminal Environment
-    # Ensures the config directory exists for the user (not root)
-    xdg.configFile."claude/.keep".text = "";
+    # (no config-dir seeding here — Claude Code reads ~/.claude, which the
+    # configure-claude activation script in essentials.nix populates;
+    # ~/.config/claude is read by nothing.)
   };
 }

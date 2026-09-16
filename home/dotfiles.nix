@@ -35,9 +35,18 @@ in
     # live theming — the colors.json lesson). See ThemeService.syncToExternalApps.
     "fastfetch".source    = ../configs/fastfetch;
     "rofi".source         = ../configs/rofi;
-    "kitty".source        = ../configs/kitty;
-    "ngeran".source       = ../configs/ngeran;
     "hypr/scripts".source = ../configs/hypr/scripts;   # scripts/ is static
+
+    # kitty + ngeran are deliberately NOT here (removed 2026-09-15):
+    #   • kitty — the package is uninstalled (ghostty is the terminal); its
+    #     whole-dir deployment was dead weight.
+    #   • ngeran — this dir is RUNTIME-OWNED by Quickshell (velocity): the
+    #     settings Header reads ~/.config/ngeran/identity/{avatar.png,
+    #     identity.txt} and ManualThemeEditor targets a theme file here. The
+    #     old whole-dir symlink made it read-only, so those writes/reads
+    #     silently failed (same class as the colors.json lesson) — the only
+    #     thing it actually contained was a kitty theme nobody read. The dir
+    #     must stay unmanaged so velocity can create/write it.
 
     # Per-file hypr sources — keeps ~/.config/hypr/ writable for the
     # runtime-written quickshell-colors.conf (see hyprStaticFiles above).

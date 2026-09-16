@@ -17,12 +17,13 @@
   # =========================================================================
   # 1. Programming Fonts
   # =========================================================================
-  # Editor/terminal fonts, installed user-wide. (fonts.fontconfig is a Home
-  # Manager option; the system-wide font set lives in modules/fonts.nix.)
+  # The actual FONT FILES (jetbrains-mono, fira-code, noto, …) live in ONE
+  # place: modules/fonts.nix (system layer, both hosts). They used to ALSO be
+  # listed here — the same drift the repo's one-source-of-truth rule forbids.
+  # What remains: the user-level fontconfig enablement (HM font cache) and
+  # the fc-* query tools.
   home.packages = with pkgs; [
     fontconfig
-    nerd-fonts.jetbrains-mono
-    nerd-fonts.fira-code
   ];
   fonts.fontconfig.enable = true;
 

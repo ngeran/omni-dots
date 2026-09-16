@@ -6,9 +6,12 @@
   #
   # Removed: inkscape-with-extensions / krita / kicad / obsidian (→ home),
   #          kitty — ghostty is the desktop's primary terminal
-  #          (configs/hypr/environment.lua sets TERMINAL="ghostty"). kitty's
-  #          config is still deployed by home/dotfiles.nix, so re-adding the
-  #          package to the desktop is a one-liner if you miss it.
+  #          (configs/hypr/environment.lua sets TERMINAL="ghostty"). Removed
+  #          2026-09-15 along with its ingested config (configs/kitty, and the
+  #          dead configs/ngeran kitty theme whose read-only deployment was
+  #          blocking Quickshell's runtime writes there — see
+  #          home/dotfiles.nix). If you ever re-add the package, re-add a
+  #          config too (the old one is in git history).
   #          hyprlock — installed by `programs.hyprlock.enable` in
   #          hosts/desktop/default.nix (the module also wires its PAM service;
   #          the bare package could never unlock).

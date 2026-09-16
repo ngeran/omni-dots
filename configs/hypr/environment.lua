@@ -49,9 +49,13 @@ hl.on("hyprland.start", function()
       .. " && systemctl --user start quickshell-bar quickshell-settings hypridle")
 
   -- 2. Dark mode: set GTK color-scheme via gsettings
+  --    icon-theme must MATCH home/apps.nix (Papirus-Dark): this dconf write is
+  --    what GTK4/libadwaita apps actually obey, and it re-runs every Hyprland
+  --    start — the old literal "Adwaita" silently overrode the HM-declared
+  --    Papirus-Dark each session.
   hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
   hl.exec_cmd("gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark")
-  hl.exec_cmd("gsettings set org.gnome.desktop.interface icon-theme Adwaita")
+  hl.exec_cmd("gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark")
 
   -- 3. Wallpaper daemon
   hl.exec_cmd("awww-daemon")

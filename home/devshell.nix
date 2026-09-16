@@ -18,6 +18,8 @@
 # The language packages that used to live in modules/apps/programming.nix and
 # modules/apps/dev-tools.nix were removed on purpose — they belong in each
 # project's flake.nix now. See templates/dev/ for a ready-made scaffold.
+# (One exception exists: modules/apps/opencode.nix ships pkgs.nodejs because
+# opencode needs it at runtime — that is a tool dependency, not a toolchain.)
 #
 # WHAT THIS MODULE INSTALLS (the only two things that MUST be global)
 #   1. direnv       — the auto-loader; hooks into bash
@@ -27,7 +29,7 @@
 #   nix flake init -t ~/.omni-nix#dev
 # (see README.md → "Development environments")
 #
-{ config, pkgs, ... }:
+{ ... }:
 
 {
   # ── Auto-loading dev shells ────────────────────────────────────────────

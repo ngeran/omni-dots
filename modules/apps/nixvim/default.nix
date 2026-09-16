@@ -317,9 +317,13 @@
       todo-comments.enable = true;
 
       # Markdown preview in browser
+      # autoLoad MUST be true here: with false, nixvim never sources the
+      # plugin, so the <leader>mp/ms/mt commands below don't exist (E492).
+      # (The "keep false" advice is for lazy.nvim setups that lazy-load on
+      # command — nixvim has no such trigger wired for this plugin.)
       markdown-preview = {
         enable = true;
-        autoLoad = false; # Recommended to keep false for better startup time
+        autoLoad = true;
       };
 
       # -----------------------------------------------------------------------

@@ -29,7 +29,7 @@ hl.bind(mod .. " + Z", hl.dsp.exec_cmd("quickshell ipc -c bar call zaiUsage togg
 -- --- Session Management ------------------------------------------------------
 hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mod .. " + M",
-  hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+  hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 
 -- --- Window Management --------------------------------------------------------
 -- Use the native hl.dsp.* helpers, NOT exec_cmd("hyprctl dispatch …"). Hyprland

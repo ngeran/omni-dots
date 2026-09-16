@@ -1,17 +1,36 @@
+# =========================================================================
+# VIRTUALIZATION — libvirt/KVM + Docker (VMs, virt-manager, registry host)
+# =========================================================================
+# On-demand philosophy mirrors the rest of the system: heavy daemons do not
+# run until something needs them. Docker stays boot-started because the
+# local registry container (labs/k8s-registry.nix) auto-starts on top of it.
+#
+# CLEANED 2026-09-15 (audit): dropped options/packages that re-stated
+# defaults or were never used (runAsRoot=true default, empty networking
+# bridges, vde2/bridge-utils/ebtables/nftables/libguestfs — none referenced
+# by this config; libvirt manages bridges via netlink and the NixOS firewall
+# goes through iptables-nft, so the raw tools were dead closure weight).
+# dnsmasq STAYS: the libvirtd module's service PATH does not include it, so
+# the default NAT network needs it visible in the system profile.
+#
+# User groups: `docker` and `libvirtd` are granted ONCE, in core/default.nix
+# (the single source for users.users.nikos.extraGroups). Only `kvm` is added
+# here — it is virtualization-specific and core does not carry it.
 { config, lib, pkgs, ... }:
 
 {
   # =========================================================================
   # 1. System-Level Virtualization & Container Daemons
   # =========================================================================
-  
+
   # QEMU/KVM Configuration
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
+      # qemu_kvm (not the default pkgs.qemu): same thing minus the
+      # cross-target emulators we never use — smaller closure.
       package = pkgs.qemu_kvm;
-      runAsRoot = true;
-      swtpm.enable = true;
+      swtpm.enable = true;   # TPM 2.0 passthrough for Windows 11 guests
     };
   };
 
@@ -28,7 +47,7 @@
   # Docker Configuration (Persistent Engine Layout)
   virtualisation.docker = {
     enable = true;
-    
+
     # Modern NixOS way: Redirect engine storage to survive ephemeral reboots
     daemon.settings = {
       data-root = "/persist/var/lib/docker";
@@ -42,17 +61,12 @@
   # =========================================================================
   # 2. Required Networking & Utility Backends
   # =========================================================================
-  networking.bridges = { };
-  
+  # Only what libvirt/virt-manager actually need at runtime (see the CLEANED
+  # note in the banner for what was removed and why).
   environment.systemPackages = with pkgs; [
     virt-viewer
-    dnsmasq
-    vde2
-    bridge-utils
-    netcat-openbsd 
-    ebtables
-    nftables
-    libguestfs
+    dnsmasq         # default NAT network DHCP/DNS (not in libvirtd's service PATH)
+    netcat-openbsd  # libvirt's remote transport probes
   ];
 
   # =========================================================================
@@ -63,5 +77,6 @@
   # =========================================================================
   # 4. User Access Permissions
   # =========================================================================
-  users.users.nikos.extraGroups = [ "libvirtd" "kvm" "docker" ];
+  # `kvm` only — docker/libvirtd already come from core/default.nix.
+  users.users.nikos.extraGroups = [ "kvm" ];
 }
