@@ -45,10 +45,10 @@ omni-apply      # alias (defined in home/default.nix): sudo nixos-rebuild switch
 
 ## Ingested application configs (`configs/` + `home/dotfiles.nix`)
 
-fastfetch, rofi, and hypr configs are version-controlled by **ingesting** them: checked-in trees under `configs/` deployed to `~/.config/<app>` by `home/dotfiles.nix` via `xdg.configFile`. They become **read-only Nix-store symlinks** — edit the file under `configs/` and rebuild; never edit `~/.config/<app>` directly.
+fastfetch, rofi, tmux, and hypr configs are version-controlled by **ingesting** them: checked-in trees under `configs/` deployed to `~/.config/<app>` by `home/dotfiles.nix` via `xdg.configFile`. They become **read-only Nix-store symlinks** — edit the file under `configs/` and rebuild; never edit `~/.config/<app>` directly.
 
 **Two cases — get this right or you break runtime writes:**
-- **Static config dir** (fastfetch, rofi) → whole-dir source: `xdg.configFile."<app>".source = ../configs/<app>;`
+- **Static config dir** (fastfetch, rofi, tmux — tmux's live theme file lives in `~/.cache/theme/tmux.conf`, not its config dir) → whole-dir source: `xdg.configFile."<app>".source = ../configs/<app>;`
 - **Dir written to at runtime** (hypr — Quickshell writes `~/.config/hypr/quickshell-colors.conf` on theme changes) → deploy **per-file** (see the `hyprStaticFiles` list + `builtins.listToAttrs` pattern in `dotfiles.nix`) so `~/.config/hypr/` stays a real, writable directory; leave `quickshell-colors.conf` unmanaged. A whole-dir source would make the dir read-only and silently break the writes — same class of bug as `colors.json` below.
 
 The full add-a-config workflow (copy → wire → dry-activate → `omni-apply` → verify → clean `.backup` → commit/push) is in `README.md` → "Tracking a new config file/folder".

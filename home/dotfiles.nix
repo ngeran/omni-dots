@@ -35,6 +35,10 @@ in
     # live theming — the colors.json lesson). See ThemeService.syncToExternalApps.
     "fastfetch".source    = ../configs/fastfetch;
     "rofi".source         = ../configs/rofi;
+    # tmux: whole-dir is safe — tmux never writes to its config dir (the LIVE
+    # theme file it sources lives in ~/.cache/theme/tmux.conf, written by
+    # Quickshell's ThemeService._syncTmux — see configs/tmux/tmux.conf header).
+    "tmux".source         = ../configs/tmux;
     "hypr/scripts".source = ../configs/hypr/scripts;   # scripts/ is static
 
     # kitty + ngeran are deliberately NOT here (removed 2026-09-15):
