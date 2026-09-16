@@ -20,6 +20,16 @@
       init.defaultBranch = "main";   # default branch for new (and this) repo
       mergetool.prompt = false;
       pull.rebase = false;           # merge on pull — git's default, stated explicitly
+
+      # ── delta pager wiring (binary installed by
+      # modules/apps/ai-tools/git-delta.nix) ──────────────────────────────
+      # Routes git diff/log/show/stash -p through delta: syntax-highlighted,
+      # line-numbered diffs — for reviewing agent-written code at speed.
+      # `n`/`N` then jump between files inside one diff (delta.navigate).
+      core.pager = "delta";
+      interactive.diffFilter = "delta --color-only";  # `git add -p` stays interactive
+      delta.navigate = true;
+      merge.conflictstyle = "diff3";                  # delta renders conflict markers best
     };
   };
 }

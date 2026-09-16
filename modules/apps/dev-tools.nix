@@ -12,6 +12,14 @@
 { pkgs, ... }:
 
 {
+  # AI/agent-development CLI tools live in their own folder (one file per
+  # tool, with a hub default.nix): jq/yq/uv/tmux/delta/compose/websocat.
+  # Imported here — not in hosts/desktop — so BOTH hosts get them, matching
+  # this module's "global CLI utilities, every machine" contract.
+  imports = [
+    ./ai-tools
+  ];
+
   environment.systemPackages = with pkgs; [
     # ── CLI utilities ─────────────────────────────────────────────────────
     fzf
