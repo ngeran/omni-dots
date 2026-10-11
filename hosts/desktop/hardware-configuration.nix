@@ -14,12 +14,12 @@
   boot.extraModulePackages = [ ];
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/fe467311-0ee2-44ec-b143-5289573778c3";
+    { device = "/dev/disk/by-uuid/568ed0c0-2511-4991-8046-b375cd01238d";
       fsType = "ext4";
     };
 
   fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/AE55-B96F";
+    { device = "/dev/disk/by-uuid/E3CF-0087";
       fsType = "vfat";
       # 0077 (root-only) instead of the generated 0022 (world-readable):
       # silences bootctl's "random seed file is world accessible" warning on
@@ -30,7 +30,7 @@
     };
 
   swapDevices =
-    [ { device = "/dev/disk/by-uuid/d385b401-b85d-45bd-9abe-3032d9674d72"; }
+    [ { device = "/dev/disk/by-uuid/d432e313-001b-491b-9fb1-6ca597d6bc40"; }
     ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
