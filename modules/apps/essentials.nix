@@ -90,14 +90,30 @@
   # =========================================================================
   # 3. Secure Infrastructure & Identity Routing (SSH)
   # =========================================================================
+  # Two GitHub identities on one machine. The default `github.com` host keeps
+  # using the primary key (id_github); the `github-ggeran069` alias routes to
+  # the same server but presents the secondary key. Use the alias in clone
+  # URLs, e.g.:
+  #     git clone git@github-ggeran069:ggeran069/<repo>.git
+  #
+  # `IdentitiesOnly yes` matters: without it, ssh-agent offers every loaded key
+  # in turn and GitHub rejects the connection with "Too many authentication
+  # failures" before it ever tries the right one.
   home.file.".ssh/config".text = ''
     Host github.com
         HostName github.com
         User git
         IdentityFile ${config.home.homeDirectory}/.ssh/id_github
         IdentitiesOnly yes
+
+    Host github-ggeran069
+        HostName github.com
+        User git
+        IdentityFile ${config.home.homeDirectory}/.ssh/ggeran069
+        IdentitiesOnly yes
   '';
-# =========================================================================
+
+  # =========================================================================
   # 4. Claude Code / Z.ai Engine Gateway Orchestration
   # =========================================================================
   # Forces your system environment to bypass standard Anthropic authentication
@@ -118,7 +134,7 @@
       ZAI_KEY=$(tr -d '\n\r ' < "$SECRET_FILE")
       mkdir -p "$TARGET_DIR"
       rm -f "$TARGET_FILE"
-      
+
       cat << EOF > "$TARGET_FILE"
 {
   "env": {
