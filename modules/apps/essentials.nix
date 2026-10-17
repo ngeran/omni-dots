@@ -15,6 +15,7 @@
     # System Tools
     btop
     qrencode # quickshell bar: TrayCard NETWORK popup wifi-share QR
+    python3  # quickshell bar: omarchy-xray plugin backend (JSON-lines inspector)
 
     # Application Launcher (Merged back into upstream for 26.05)
     rofi
