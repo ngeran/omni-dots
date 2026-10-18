@@ -24,6 +24,17 @@ in
       cc = "claude --continue";
     };
 
+    # 3. Ingested workflow skills (adapted from efficient-vibe-coding)
+    # Deployed per-skill-dir so ~/.claude/skills/ stays a real, writable dir —
+    # it's a hybrid: plain dirs + symlinks into ~/.agents/skills/ (skills CLI).
+    # SKILL.md files are static, never written at runtime, so read-only store
+    # symlinks are safe (same rule as the fastfetch/rofi/tmux whole-dir case).
+    home.file = {
+      ".claude/skills/plan-first".source = ../../configs/claude-skills/plan-first;
+      ".claude/skills/verify-work".source = ../../configs/claude-skills/verify-work;
+      ".claude/skills/token-hygiene".source = ../../configs/claude-skills/token-hygiene;
+    };
+
     # (no config-dir seeding here — Claude Code reads ~/.claude, which the
     # configure-claude activation script in essentials.nix populates;
     # ~/.config/claude is read by nothing.)
