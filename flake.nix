@@ -47,6 +47,17 @@
       url = "github:matthart1983/netwatch/v0.29.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # -- ARTCRAFT (storytold's ArtCraft creative suite: PhotoCraft, VectorCraft,
+    # PdfCraft, ...) — upstream's prebuilt release tarballs packaged by
+    # olafkfreund's nix-craftapps flake. Consumed by modules/artcraft.nix (the
+    # programs.artcraft wrapper: per-app opt-ins + the `artcraft` life-cycle
+    # CLI). The input name MUST stay `nix-craftapps` — the helper CLI reads
+    # that name from flake.lock.
+    nix-craftapps = {
+      url = "github:olafkfreund/nix-craftapps";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, claude-code, ... }@inputs: {
@@ -85,6 +96,11 @@
     nixosConfigurations = {
       # --- MAIN DESKTOP RIG ---
       nixos-btw = nixpkgs.lib.nixosSystem {
+        # Externally provide `inputs` to all modules. `_module.args.inputs`
+        # (below) is resolved through `config`, which recurses infinitely if a
+        # module uses `inputs` in its `imports` (e.g. modules/artcraft.nix
+        # importing inputs.nix-craftapps.nixosModules.default).
+        specialArgs = { inherit inputs; };
         modules = [
           nixos-hardware.nixosModules.common-cpu-amd
           nixos-hardware.nixosModules.common-pc-ssd
@@ -110,6 +126,8 @@
 
       # --- DELL LATITUDE 3440 LAPTOP ---
       dell3440 = nixpkgs.lib.nixosSystem {
+        # Same as nixos-btw: externally-provided `inputs` for imports-time use.
+        specialArgs = { inherit inputs; };
         modules = [
           # Swap out the missing dell-latitude attribute for these:
           nixos-hardware.nixosModules.common-cpu-intel

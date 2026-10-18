@@ -87,8 +87,11 @@ in
     # (NOT also in modules/apps/desktop-apps.nix; dedup'd so the two layers
     # can't drift). inkscape-with-extensions is the superset of plain inkscape.
     kicad
-    inkscape-with-extensions
-    krita
+    # Disabled (NOT removed) 2026-10-18 — replaced by the ArtCraft suite
+    # (modules/artcraft.nix: photocraft/vectorcraft/pdfcraft). Uncomment to
+    # restore.
+    # inkscape-with-extensions
+    # krita
 
     # NOTE: openssh client removed — services.openssh.enable (modules/ssh.nix)
     # already ships `ssh`/`scp`/`sftp` in the system profile
