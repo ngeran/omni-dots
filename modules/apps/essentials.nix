@@ -1,5 +1,68 @@
 { config, pkgs, lib, ... }:
 
+let
+  # =========================================================================
+  # Claude Code / Z.ai gateway — single source of truth
+  # =========================================================================
+  # Gateway + model routing. Exported to the shell AND written to settings.json
+  # so the two can never drift apart.
+  claudeModelEnv = {
+    ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic";
+    ANTHROPIC_DEFAULT_HAIKU_MODEL = "glm-5.3-flash[1m]";
+    ANTHROPIC_DEFAULT_SONNET_MODEL = "glm-5.3[1m]";
+    ANTHROPIC_DEFAULT_OPUS_MODEL = "glm-5.3[1m]";
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
+  };
+
+  # Everything written to ~/.claude/settings.json (the auth token is injected
+  # at activation time from ~/.config/secrets/zai_key, never stored in Nix).
+  claudeSettings = {
+    env = claudeModelEnv // {
+      # Compact at 200k instead of letting history grow to 1M and re-sending it every turn.
+      CLAUDE_CODE_AUTO_COMPACT_WINDOW = "200000";
+      API_TIMEOUT_MS = "3000000";
+      MAX_THINKING_TOKENS = "10000";
+      BASH_MAX_OUTPUT_LENGTH = "20000";
+    };
+
+    # Lean default set; enable heavier plugins per project in .claude/settings.json.
+    enabledPlugins = {
+      "context7@claude-plugins-official" = true;
+      "frontend-design@claude-plugins-official" = true;
+      "rtk-plugin@enix" = true;
+      "claude-code-setup@claude-plugins-official" = false;
+      "claude-md-management@claude-plugins-official" = false;
+      "code-review@claude-plugins-official" = false;
+      "code-simplifier@claude-plugins-official" = false;
+      "commit-commands@claude-plugins-official" = false;
+      "feature-dev@claude-plugins-official" = false;
+      "figma@claude-plugins-official" = false;
+      "github@claude-plugins-official" = false;
+      "playwright@claude-plugins-official" = false;
+      "ralph-loop@claude-plugins-official" = false;
+      "security-guidance@claude-plugins-official" = false;
+      "skill-creator@claude-plugins-official" = false;
+      "superpowers@claude-plugins-official" = false;
+      "typescript-lsp@claude-plugins-official" = false;
+      "vercel@claude-plugins-official" = false;
+    };
+
+    # Keep noisy / secret / generated files out of the context window.
+    permissions.deny = [
+      "Read(./.env)"
+      "Read(./.env.*)"
+      "Read(./node_modules/**)"
+      "Read(./dist/**)"
+      "Read(./build/**)"
+      "Read(./.astro/**)"
+      "Read(./result/**)"
+      "Read(./package-lock.json)"
+      "Read(./pnpm-lock.yaml)"
+      "Read(./uv.lock)"
+      "Read(./flake.lock)"
+    ];
+  };
+in
 {
   # =========================================================================
   # 1. User Application Workspace (Home Manager Packages)
@@ -76,10 +139,10 @@
         ahead = "⇡\${count} ";
         diverged = "⇕⇡\${ahead_count}⇣\${behind_count} ";
         behind = "⇣\${count} ";
-        conflicted = " ";
-        up_to_date = " ";
+        conflicted = " ";
+        up_to_date = " ";
         untracked = "? ";
-        modified = " ";
+        modified = " ";
         stashed = "";
         staged = "";
         renamed = "";
@@ -117,40 +180,49 @@
   # =========================================================================
   # 4. Claude Code / Z.ai Engine Gateway Orchestration
   # =========================================================================
-  # Forces your system environment to bypass standard Anthropic authentication
-  home.sessionVariables = {
-    ANTHROPIC_BASE_URL = "https://api.z.ai/api/anthropic";
-    ANTHROPIC_DEFAULT_HAIKU_MODEL = "glm-4.7";
-    ANTHROPIC_DEFAULT_SONNET_MODEL = "glm-5.2[1m]";
-    ANTHROPIC_DEFAULT_OPUS_MODEL = "glm-5.2[1m]";
-    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC = "1";
-  };
+  # Gateway + model routing for the shell (same values as settings.json env).
+  # The auth token is deliberately NOT exported here.
+  home.sessionVariables = claudeModelEnv;
 
-  home.activation.configure-claude = lib.hm.dag.entryAfter ["writeBoundary"] ''
+  # Generates ~/.claude/settings.json:
+  #   - declared settings above are merged over whatever already exists, so
+  #     keys Claude Code adds itself survive, while declared keys always win
+  #   - the API key is read from the secret file and injected with jq --arg
+  #     (no shell/JSON escaping hazards)
+  #   - written with umask 077 to a temp file, then moved into place atomically
+  # To fully reset the file, delete it and re-run the switch.
+  home.activation.configure-claude = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     SECRET_FILE="${config.home.homeDirectory}/.config/secrets/zai_key"
     TARGET_DIR="${config.home.homeDirectory}/.claude"
     TARGET_FILE="$TARGET_DIR/settings.json"
+    JQ="${pkgs.jq}/bin/jq"
 
-    if [ -f "$SECRET_FILE" ]; then
+    if [ ! -s "$SECRET_FILE" ]; then
+      echo "configure-claude: $SECRET_FILE missing or empty; leaving $TARGET_FILE untouched" >&2
+    else
       ZAI_KEY=$(tr -d '\n\r ' < "$SECRET_FILE")
       mkdir -p "$TARGET_DIR"
-      rm -f "$TARGET_FILE"
 
-      cat << EOF > "$TARGET_FILE"
-{
-  "env": {
-    "ANTHROPIC_AUTH_TOKEN": "$ZAI_KEY",
-    "ANTHROPIC_BASE_URL": "https://api.z.ai/api/anthropic",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.7",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5.2[1m]",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5.2[1m]",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "1000000",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
-    "API_TIMEOUT_MS": "3000000"
-  }
-}
-EOF
-      chmod 600 "$TARGET_FILE"
+      EXISTING='{}'
+      if [ -s "$TARGET_FILE" ] && "$JQ" -e . "$TARGET_FILE" >/dev/null 2>&1; then
+        EXISTING=$(cat "$TARGET_FILE")
+      fi
+
+      OLD_UMASK=$(umask)
+      umask 077
+      TMP_FILE=$(mktemp "$TARGET_DIR/settings.json.XXXXXX")
+      umask "$OLD_UMASK"
+
+      if printf '%s' "$EXISTING" | "$JQ" \
+          --arg key "$ZAI_KEY" \
+          --argjson declared ${lib.escapeShellArg (builtins.toJSON claudeSettings)} \
+          '. * $declared | .env.ANTHROPIC_AUTH_TOKEN = $key' > "$TMP_FILE"; then
+        chmod 600 "$TMP_FILE"
+        mv -f "$TMP_FILE" "$TARGET_FILE"
+      else
+        echo "configure-claude: jq failed; leaving $TARGET_FILE untouched" >&2
+        rm -f "$TMP_FILE"
+      fi
     fi
   '';
 
