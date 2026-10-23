@@ -22,6 +22,12 @@ hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("CLUTTER_BACKEND", "wayland")
 hl.env("SDL_VIDEODRIVER", "wayland")
 hl.env("MOZ_ENABLE_WAYLAND", "1")
+-- GTK4 apps segfault when Hyprland re-sends linux-dmabuf feedback on output
+-- reconfig (DPMS on after idle, hyprlock lock surface) — ghostty lost ALL its
+-- sessions this way on 2026-10-20/21 (crash in linux_dmabuf_done; GTK4 bug,
+-- closed upstream as won't-fix). GDK_DISABLE=dmabuf removes that code path.
+-- Applies at next Hyprland start; ghostty must be spawned after it takes effect.
+hl.env("GDK_DISABLE", "dmabuf")
 
 -- ── Qt Application Configuration ─────────────────────────────────────────────
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
