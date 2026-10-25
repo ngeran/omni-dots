@@ -16,6 +16,7 @@
     ../../modules/matugen.nix        # runtime wallpaper→palette generator (hybrid with stylix)
     ../../modules/fonts.nix
     ../../modules/apps/desktop-apps.nix
+    ../../modules/apps/wallpaper-engine.nix  # animated wallpapers (mpvpaper) — driven by Quickshell's WallpaperService
     ../../modules/apps/dev-tools.nix
     ../../modules/apps/imagemagick.nix
     ../../modules/apps/ghostscript.nix
