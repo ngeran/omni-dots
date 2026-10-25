@@ -138,6 +138,39 @@ start_instance() { # OUTPUT MEDIA
   log "started mpvpaper on $out"
 }
 
+# --- wedged-decoder sweep ----------------------------------------------------
+# Ryoku's backdrop restarts a player on reported errors; our players are
+# separate processes, so the equivalent failure is an mpv that stopped
+# advancing while unpaused (decoder wedge — the process stays alive, so the
+# plain heal never fires). Once per tick the daemon probes time-pos twice per
+# instance: identical positions across the probe gap on an unpaused player
+# means wedged -> restart the instance from last-media.
+sock_prop() { # SOCKET PROPERTY -> value ("" when unavailable)
+  printf '%s\n' "{\"command\":[\"get_property\",\"$2\"]}" \
+    | socat -t 0.5 - "UNIX-CONNECT:$1" 2>/dev/null \
+    | jq -r '.data // empty' 2>/dev/null || true
+}
+
+restart_if_stalled() { # OUTPUT
+  local out=$1 sock="$RUNTIME/$1.sock" p1 p2 paused
+  [[ -S $sock ]] || return 0
+  alive "$out" || return 0
+  p1=$(sock_prop "$sock" "time-pos")
+  sleep 3
+  p2=$(sock_prop "$sock" "time-pos")
+  # Read `pause` last: a pause toggled mid-probe must count as paused.
+  # Empty replies (dead socket, property missing) are left to the plain heal.
+  paused=$(sock_prop "$sock" "pause")
+  if [[ -n $p1 && -n $p2 && $p1 == "$p2" && $paused != "true" ]]; then
+    log "stalled mpv on $out (time-pos frozen at $p1) — restarting"
+    kill "$(<"$RUNTIME/$out.pid")" 2>/dev/null || true
+    rm -f "$RUNTIME/$out.pid" "$sock"
+    sleep 1
+    start_instance "$out" "$(cat "$STATE/last-media")"
+  fi
+  return 0
+}
+
 apply_media() { # MEDIA [heal]   heal = only start dead instances
   local media=$1 heal=${2:-} out json
   json=$(jq -cn --arg f "$media" '{command:["loadfile",$f,"replace"]}')
@@ -186,7 +219,7 @@ cmd_daemon() {
     rm -f "$STATE/last-media"
   fi
 
-  local idx=0 n current="" media="" elapsed spid step heal_media
+  local idx=0 n current="" media="" elapsed spid step heal_media s out
   while :; do
     n=${#PLAYLIST[@]}
     media=""
@@ -213,6 +246,12 @@ cmd_daemon() {
       if [[ -s $STATE/last-media ]]; then
         heal_media=$(cat "$STATE/last-media")
         apply_media "$heal_media" heal
+        # Wedged-decoder sweep: a frozen-but-alive mpv gets restarted.
+        for s in "$RUNTIME"/*.sock; do
+          [[ -S $s ]] || continue
+          out=${s##*/}; out=${out%.sock}
+          restart_if_stalled "$out"
+        done
       fi
     done
 
