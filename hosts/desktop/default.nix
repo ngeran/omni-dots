@@ -34,6 +34,17 @@
   networking.hostName = "nixos-btw";
 
   # =========================================================================
+  # Animated wallpapers — the module above is imported but opt-in.
+  # =========================================================================
+  # Without this switch the engine daemon/binary never exist, and Quickshell's
+  # WallpaperService has NO video backend: the live library
+  # (~/Pictures/Live-Wallpapers, all mp4) silently falls back to awww, which
+  # cannot decode video. Integrated mode (autostart = false, the default):
+  # the daemon only keeps mpvpaper instances alive; WallpaperService drives
+  # every `set`/`pause`/`resume` over the wallpaper-engine CLI.
+  services.wallpaperEngine.enable = true;
+
+  # =========================================================================
   # ArtCraft creative suite (photocraft / vectorcraft / pdfcraft)
   # =========================================================================
   # Wrapper module (modules/artcraft.nix) around github:olafkfreund/nix-craftapps

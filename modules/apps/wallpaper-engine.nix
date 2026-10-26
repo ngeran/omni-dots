@@ -121,7 +121,11 @@ in
   };
 
   config = mkIf cfg.enable {
-    environment.systemPackages = [ engine ];
+    # engine's wrapper carries runtimeDeps on ITS OWN PATH; ffmpeg is ALSO
+    # installed system-wide because Quickshell's WallpaperService (settings
+    # unit) shells out to it directly for live-library poster frames and the
+    # matugen extraction frame.
+    environment.systemPackages = [ engine pkgs.ffmpeg ];
 
     systemd.user.services.wallpaper-engine = {
       description = "Animated wallpaper engine (mpvpaper watchdog)";
