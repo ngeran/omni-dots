@@ -76,9 +76,14 @@ hl.config({
     force_default_wallpaper = -1,
     disable_hyprland_logo   = true,
     vrr                     = 2,     -- fullscreen-only VRR (0 off / 1 always / 2 fullscreen)
-    focus_on_activate       = false, 
-    mouse_move_enables_dpms = false, 
+    focus_on_activate       = false,
+    mouse_move_enables_dpms = false,
     key_press_enables_dpms  = false,
+    -- velocity-lock recovery (ext_session_lock_v1): if the locker process dies
+    -- mid-lock the session stays locked AND inoperable by design — this flag
+    -- lets another locker (hyprlock from a TTY: `hyprctl --instance 0 dispatch
+    -- exec hyprlock`) take the lock over so the session is recoverable.
+    allow_session_lock_restore = true,
   },
 
   -- ── Animations enabled globally (curves in animations.lua) ───────────────

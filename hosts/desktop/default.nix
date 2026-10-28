@@ -164,6 +164,14 @@
   # the package itself).
   programs.hyprlock.enable = true;
 
+  # velocity-lock (the quickshell lock screen in ~/.config/quickshell/lock/)
+  # authenticates through its own PAM service — the package/script alone
+  # wires nothing, and PAM would fall back to /etc/pam.d/other (DENY all):
+  # the exact lockout trap documented above, one layer up. bin/velocity-lock
+  # refuses to lock while this service file is missing, so a stale profile
+  # cannot wedge the session.
+  security.pam.services.velocity-lock = { };
+
   # =========================================================================
   # Secrets — gnome-keyring, unlocked automatically at login
   # =========================================================================
