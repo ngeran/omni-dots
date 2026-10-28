@@ -11,7 +11,6 @@
     ./hypridle.nix              # ★ idle daemon as a supervised systemd user unit
     ./chromium.nix              # ★ browser with keyring + NVDEC + native-Wayland flags
     ./stylix.nix
-    ./notifications.nix
     ./git.nix
     ./dotfiles.nix
     ./devshell.nix              # ★ direnv + nix-direnv (per-project dev shells)

@@ -36,9 +36,9 @@ let
   };
 
   # A single Quickshell instance bound to a config directory under
-  # ~/.config/quickshell. Restart/Install shape mirrors notifications.nix:
-  # WantedBy=default.target because graphical-session.target is never activated
-  # on this host (verified), so a graphical-session-bound service never starts.
+  # ~/.config/quickshell. WantedBy=default.target because
+  # graphical-session.target is never activated on this host (verified), so a
+  # graphical-session-bound service never starts.
   qsInstance = description: path: {
     Unit = {
       Description = description;
