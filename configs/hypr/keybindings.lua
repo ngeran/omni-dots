@@ -16,9 +16,9 @@ hl.bind(modShift .. " + F", hl.dsp.exec_cmd(FILE_MANAGER))
 
 -- --- QuickShell IPC Toggles --------------------------------------------------
 hl.bind(modShift .. " + B", hl.dsp.exec_cmd("quickshell ipc -c bar call barToggle toggle"))
-hl.bind(mod .. " + P", hl.dsp.exec_cmd("quickshell ipc -c settings call powerMenu toggle"))
-hl.bind(modShift .. " + T", hl.dsp.exec_cmd("quickshell ipc -c settings call SettingsWindow openControlNetwork"))
-hl.bind(mod .. " + A", hl.dsp.exec_cmd("quickshell ipc -c settings call SettingsWindow toggle"))
+hl.bind(mod .. " + P", hl.dsp.exec_cmd("qs -c bar ipc call powerMenu toggle"))
+hl.bind(modShift .. " + T", hl.dsp.exec_cmd("qs -c bar ipc call SettingsWindow openControlNetwork"))
+hl.bind(mod .. " + A", hl.dsp.exec_cmd("qs -c bar ipc call SettingsWindow toggle"))
 hl.bind(mod .. " + T", hl.dsp.exec_cmd("quickshell ipc -c bar call logs toggle"))
 hl.bind(modShift .. " + SPACE", hl.dsp.exec_cmd("quickshell ipc -c bar call keyboard next"))
 
