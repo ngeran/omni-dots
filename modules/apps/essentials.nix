@@ -86,6 +86,10 @@ in
     cliphist
     wl-clipboard
 
+    # Screen recording — quickshell bar: velocity.record service (J9). slurp
+    # is already present; wf-recorder does the capture (mp4 to ~/Videos).
+    wf-recorder
+
     # Application Launcher (Merged back into upstream for 26.05)
     rofi
 
