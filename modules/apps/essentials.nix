@@ -80,6 +80,12 @@ in
     qrencode # quickshell bar: TrayCard NETWORK popup wifi-share QR
     python3  # quickshell bar: omarchy-xray plugin backend (JSON-lines inspector)
 
+    # Clipboard history — quickshell bar: velocity.clipboard picker (J8).
+    # cliphist store capture arms at the picker's first open; wl-clipboard
+    # provides wl-paste (capture) + wl-copy (paste-back).
+    cliphist
+    wl-clipboard
+
     # Application Launcher (Merged back into upstream for 26.05)
     rofi
 
