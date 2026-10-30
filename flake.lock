@@ -550,10 +550,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "dirtyRev": "69e1ddd7d660a68efae8501e058e3bd6a52150b0-dirty",
-        "dirtyShortRev": "69e1ddd-dirty",
-        "lastModified": 1793322926,
-        "narHash": "sha256-4ekoxL6Hm7lfg0WYax9aHYnE9RsS23DiBVlc4bsbT/o=",
+        "lastModified": 1793359775,
+        "narHash": "sha256-MlYg3P364OJ1LN09gnAGTmQg3e2MTMhHzAsqUt1E/KE=",
+        "ref": "refs/heads/main",
+        "rev": "07f1792b9a796113e1a2578e24c384a06ab95750",
+        "revCount": 406,
         "type": "git",
         "url": "file:///home/nikos/.config/quickshell"
       },
