@@ -58,6 +58,14 @@
       url = "github:olafkfreund/nix-craftapps";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # -- VELOCITY (the quickshell bar/settings rice) --
+    # The live config dir IS its own flake: HM module (tools, fonts, cliphist
+    # unit, keybinds single source) + NixOS module (velocity-lock PAM).
+    # git+file fetches the repo's TRACKED files — a brand-new file is
+    # invisible to omni-apply until it is `git add`-ed (staging alone is
+    # enough; no commit needed). Dirty tracked files are picked up as-is.
+    velocity.url = "git+file:///home/nikos/.config/quickshell";
   };
 
   outputs = { self, nixpkgs, home-manager, stylix, nixos-hardware, claude-code, ... }@inputs: {

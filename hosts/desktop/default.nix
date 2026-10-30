@@ -1,8 +1,9 @@
-{ config, lib, pkgs, ... }:
+{ inputs, config, lib, pkgs, ... }:
 
 {
   imports = [
     ./hardware-configuration.nix
+    inputs.velocity.nixosModules.default # velocity-lock's PAM service — the flake owns it now (P3)
     ../../modules/audio.nix
     ../../modules/bluetooth.nix
     ../../modules/nvidiagpu-compute.nix  # NVIDIA RTX 5080 + CUDA (was amdgpu-compute.nix)
@@ -164,13 +165,12 @@
   # the package itself).
   programs.hyprlock.enable = true;
 
-  # velocity-lock (the quickshell lock screen in ~/.config/quickshell/lock/)
-  # authenticates through its own PAM service — the package/script alone
-  # wires nothing, and PAM would fall back to /etc/pam.d/other (DENY all):
-  # the exact lockout trap documented above, one layer up. bin/velocity-lock
-  # refuses to lock while this service file is missing, so a stale profile
-  # cannot wedge the session.
-  security.pam.services.velocity-lock = { };
+  # velocity-lock's PAM service moved to the velocity flake's NixOS module
+  # (imported at the top of this file — inputs.velocity.nixosModules.default,
+  # P3). Same lockout logic as hyprlock above: the package/script alone wires
+  # nothing, and PAM would fall back to /etc/pam.d/other (DENY all).
+  # bin/velocity-lock refuses to lock while the service file is missing, so a
+  # stale profile cannot wedge the session.
 
   # =========================================================================
   # Secrets — gnome-keyring, unlocked automatically at login

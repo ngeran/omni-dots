@@ -8,26 +8,17 @@ local mod      = MAIN_MOD -- "SUPER"
 local modShift = mod .. " + SHIFT"
 
 -- --- Core Applications -------------------------------------------------------
+-- NOTE (P3): every velocity rice bind (launcher, bar overlays, lock, …) is
+-- GENERATED to velocity-binds.lua by the velocity flake's HM module from
+-- tools/keybinds-default.json — the single source. This file keeps only the
+-- non-velocity binds; SUPER+SPACE (launcher), SUPER+K (keybinds cheat sheet),
+-- SUPER+L (lock) etc. live over there now.
 hl.bind(mod .. " + X", hl.dsp.exec_cmd(TERMINAL))
 hl.bind(mod .. " + B", hl.dsp.exec_cmd("chromium"))
-hl.bind(mod .. " + SPACE", hl.dsp.exec_cmd(LAUNCHER))
 hl.bind(mod .. " + C", hl.dsp.window.close()) -- This function is native and works
 hl.bind(modShift .. " + F", hl.dsp.exec_cmd(FILE_MANAGER))
 
--- --- QuickShell IPC Toggles --------------------------------------------------
-hl.bind(modShift .. " + B", hl.dsp.exec_cmd("quickshell ipc -c bar call barToggle toggle"))
-hl.bind(mod .. " + P", hl.dsp.exec_cmd("qs -c bar ipc call powerMenu toggle"))
-hl.bind(modShift .. " + T", hl.dsp.exec_cmd("qs -c bar ipc call SettingsWindow openControlNetwork"))
-hl.bind(mod .. " + A", hl.dsp.exec_cmd("qs -c bar ipc call SettingsWindow toggle"))
-hl.bind(mod .. " + T", hl.dsp.exec_cmd("quickshell ipc -c bar call logs toggle"))
-hl.bind(modShift .. " + SPACE", hl.dsp.exec_cmd("quickshell ipc -c bar call keyboard next"))
-
--- --- Help & Analytics --------------------------------------------------------
-hl.bind(mod .. " + K", hl.dsp.exec_cmd("quickshell ipc -c bar call keybinds toggle"))
-hl.bind(mod .. " + Z", hl.dsp.exec_cmd("quickshell ipc -c bar call zaiUsage toggle"))
-
 -- --- Session Management ------------------------------------------------------
-hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mod .. " + M",
   hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch exit"))
 

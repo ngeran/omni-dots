@@ -8,6 +8,7 @@
      
     ./apps.nix
     ./quickshell.nix
+    ./velocity.nix              # ★ the quickshell rice — HM module from the velocity flake (P3)
     ./hypridle.nix              # ★ idle daemon as a supervised systemd user unit
     ./chromium.nix              # ★ browser with keyring + NVDEC + native-Wayland flags
     ./stylix.nix

@@ -42,8 +42,9 @@ hl.env("GTK_APPLICATION_PREFER_DARK_THEME", "1")
 hl.on("hyprland.start", function()
   -- 1. Propagate Wayland vars to D-Bus and the systemd user session, then
   --    start the session services deterministically once the environment is
-  --    imported. All three are systemd user services (see home/quickshell.nix
-  --    and home/hypridle.nix); chaining with && guarantees ordering without
+  --    imported. All are systemd user services (see home/velocity.nix — the
+  --    bar unit now lives in the velocity flake — and home/hypridle.nix);
+  --    chaining with && guarantees ordering without
   --    racing the import. exec_cmd is async, so this is a single shell chain.
   --    HYPRLAND_INSTANCE_SIGNATURE is included so services can find the
   --    compositor's IPC socket under $XDG_RUNTIME_DIR/hypr/<signature>/.
@@ -52,7 +53,7 @@ hl.on("hyprland.start", function()
   hl.exec_cmd(
     "dbus-update-activation-environment --systemd WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER"
       .. " && systemctl --user import-environment WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND CLUTTER_BACKEND SDL_VIDEODRIVER"
-      .. " && systemctl --user start quickshell-bar quickshell-settings hypridle")
+      .. " && systemctl --user start quickshell-bar hypridle")
 
   -- 2. Dark mode: set GTK color-scheme via gsettings
   --    icon-theme must MATCH home/apps.nix (Papirus-Dark): this dconf write is
