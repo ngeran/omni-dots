@@ -1,33 +1,38 @@
 # modules/ssh.nix
 # =============================================================================
-# SSH daemon: DISABLED  (inbound SSH closed)
+# SSH daemon: ENABLED  (inbound SSH open, password auth)
 # =============================================================================
-# Nothing SSHes INTO this desktop — zero inbound auth events in 7+ days and no
-# authorized keys (the only key in ~/.ssh is `id_github`, an OUTBOUND key for git
-# pushes). Running an unused sshd is a needless brute-force surface, so the
-# daemon is OFF and port 22 is CLOSED. This is stronger than hardening an unused
-# service — there is no door to attack.
+# Re-enabled 2026-10-30 so nikos can ssh INTO this machine from LAN devices.
+# Password authentication is ON (reuses the account password set with `passwd`,
+# so new devices need no key provisioning). Root stays key-only
+# (`prohibit-password`, the NixOS default) so root is not password-brute-forceable.
 #
-# The OUTBOUND ssh client stays available (installed explicitly below) so github
-# pushes / `ssh git@github.com` keep working — only inbound access is removed.
+# openFirewall opens tcp/22 on networking.firewall. NOTE: this module is shared —
+# hosts/desktop AND hosts/dell3440 both import it, so BOTH machines accept
+# inbound SSH after this change.
 #
-# To re-enable REMOTE (inbound) access later:
-#   1. services.openssh.enable = true
-#   2. add an authorized key (prefer key-only — also set PasswordAuthentication=false):
-#        users.users.nikos.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAA..." ];
-#   3. re-open the firewall: networking.firewall.allowedTCPPorts = [ 22 ];
-#   4. omni-apply
+# To harden later (key-only):
+#   1. settings.PasswordAuthentication = false
+#   2. users.users.nikos.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAA..." ];
 # =============================================================================
 { pkgs, ... }:
 
 {
-  # Inbound SSH daemon: OFF (see header). No firewall opening for port 22 — it
-  # stays closed. (services.openssh.openFirewall defaults to false anyway, and
-  # we no longer add 22 to allowedTCPPorts.)
-  services.openssh.enable = false;
+  # Inbound SSH daemon (see header).
+  services.openssh.enable = true;
 
-  # Outbound SSH client (ssh/scp/sftp). `services.openssh.enable = true` added
-  # this while the daemon was on; with the daemon off, install it explicitly so
-  # outbound ssh (github pushes via id_github) keeps working.
+  services.openssh.settings = {
+    # Account password (`passwd`) is accepted for nikos logins.
+    PasswordAuthentication = true;
+    # Root: keys only, never passwords (NixOS default — kept explicit).
+    PermitRootLogin = "prohibit-password";
+  };
+
+  # Open tcp/22 on the firewall (adds to networking.firewall.allowedTCPPorts).
+  services.openssh.openFirewall = true;
+
+  # Outbound SSH client (ssh/scp/sftp). The daemon's package also provides it,
+  # but the explicit install keeps outbound ssh (github pushes via id_github)
+  # working independently of the daemon state.
   environment.systemPackages = [ pkgs.openssh ];
 }
