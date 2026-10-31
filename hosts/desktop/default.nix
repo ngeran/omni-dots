@@ -117,16 +117,15 @@
   # Maps your volatile home space cleanly to your persistent storage block
   fileSystems."/home/nikos/.local/share/nvim" = {
     device = "/persist/home/nikos/.local/share/nvim";
-    fsType = "none"; # <-- Added
+    fsType = "none";
     options = [ "bind" "noauto" "x-systemd.automount" ];
   };
 
   fileSystems."/home/nikos/.local/state/nvim" = {
     device = "/persist/home/nikos/.local/state/nvim";
-    fsType = "none"; # <-- Added
+    fsType = "none";
     options = [ "bind" "noauto" "x-systemd.automount" ];
   };
-  # fIX iSSUS aFTER CLEAN INSTALL 
 
   systemd.tmpfiles.rules = [
       "d /persist/home/nikos                       0755 nikos users -"

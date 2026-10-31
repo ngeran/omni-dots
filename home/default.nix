@@ -36,10 +36,8 @@
     shellAliases = {
       btw = "echo I use nixos btw";
       # Rebuild from the EXACT locked inputs — this never pulls anything new.
-      # The host is derived from /etc/hostname, NOT hardcoded: this flake
-      # defines TWO hosts (nixos-btw desktop + dell3440 laptop) and this
-      # home config is shared by both — a hardcoded host would apply the
-      # desktop's NVIDIA/CUDA stack to the Intel laptop (or vice versa).
+      # The host is derived from /etc/hostname, NOT hardcoded (the flake used
+      # to define a second host, dell3440 — removed 2026-10-31).
       omni-apply = "sudo nixos-rebuild switch --flake ~/.omni-nix/#$(cat /etc/hostname)";
       # Update everything, MANUALLY, when you decide (~monthly is plenty).
       # Moves flake.lock to the latest commit of each input branch

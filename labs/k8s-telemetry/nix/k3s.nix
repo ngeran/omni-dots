@@ -94,7 +94,6 @@
     # *.lab.local via Ingress — see ../manifests/90-ingress.yaml). Klipper
     # (ServiceLB) stays enabled too, so traefik binds 10.0.0.86:80/443 on this
     # single node. To turn ingress back off, set: disable = [ "traefik" ];
-    disable = [ ];
 
     # Future lab workloads: auto-deploying manifests can be added via
     #   manifests.foo = { content = { ... }; };

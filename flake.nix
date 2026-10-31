@@ -131,34 +131,6 @@
           }
         ];
       };
-
-      # --- DELL LATITUDE 3440 LAPTOP ---
-      dell3440 = nixpkgs.lib.nixosSystem {
-        # Same as nixos-btw: externally-provided `inputs` for imports-time use.
-        specialArgs = { inherit inputs; };
-        modules = [
-          # Swap out the missing dell-latitude attribute for these:
-          nixos-hardware.nixosModules.common-cpu-intel
-          nixos-hardware.nixosModules.common-pc-ssd
-
-          ./core                          # Inherit the exact same core configuration
-          ./hosts/dell3440                # Target folder for your laptop's layout
-
-          stylix.nixosModules.stylix      # Keep the theme engine unified
-
-          { _module.args.inputs = inputs; }
-
-          home-manager.nixosModules.home-manager {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              extraSpecialArgs = { inherit inputs; };
-              users.nikos = import ./home/default.nix;
-              backupFileExtension = "backup";
-            };
-          }
-        ];
-      };
     };
   };
 }

@@ -43,6 +43,9 @@
   };
 
   # ── 4. Qt Engine Overrides ──────────────────────────────────────────────────
+  # NOTE: Stylix's per-app targets need no explicit disabling here — the
+  # system-level `stylix.autoEnable = false` (modules/stylix.nix) already
+  # turns every target off; this HM-level config would just restate it.
   qt = {
     enable = true;
     # Tells Stylix that your custom GTK-engine mapping wins!
@@ -50,9 +53,4 @@
     # Tells Stylix that your explicit Adwaita style wins!
     style.name = lib.mkForce "adwaita-dark";
   };
-
-  # ── 5. Disable Stylix Desktop Hooks for Home Manager ────────────────────────
-  stylix.targets.gtk.enable = false;
-  stylix.targets.qt.enable = false;
-  stylix.targets.gnome.enable = false;
 }

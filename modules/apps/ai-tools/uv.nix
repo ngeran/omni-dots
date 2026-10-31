@@ -9,11 +9,11 @@
 #   • one-shot tool running (like npx)         → uvx <tool>
 #   • Python interpreters themselves           → uv python install 3.12
 #
-# Deliberate design fit: this system has NO global python3 (the devshell
-# philosophy in home/devshell.nix — toolchains live per-project). uv
-# completes that model instead of fighting it: projects pin their stack in
-# pyproject.toml, `uv sync` materializes it into ./.venv, and direnv activates
-# it. Global $HOME stays clean.
+# Design fit: python3 IS present globally, but only as the quickshell bar's
+# omarchy-xray plugin backend (modules/apps/essentials.nix) — it is not a
+# general-purpose toolchain. uv keeps project stacks isolated: projects pin
+# theirs in pyproject.toml, `uv sync` materializes it into ./.venv, and
+# direnv activates it. Global $HOME stays clean.
 #
 { pkgs, ... }:
 
