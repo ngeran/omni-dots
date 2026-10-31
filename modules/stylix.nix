@@ -47,7 +47,7 @@ in {
   #
   # SCOPE: palette generator ONLY. `autoEnable = false` disables all of Stylix's
   # per-app targets so it does NOT fight Quickshell's ThemeService.syncToExternalApps
-  # (which themes ghostty/kitty/hyprlock/nvim/rofi/gtk live). The palette is
+  # (which themes ghostty/kitty/hyprlock/nvim/gtk live). The palette is
   # exposed as `config.lib.stylix.colors`, bridged by home/stylix.nix.
   # =========================================================================
   stylix = {

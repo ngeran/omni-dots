@@ -31,7 +31,6 @@ git push                     # Push to GitHub
 │   ├── fastfetch/                  #   → ~/.config/fastfetch (symlink)
 │   ├── hypr/                       #   → ~/.config/hypr (PER-FILE, stays writable)
 │   ├── kitty/                      #   → ~/.config/kitty (symlink)
-│   ├── rofi/                       #   → ~/.config/rofi (symlink)
 │   └── ...
 ├── home/                           # Home Manager config
 │   ├── dotfiles.nix               #   Declares xdg.configFile ingestions
@@ -118,7 +117,7 @@ git -C ~/.omni-nix push
 
 ### Workflow 2: Edit an Ingested Config
 
-**Use cases:** Change kitty font size, modify rofi theme, update fastfetch config.
+**Use cases:** Change kitty font size, update fastfetch config.
 
 **Step 1: Edit under configs/, NOT ~/.config/**
 
@@ -179,7 +178,6 @@ Add to `xdg.configFile`:
 ```nix
 xdg.configFile = {
   "fastfetch".source  = ../configs/fastfetch;
-  "rofi".source       = ../configs/rofi;
   "new-app".source   = ../configs/new-app;  # Add this line
   # ...
 };

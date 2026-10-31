@@ -4,7 +4,7 @@
 # =============================================================================
 # WHY A HOME-MANAGER "PROGRAM" INSTEAD OF A PACKAGE:
 #   programs.chromium installs the browser AND renders its launch flags into
-#   the desktop entry, so every way you launch it (rofi, dock, `chromium`)
+#   the desktop entry, so every way you launch it (launcher, dock, `chromium`)
 #   gets the same arguments. With a bare package, flags would need a wrapper
 #   script or be forgotten.
 #

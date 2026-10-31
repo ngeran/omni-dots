@@ -90,9 +90,6 @@ in
     # is already present; wf-recorder does the capture (mp4 to ~/Videos).
     wf-recorder
 
-    # Application Launcher (Merged back into upstream for 26.05)
-    rofi
-
     # Creative & Engineering Suite — the SINGLE source of truth for these
     # (NOT also in modules/apps/desktop-apps.nix; dedup'd so the two layers
     # can't drift). inkscape-with-extensions is the superset of plain inkscape.

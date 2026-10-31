@@ -24,7 +24,7 @@ CLR_TEXT   = "\033[38;5;255m" # White
 CLR_RESET  = "\033[0m"
 CLR_BOLD   = "\033[1m"
 
-KNOWN_VARS = {"TERMINAL": "Terminal", "FILE_MANAGER": "File Manager", "LAUNCHER": "App Launcher"}
+KNOWN_VARS = {"TERMINAL": "Terminal", "FILE_MANAGER": "File Manager"}
 MOUSE_NAMES = {"mouse_down": "Scroll Down", "mouse_up": "Scroll Up", "mouse:272": "LMB", "mouse:273": "RMB"}
 
 def resolve_path():

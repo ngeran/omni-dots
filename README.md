@@ -17,7 +17,7 @@ Deep-dive guides (this README is the overview):
 
 | Repo | Path | GitHub remote | Holds |
 |---|---|---|---|
-| **omni-dots** (this repo) | `~/.omni-nix` | `github.com/ngeran/omni-dots` | the flake: system + home config, packages, and ingested configs (fastfetch, rofi, hypr) |
+| **omni-dots** (this repo) | `~/.omni-nix` | `github.com/ngeran/omni-dots` | the flake: system + home config, packages, and ingested configs (fastfetch, tmux, hypr) |
 | **velocity** | `~/.config/quickshell` | `github.com/ngeran/velocity` | the QML desktop shell — kept separate (actively edited in place, writes runtime files) |
 
 ## Directory structure
@@ -30,7 +30,6 @@ Deep-dive guides (this README is the overview):
 │
 ├── configs/               # ★ ingested application config trees (checked in)
 │   ├── fastfetch/         #   deployed whole-dir → ~/.config/fastfetch
-│   ├── rofi/              #   deployed whole-dir → ~/.config/rofi
 │   └── hypr/              #   deployed PER-FILE (dir must stay writable)
 │
 ├── core/                  # base system: bootloader, user, nix settings
@@ -70,7 +69,7 @@ Flakes evaluate from the **git index** — `git add` any new/changed file before
 
 The declarative way to version-control an app's config. Deployed configs become **read-only Nix-store symlinks** at `~/.config/<app>` — you edit the file under `configs/` and rebuild; never edit `~/.config/<app>` directly. Three cases:
 
-### Case A — a fully static config (the common case: fastfetch, rofi)
+### Case A — a fully static config (the common case: fastfetch, tmux)
 
 The app never writes to its config dir at runtime.
 

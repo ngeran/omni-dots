@@ -34,7 +34,8 @@ in
     # writable (a whole-dir symlink would make it read-only and silently break
     # live theming — the colors.json lesson). See ThemeService.syncToExternalApps.
     "fastfetch".source    = ../configs/fastfetch;
-    "rofi".source         = ../configs/rofi;
+    # rofi removed 2026-10-31 — package + config gone; the launcher is
+    # velocity's native overlay (SUPER+SPACE → velocity-binds.lua).
     # tmux: whole-dir is safe — tmux never writes to its config dir (the LIVE
     # theme file it sources lives in ~/.cache/theme/tmux.conf, written by
     # Quickshell's ThemeService._syncTmux — see configs/tmux/tmux.conf header).
