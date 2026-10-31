@@ -28,7 +28,11 @@ let
     text = ''
       rt="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
       for _ in $(seq 1 120); do
-        if [ -n "$WAYLAND_DISPLAY" ] && [ -S "$rt/$WAYLAND_DISPLAY" ]; then exit 0; fi
+        # ''${VAR:-}: nounset-safe — writeShellApplication runs set -u, so a
+        # bare $WAYLAND_DISPLAY aborts with "unbound variable" the moment the
+        # var is unset (the 2026-10-31 boot: gate died instantly, socket
+        # probes never ran, unit crash-looped until the env import landed).
+        if [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -S "$rt/''${WAYLAND_DISPLAY:-}" ]; then exit 0; fi
         for w in "$rt"/wayland-*; do
           if [ -S "$w" ]; then exit 0; fi
         done
@@ -133,6 +137,12 @@ in
       # runs outside systemd — see home/quickshell.nix). default.target +
       # ExecStartPre socket gate replaces it.
       wantedBy = [ "default.target" ];
+      # NixOS-level user units are shared by EVERY user manager on the host:
+      # greetd's greeter (uid 994) ran its own copy and crash-looped at boot
+      # (2026-10-31: 3 err-level "Failed to start" lines, start-limit hit).
+      # It never has a Wayland socket, so skip it entirely. HM-level units
+      # (hypridle, quickshell) don't need this — they exist only for nikos.
+      unitConfig.ConditionUser = "nikos";
       serviceConfig = {
         ExecStartPre = "${waitWayland}/bin/wallpaper-engine-wait-wayland";
         ExecStart = "${engine}/bin/wallpaper-engine daemon";

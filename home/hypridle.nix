@@ -45,7 +45,12 @@ let
       # `_` (not `i`): writeShellApplication runs shellcheck, which only
       # exempts `_` from its "unused variable" check (SC2034).
       for _ in $(seq 1 120); do
-        [ -n "$WAYLAND_DISPLAY" ] && [ -S "$rt/$WAYLAND_DISPLAY" ] && exit 0
+        # ''${VAR:-}: nounset-safe — writeShellApplication runs set -u, and a
+        # bare $WAYLAND_DISPLAY aborts with "unbound variable" if the unit is
+        # ever started before environment.lua's env import (same boot bug as
+        # wallpaper-engine's gate, 2026-10-31). Latent here — this unit is
+        # started explicitly AFTER the import — but guarded regardless.
+        [ -n "''${WAYLAND_DISPLAY:-}" ] && [ -S "$rt/''${WAYLAND_DISPLAY:-}" ] && exit 0
         sleep 0.5
       done
       echo "hypridle-wait-wayland: timed out (WAYLAND_DISPLAY=''${WAYLAND_DISPLAY:-unset}, no socket in $rt)" >&2
