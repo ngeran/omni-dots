@@ -164,10 +164,10 @@ in
   # =========================================================================
   # 3. Secure Infrastructure & Identity Routing (SSH)
   # =========================================================================
-  # Two GitHub identities on one machine. The default `github.com` host keeps
-  # using the primary key (id_github); the `github-ggeran069` alias routes to
-  # the same server but presents the secondary key. Use the alias in clone
-  # URLs, e.g.:
+  # Multiple GitHub identities on one machine. The default `github.com` host
+  # keeps using the primary key (id_github); the aliases (`github-ggeran069`,
+  # `github-calgreece`) route to the same server but each presents its own
+  # key. Use the alias in clone URLs, e.g.:
   #     git clone git@github-ggeran069:ggeran069/<repo>.git
   #
   # `IdentitiesOnly yes` matters: without it, ssh-agent offers every loaded key
@@ -184,6 +184,12 @@ in
         HostName github.com
         User git
         IdentityFile ${config.home.homeDirectory}/.ssh/ggeran069
+        IdentitiesOnly yes
+
+    Host github-calgreece
+        HostName github.com
+        User git
+        IdentityFile ${config.home.homeDirectory}/.ssh/calgreece
         IdentitiesOnly yes
   '';
 
