@@ -1,9 +1,12 @@
 # modules/apps/opencode.nix
 # OpenCode — open-source AI coding agent for the terminal (opencode.ai).
 # Default model = the LOCAL Ollama daemon (modules/ollama.nix, qwen2.5:14b
-# variants on the 5080); background summarization = the z.ai coding plan
-# (cloud, cheap). This module is Home-Manager level (user CLI), mirroring
-# claude.nix.
+# variants on the 5080); background summarization + the on-demand cloud tier
+# = the z.ai coding plan via its Anthropic-compatible gateway, authenticated
+# from ~/.config/secrets/zai_key — the ONE location every Z.ai key reference
+# points at (Claude Code's configure-claude activation script in
+# modules/apps/essentials.nix reads the same file). This module is
+# Home-Manager level (user CLI), mirroring claude.nix.
 { pkgs, lib, ... }:
 
 let
@@ -29,6 +32,19 @@ in
       oc = "opencode";
     };
 
+    # 4. Z.ai API key for the gateway provider below (section 3). Same
+    #    convention as CONTEXT7_API_KEY in modules/apps/programming.nix:
+    #    sessionVariables values are baked into the world-readable store, so
+    #    the key itself is read from ~/.config/secrets/zai_key at shell
+    #    startup and only lives in the process env. Dedicated var name on
+    #    purpose — ANTHROPIC_AUTH_TOKEN is deliberately NOT exported (Claude
+    #    Code's settings.json is its sole source; see essentials.nix →
+    #    configure-claude).
+    programs.bash.initExtra = ''
+      [ -f "$HOME/.config/secrets/zai_key" ] && \
+        export ZAI_API_KEY="$(tr -d '\n\r ' < "$HOME/.config/secrets/zai_key")"
+    '';
+
     # 3. Config — deployed as a SINGLE FILE so ~/.config/opencode/ stays a
     # real writable directory (opencode writes AGENTS.md etc. next to it;
     # auth/state live in ~/.local/share/opencode). Same per-file pattern as
@@ -52,11 +68,16 @@ in
       # a cheap CLOUD model on purpose: opencode runs a summarizer subagent
       # after every turn, and on a local model that meta-task is slow AND
       # flaky (observed: the 14B re-summarizing in circles after the real
-      # answer already landed — turns look "hung"). glm-5-turbo does it in
-      # ~1s on the coding plan. NOTE: this means even local-model sessions
-      # send a derived summary to Z.ai — fine here (cloud is already in the
-      # ladder), flip to an ollama model if a session must stay fully local.
-      small_model = "zai-coding-plan/glm-5-turbo";
+      # answer already landed — turns look "hung"). NOTE: this means even
+      # local-model sessions send a derived summary to Z.ai — fine here
+      # (cloud is already in the ladder), flip to an ollama model if a
+      # session must stay fully local.
+      #
+      # Was "zai-coding-plan/glm-5-turbo" (models.dev catalog provider,
+      # authenticated via ZHIPU_API_KEY env or auth.json) — NEITHER existed
+      # on this box, so every summarizer call was failing silently. Routed
+      # through our own gateway provider below instead.
+      small_model = "zai-gateway/glm-5.3-flash[1m]";
 
       provider.ollama = {
         # OpenAI-compatible provider shim from the AI SDK — the documented
@@ -88,6 +109,49 @@ in
           };
         }; # models
       }; # provider.ollama
+
+      # ── z.ai coding plan via the Anthropic-compatible gateway ────────────
+      # Same endpoint Claude Code uses (essentials.nix → configure-claude),
+      # same key file (~/.config/secrets/zai_key — see initExtra above).
+      # The [1m] suffix is z.ai's 1M-context variant naming; model IDs are
+      # passed through to the gateway verbatim.
+      provider.zai-gateway = {
+        npm = "@ai-sdk/anthropic";
+        name = "Z.ai (coding plan gateway)";
+        options = {
+          baseURL = "https://api.z.ai/api/anthropic";
+
+          # {env:VAR} is substituted from the process environment at startup
+          # (empty string if unset — bash initExtra above exports it). NEVER
+          # inline the literal here: this file lands in the world-readable
+          # nix store, and zai_key must stay the single source.
+          apiKey = "{env:ZAI_API_KEY}";
+
+          # Explicit Bearer on top of the SDK's x-api-key: z.ai documents
+          # ANTHROPIC_AUTH_TOKEN (Authorization: Bearer) auth for this
+          # endpoint (that's what Claude Code sends).
+          headers.authorization = "Bearer {env:ZAI_API_KEY}";
+        };
+
+        models = {
+          # Haiku-tier slot in the z.ai routing (fast, cheap, 1M ctx) —
+          # also the small_model above (summarizer/titles).
+          "glm-5.3-flash[1m]" = {
+            name = "GLM 5.3 Flash (1M)";
+            tool_call = true;
+            limit.context = 1000000;
+            limit.output = 65536;
+          };
+          # Sonnet/Opus-tier slot (deep work, 1M ctx). Switch per-session
+          # with /models — the default stays the local ollama ladder.
+          "glm-5.3[1m]" = {
+            name = "GLM 5.3 (1M)";
+            tool_call = true;
+            limit.context = 1000000;
+            limit.output = 65536;
+          };
+        }; # models
+      }; # provider.zai-gateway
 
     # ── Free-tier MCP servers ──────────────────────────────────────────────
     # (local = opencode spawns the command; first call npx-downloads the
