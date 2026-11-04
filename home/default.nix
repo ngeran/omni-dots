@@ -8,6 +8,7 @@
      
     ./apps.nix
     ./quickshell.nix
+    ./artcraft                  # ★ ArtCraft apps + update check (versions.json)
     ./velocity.nix              # ★ the quickshell rice — HM module from the velocity flake (P3)
     ./hypridle.nix              # ★ idle daemon as a supervised systemd user unit
     ./chromium.nix              # ★ browser with keyring + NVDEC + native-Wayland flags
@@ -23,6 +24,11 @@
     ../modules/apps/opencode.nix    # ★ opencode CLI — model ladder + free MCP servers
     ../modules/apps/junos-mcp       # ★ read-only Junos MCP server (FastMCP + PyEZ)
   ];
+
+  programs.artcraft = {
+    enable = true;
+    versionsPath = "/home/nikos/.omni-nix/home/artcraft/versions.json";
+  };
 
   home.username = "nikos";
   home.homeDirectory = "/home/nikos";

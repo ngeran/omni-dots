@@ -21,7 +21,6 @@
     ../../modules/apps/dev-tools.nix
     ../../modules/apps/imagemagick.nix
     ../../modules/apps/ghostscript.nix
-    ../../modules/artcraft.nix          # ArtCraft suite wrapper (nix-craftapps) — replaces inkscape/krita
     ../../modules/apps/sniffnet.nix    # network traffic monitor (cap-wrapped, runs unprivileged)
     ../../modules/apps/hashcat.nix     # GPU password cracker (CUDA backend wrapped for the RTX 5080)
     ../../modules/apps/netwatch.nix    # network diagnostics TUI (eBPF/cap-wrapped, runs unprivileged)
@@ -48,17 +47,26 @@
   # =========================================================================
   # ArtCraft creative suite (photocraft / vectorcraft / pdfcraft)
   # =========================================================================
-  # Wrapper module (modules/artcraft.nix) around github:olafkfreund/nix-craftapps
-  # — storytold's prebuilt Linux release tarballs. Replaces inkscape + krita
-  # (commented out in modules/apps/essentials.nix; kicad kept).
-  # `flakePath` MUST point at this repo — the `artcraft` helper's check/update
-  # read flake.lock there (its default /etc/nixos would break them).
-  # photocraft/vectorcraft/pdfcraft are on by default; the other nine apps are
-  # opt-in via programs.artcraft.apps.<name>.enable = true.
-  programs.artcraft = {
-    enable = true;
-    flakePath = "/home/nikos/.omni-nix";
-  };
+  # The apps and their update lifecycle live in the Home Manager module
+  # home/artcraft/default.nix (versions.json + artcraft-check/upgrade).
+  # This host half only provides the privileged rebuild entry point the
+  # Quickshell plugin calls: a FIXED nixos-rebuild command, no user args.
+  environment.etc."artcraft-switch".source = pkgs.writeScript "artcraft-switch" ''
+    #!${pkgs.runtimeShell}
+    # Fixed on purpose: artcraft-upgrade runs this via `sudo -n`.
+    exec /run/current-system/sw/bin/nixos-rebuild switch --flake /home/nikos/.omni-nix#nixos-btw
+  '';
+  security.sudo.extraRules = [
+    {
+      users = [ "nikos" ];
+      commands = [
+        {
+          command = "/etc/artcraft-switch";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 
   # =========================================================================
   # Boot speed — stop waiting for the network at boot
