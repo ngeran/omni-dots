@@ -89,7 +89,7 @@ in
       # authenticated via ZHIPU_API_KEY env or auth.json) — NEITHER existed
       # on this box, so every summarizer call was failing silently. Routed
       # through our own gateway provider below instead.
-      small_model = "zai-gateway/glm-5.3-flash[1m]";
+      small_model = "zai-gateway/glm-5.3-flash";
 
       provider.ollama = {
         # OpenAI-compatible provider shim from the AI SDK — the documented
@@ -125,13 +125,33 @@ in
       # ── z.ai coding plan via the Anthropic-compatible gateway ────────────
       # Same endpoint Claude Code uses (essentials.nix → configure-claude),
       # same key file (~/.config/secrets/zai_key — see initExtra above).
-      # The [1m] suffix is z.ai's 1M-context variant naming; model IDs are
-      # passed through to the gateway verbatim.
+      #
+      # TWO wire-format traps, both verified by capturing opencode's actual
+      # outbound request (local echo server + curl replays, 2026-11-04):
+      #
+      # 1. baseURL MUST include "/v1". Claude Code appends "/v1/messages"
+      #    to ANTHROPIC_BASE_URL itself, but the @ai-sdk/anthropic package
+      #    opencode bundles (provider-utils 4.x) defaults to
+      #    "https://api.anthropic.com/v1" and appends ONLY "/messages".
+      #    Without the /v1 here, opencode hits .../api/anthropic/messages,
+      #    the gateway answers {"code":500,"msg":"404 NOT_FOUND"} with no
+      #    SSE events → the AI SDK sees an EMPTY stream (step-finish
+      #    reason="unknown", 0 tokens) → opencode's agent loop steps
+      #    forever with zero errors (observed: 462+ silent steps ≈
+      #    "select Z.ai and nothing happens"). opencode 1.15.10 appended
+      #    /v1 itself; 1.18.x's newer SDK silently changed the convention.
+      #
+      # 2. MODEL IDs MUST NOT carry the "[1m]" suffix (was
+      #    glm-5.3-flash[1m] / glm-5.3[1m]). "[1m]" is a Claude Code-side
+      #    convention — CC strips it and sends `anthropic-beta: context-1m`
+      #    on the wire. opencode passes the ID verbatim and the gateway
+      #    1211-rejects it ("Unknown Model"). Plain IDs + the beta header
+      #    below reproduce exactly what Claude Code sends.
       provider.zai-gateway = {
         npm = "@ai-sdk/anthropic";
         name = "Z.ai (coding plan gateway)";
         options = {
-          baseURL = "https://api.z.ai/api/anthropic";
+          baseURL = "https://api.z.ai/api/anthropic/v1";
 
           # {env:VAR} is substituted from the process environment at startup
           # (empty string if unset — bash initExtra above exports it). NEVER
@@ -141,23 +161,28 @@ in
 
           # Explicit Bearer on top of the SDK's x-api-key: z.ai documents
           # ANTHROPIC_AUTH_TOKEN (Authorization: Bearer) auth for this
-          # endpoint (that's what Claude Code sends).
-          headers.authorization = "Bearer {env:ZAI_API_KEY}";
+          # endpoint (that's what Claude Code sends). The anthropic-beta
+          # header is the 1M-context opt-in — the wire equivalent of CC's
+          # "[1m]" suffix (see the model-ID note above).
+          headers = {
+            authorization = "Bearer {env:ZAI_API_KEY}";
+            anthropic-beta = "context-1m-2025-08-07";
+          };
         };
 
         models = {
-          # Haiku-tier slot in the z.ai routing (fast, cheap, 1M ctx) —
-          # also the small_model above (summarizer/titles).
-          "glm-5.3-flash[1m]" = {
-            name = "GLM 5.3 Flash (1M)";
+          # Haiku-tier slot in the z.ai routing (fast, cheap) — also the
+          # small_model above (summarizer/titles).
+          "glm-5.3-flash" = {
+            name = "GLM 5.3 Flash";
             tool_call = true;
             limit.context = 1000000;
             limit.output = 65536;
           };
-          # Sonnet/Opus-tier slot (deep work, 1M ctx). Switch per-session
-          # with /models — the default stays the local ollama ladder.
-          "glm-5.3[1m]" = {
-            name = "GLM 5.3 (1M)";
+          # Sonnet/Opus-tier slot (deep work). Switch per-session with
+          # /models — the default stays the local ollama ladder.
+          "glm-5.3" = {
+            name = "GLM 5.3";
             tool_call = true;
             limit.context = 1000000;
             limit.output = 65536;
