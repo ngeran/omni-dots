@@ -7,7 +7,7 @@
 # points at (Claude Code's configure-claude activation script in
 # modules/apps/essentials.nix reads the same file). This module is
 # Home-Manager level (user CLI), mirroring claude.nix.
-{ pkgs, lib, ... }:
+{ inputs, pkgs, lib, ... }:
 
 let
   isSupported = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
@@ -16,6 +16,18 @@ let
   # binds 127.0.0.1:11434 only, and on this box `localhost` may resolve to
   # ::1 first, which would refuse the connection.
   ollamaBase = "http://127.0.0.1:11434/v1";
+
+  # opencode from UNSTABLE (2026-11-04, same pattern as modules/matugen.nix):
+  # the z.ai coding-plan gateway REJECTS requests with "OpenCode 1.18.0 or
+  # newer is required to use the free tier" — a client-version gate on the
+  # endpoint (auth itself passes; see ~/.local/share/opencode/log). The
+  # release-26.05 pin ships 1.15.10, which silently fails every Z.ai call
+  # (turns look hung — the error only lands in the log, not the UI). Unstable
+  # ships 1.18.29, binary-cached on cache.nixos.org.
+  pkgs-unstable = import inputs.nixpkgs-unstable {
+    system = pkgs.stdenv.hostPlatform.system;
+    config.allowUnfree = true;
+  };
 in
 {
   config = lib.mkIf isSupported {
@@ -23,7 +35,7 @@ in
     #    plus node — the MCP servers below are npm-distributed and launch
     #    through npx by absolute store path (no PATH dependence).
     home.packages = [
-      pkgs.opencode
+      pkgs-unstable.opencode
       pkgs.nodejs
     ];
 
