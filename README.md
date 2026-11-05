@@ -17,7 +17,7 @@ Deep-dive guides (this README is the overview):
 
 | Repo | Path | GitHub remote | Holds |
 |---|---|---|---|
-| **omni-dots** (this repo) | `~/.omni-nix` | `github.com/ngeran/omni-dots` | the flake: system + home config, packages, and ingested configs (fastfetch, tmux, hypr) |
+| **omni-dots** (this repo) | `~/.omni-nix` | `github.com/ngeran/omni-dots` | the flake: system + home config, packages, and ingested configs (fastfetch, tmux, hypr, opencode) |
 | **velocity** | `~/.config/quickshell` | `github.com/ngeran/velocity` | the QML desktop shell — kept separate (actively edited in place, writes runtime files) |
 
 ## Directory structure
@@ -30,7 +30,8 @@ Deep-dive guides (this README is the overview):
 │
 ├── configs/               # ★ ingested application config trees (checked in)
 │   ├── fastfetch/         #   deployed whole-dir → ~/.config/fastfetch
-│   └── hypr/              #   deployed PER-FILE (dir must stay writable)
+│   ├── hypr/              #   deployed PER-FILE (dir must stay writable)
+│   └── opencode/          #   agents/skills/prompts/commands, deployed PER-FILE
 │
 ├── core/                  # base system: bootloader, user, nix settings
 ├── hosts/desktop/         # this machine's hardware + compositor (Hyprland)

@@ -1,12 +1,15 @@
 # modules/apps/opencode.nix
 # OpenCode — open-source AI coding agent for the terminal (opencode.ai).
-# Default model = the LOCAL Ollama daemon (modules/ollama.nix, qwen2.5:14b
-# variants on the 5080); background summarization + the on-demand cloud tier
-# = the z.ai coding plan via its Anthropic-compatible gateway, authenticated
-# from ~/.config/secrets/zai_key — the ONE location every Z.ai key reference
-# points at (Claude Code's configure-claude activation script in
-# modules/apps/essentials.nix reads the same file). This module is
-# Home-Manager level (user CLI), mirroring claude.nix.
+# Default model = the z.ai coding plan (glm-5.3) via its Anthropic-compatible
+# gateway, authenticated from ~/.config/secrets/zai_key — the ONE location
+# every Z.ai key reference points at (Claude Code's configure-claude activation
+# script in modules/apps/essentials.nix reads the same file). The LOCAL Ollama
+# ladder (modules/ollama.nix, qwen2.5:14b variants on the 5080) stays declared
+# for offline / private sessions; switch to it with /models.
+#
+# The agent pipeline (plan -> build -> explore/reviewer), prompt, skill and
+# command files live under configs/opencode/ and are deployed next to this
+# config. This module is Home-Manager level (user CLI), mirroring claude.nix.
 { inputs, pkgs, lib, ... }:
 
 let
@@ -68,28 +71,110 @@ in
       # Nix owns the binary — never let it self-update underneath the profile.
       autoupdate = false;
 
-      # Default agent model: the anti-loop 14B variant. The qwen2.5-CODER
-      # models (14b/32b) are deliberately NOT declared here — they cannot
-      # emit structured tool_calls through this Ollama build (probed
-      # 2026-08-21: bare JSON as text) and will narrate tool calls forever
-      # instead of executing them. Base qwen2.5:14b tool-calls correctly.
-      # Judgment-heavy work: switch per-session to zai-coding-plan/glm-5.x.
-      model = "ollama/qwen2.5:14b-agent";
+      # Default agent model: the strong cloud tier. Local Ollama remains
+      # selectable per-session via /models (see provider.ollama below) for
+      # offline work; its 14B variants are deliberately not the default —
+      # the cloud gateway is dramatically faster and has a 1M context.
+      model = "zai-gateway/glm-5.3";
 
       # Background housekeeping (titles, anchored session summaries) goes to
-      # a cheap CLOUD model on purpose: opencode runs a summarizer subagent
-      # after every turn, and on a local model that meta-task is slow AND
-      # flaky (observed: the 14B re-summarizing in circles after the real
-      # answer already landed — turns look "hung"). NOTE: this means even
-      # local-model sessions send a derived summary to Z.ai — fine here
-      # (cloud is already in the ladder), flip to an ollama model if a
-      # session must stay fully local.
-      #
-      # Was "zai-coding-plan/glm-5-turbo" (models.dev catalog provider,
-      # authenticated via ZHIPU_API_KEY env or auth.json) — NEITHER existed
-      # on this box, so every summarizer call was failing silently. Routed
-      # through our own gateway provider below instead.
+      # the fast/cheap sibling. opencode runs a summarizer subagent after
+      # every turn; using the strong model there would burn tokens for no
+      # benefit.
       small_model = "zai-gateway/glm-5.3-flash";
+
+      # Dynamic context pruning (DCP): replaces stale tool output with
+      # summaries so long sessions stay cheap. Pinned — the binary version is
+      # owned by this flake, so don't let the plugin float on @latest.
+      plugin = [ "@tarquinen/opencode-dcp@3.2.0" ];
+
+      # opencode's own coarse compaction. `prune` is deprecated; DCP handles
+      # the fine-grained pruning. `auto` keeps the safety net for very long
+      # sessions.
+      compaction.auto = true;
+
+      # Cap tool output so one huge log/build dump cannot eat the context
+      # window. Full output is still written to disk by opencode.
+      tool_output = {
+        max_lines = 600;
+        max_bytes = 32768;
+      };
+
+      # ── Permissions ──────────────────────────────────────────────────────
+      # Broad rules first, narrow rules last: opencode's LAST matching rule
+      # wins, and builtins.toJSON sorts keys alphabetically — "*" sorts first,
+      # so the catch-all must stay the broad rule above the specific ones.
+      permission = {
+        edit = "ask";
+        webfetch = "ask";
+        websearch = "ask";
+
+        # MCP tool schemas are only sent when the tools are enabled, so
+        # Context7 is off everywhere except the plan/build agents below.
+        "context7_*" = "deny";
+
+        bash = {
+          "*" = "ask";
+          "git status*" = "allow";
+          "git diff*" = "allow";
+          "git log*" = "allow";
+          "git show*" = "allow";
+          "ls*" = "allow";
+          "rg *" = "allow";
+          "just check*" = "allow";
+          "just test*" = "allow";
+          "nix flake check*" = "allow";
+          "nixos-rebuild dry-build*" = "allow";
+          "nixos-rebuild switch*" = "deny";
+          "git push*" = "ask";
+          "rm *" = "ask";
+        };
+      };
+
+      # ── Agent pipeline: plan -> build -> review ──────────────────────────
+      # plan writes ONLY PLAN.md; build executes it; explore/reviewer are
+      # read-only subagents in their own contexts, so 40-file searches cost
+      # the main context a paragraph instead of the whole tree.
+      agent = {
+        plan = {
+          model = "zai-gateway/glm-5.3";
+          description = "Read-only planner: explores, then writes PLAN.md only.";
+          prompt = "{file:./prompts/plan.txt}";
+          steps = 24;
+          permission = {
+            edit = {
+              "*" = "deny";
+              "PLAN.md" = "allow";
+              "**/PLAN.md" = "allow";
+            };
+            bash = {
+              "*" = "deny";
+              "git status*" = "allow";
+              "git diff*" = "allow";
+              "git log*" = "allow";
+              "git show*" = "allow";
+              "rg *" = "allow";
+              "ls*" = "allow";
+            };
+            webfetch = "allow";
+            "context7_*" = "allow";
+          };
+        };
+
+        build = {
+          model = "zai-gateway/glm-5.3";
+          description = "Builder: executes PLAN.md in small, verified steps.";
+          prompt = "{file:./prompts/build.txt}";
+          permission = {
+            "context7_*" = "allow";
+          };
+        };
+
+        explore = {
+          model = "zai-gateway/glm-5.3-flash";
+          steps = 16;
+        };
+      };
 
       provider.ollama = {
         # OpenAI-compatible provider shim from the AI SDK — the documented
@@ -234,5 +319,33 @@ in
       };
     }; # mcp — TOP-LEVEL on purpose; see the note above
     };
+
+    # ── Agent pipeline files ───────────────────────────────────────────────
+    # Deployed PER-FILE (not as a whole-dir source) so ~/.config/opencode
+    # stays a real, writable directory — opencode writes auth/state and some
+    # runtime files next to the config. Sources live in configs/opencode/.
+    #
+    # Prompt paths in opencode.json are relative to the config file, hence
+    # ./prompts/plan.txt -> ~/.config/opencode/prompts/plan.txt.
+    xdg.configFile."opencode/AGENTS.md".source =
+      ../../configs/opencode/AGENTS.md;
+    xdg.configFile."opencode/prompts/plan.txt".source =
+      ../../configs/opencode/prompts/plan.txt;
+    xdg.configFile."opencode/prompts/build.txt".source =
+      ../../configs/opencode/prompts/build.txt;
+    xdg.configFile."opencode/agents/reviewer.md".source =
+      ../../configs/opencode/agents/reviewer.md;
+    xdg.configFile."opencode/commands/plan.md".source =
+      ../../configs/opencode/commands/plan.md;
+    xdg.configFile."opencode/commands/ship.md".source =
+      ../../configs/opencode/commands/ship.md;
+    xdg.configFile."opencode/skills/nixos/SKILL.md".source =
+      ../../configs/opencode/skills/nixos/SKILL.md;
+    xdg.configFile."opencode/skills/astro/SKILL.md".source =
+      ../../configs/opencode/skills/astro/SKILL.md;
+    xdg.configFile."opencode/skills/quickshell/SKILL.md".source =
+      ../../configs/opencode/skills/quickshell/SKILL.md;
+    xdg.configFile."opencode/skills/python/SKILL.md".source =
+      ../../configs/opencode/skills/python/SKILL.md;
   };
 }
