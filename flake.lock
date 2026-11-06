@@ -550,11 +550,11 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1793744483,
-        "narHash": "sha256-OpJWLmZjxMZAOzGe1/fqkQzjbtK5OyCkRtQS9G+j+ig=",
+        "lastModified": 1793909329,
+        "narHash": "sha256-OLE7X2Fd4s6fqkhwThnpA11zFeNUwlkGKghIKpw7jgY=",
         "ref": "refs/heads/main",
-        "rev": "5e690dca2f6b5a25740de3756d43430cbb08840c",
-        "revCount": 458,
+        "rev": "bd01df29b5c14e75440567f988486128a44ebc99",
+        "revCount": 462,
         "type": "git",
         "url": "file:///home/nikos/.config/quickshell"
       },
