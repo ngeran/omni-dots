@@ -23,8 +23,14 @@
 # /sys/block/sda) — one line, no races, applied before the device is probed.
 #
 # Set on the kernel command line (NOT boot.extraModprobeConfig) so it applies
-# whether usb-storage is built-in or modular, initrd or runtime. uas.quirks is
-# belt-and-suspenders in case the device ever claims the uas driver instead.
+# whether usb-storage is built-in or modular, initrd or runtime.
+#
+# NOTE: there is deliberately NO `uas.quirks=...` line here. The uas driver
+# has no `quirks` module parameter in this kernel, so the kernel logs
+#     uas: unknown parameter 'quirks' ignored
+# every boot and ignores it — dead config providing zero protection (verified
+# in journal, 2026-11-07). If the device ever claims uas instead of
+# usb-storage on :1.1, the fix is a udev rule, not a cmdline param.
 # =========================================================================
 # IMPORTANT: this only kills the sda I/O spam. It does NOT fix the hard freeze
 # the machine took — that was an NVIDIA GSP heartbeat timeout → Xid 154 (full
@@ -36,6 +42,5 @@
 {
   boot.kernelParams = [
     "usb-storage.quirks=1462:3fa4:i"   # device binds usb-storage on :1.1 today
-    "uas.quirks=1462:3fa4:i"           # defensive: in case it ever claims uas
   ];
 }
