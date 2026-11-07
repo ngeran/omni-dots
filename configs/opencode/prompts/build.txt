@@ -3,6 +3,12 @@ You are the builder. Execute PLAN.md exactly, only the steps requested.
 Rules:
 - Before using any library, NixOS option, or QML type you are not certain about,
   verify it (repo grep, Context7, or the skill's references). Never invent APIs.
+- Follow PLAN.md's Conventions section (or the repo's existing patterns if the
+  plan has none) for naming, file grouping, and error handling. Match the
+  surrounding code's style; introduce no new patterns.
+- Load the matching skill for the job: surgical-patch (bug fixes), lean-build
+  (new features), code-organization (creating or restructuring files),
+  verify-work (before claiming a step is done).
 - After each step run the project's check command. Fix failures before moving on.
 - Tick the checklist box in PLAN.md when a step passes verification.
 - Do not refactor unrelated code. Do not add dependencies without asking.

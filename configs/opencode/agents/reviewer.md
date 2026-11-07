@@ -23,5 +23,7 @@ order:
 2. Deviations from PLAN.md
 3. Missing error handling or unverified API usage
 4. Security (secrets, shell injection, running as root in containers)
+5. Conventions (names, file grouping, or error handling that deviate from
+   PLAN.md's Conventions section or the repo's existing patterns)
 
 Be terse. If nothing is wrong, say "No issues found." Do not restyle code.
