@@ -58,10 +58,13 @@
     #   • nomic-embed-text — 274 MB embedding model for Open WebUI RAG
     #     (RAG_EMBEDDING_ENGINE=ollama in modules/open-webui.nix). Runs
     #     mostly on CPU-class compute; ~0.5 GB VRAM while resident.
+    #   • gpt-oss:20b — general/reasoning MoE; migrated 2026-11-07 from a
+    #     manual ~/.ollama store (rogue `ollama serve` era) via blob copy.
     loadModels = [
       "qwen2.5-coder:32b"
       "qwen2.5:14b"
       "nomic-embed-text"
+      "gpt-oss:20b"
     ];
     # syncModels stays false — we only DECLARATIVELY pull, never auto-delete
     # models that were `ollama pull`-ed by hand.
