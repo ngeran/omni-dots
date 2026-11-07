@@ -137,6 +137,12 @@
       RestartSec = "30s";
     };
     path = [ pkgs.ollama-cuda ];
+    # ollama 0.32.x CLI panics ("$HOME is not defined", envconfig.Models)
+    # when neither OLLAMA_MODELS nor HOME is set — seen as a 30 s restart
+    # loop on 2026-11-07. Setting OLLAMA_MODELS alone short-circuits the
+    # $HOME lookup. Deliberately NOT HOME=/var/lib/ollama: this unit runs
+    # as root and would plant root-owned files into the daemon's state dir.
+    environment.OLLAMA_MODELS = "/mnt/INLAND-500GB/ollama/models";
     script = ''
       printf 'FROM qwen2.5:14b\nPARAMETER temperature 0.6\nPARAMETER repeat_penalty 1.15\n' > /tmp/qwen-agent.Modelfile
       ollama create qwen2.5:14b-agent -f /tmp/qwen-agent.Modelfile
@@ -146,7 +152,7 @@
   # =========================================================================
   # Storage plumbing for the INLAND models dir
   # =========================================================================
-  # Two traps, both hit in practice while wiring this up:
+  # Three traps, all hit in practice while wiring this up:
   #  1) /mnt/INLAND-500GB is owned by nikos — systemd-tmpfiles REFUSES to
   #     create ollama-owned dirs under a non-root-owned parent ("Detected
   #     unsafe path transition": anti-dir-planting guard), so tmpfiles rules
@@ -155,6 +161,9 @@
   #     (and validates!) the unit's mount namespace BEFORE running ANY of its
   #     commands — even "+"-prefixed ExecStartPre died with 226/NAMESPACE
   #     while the path was missing. Nothing inside the unit can create it.
+  #  3) static-uid drift: the `ollama` user's uid reshuffled 991→993 and
+  #     blobs/manifests kept the dead owner at 0700 → daemon died in 37 ms
+  #     with "open .../blobs: permission denied" (2026-11-07). Hence chown -R.
   # => a SEPARATE sandbox-free oneshot unit. `systemctl start ollama` pulls
   #    it in via the ollama.service.wants symlink and ordering (before=)
   #    makes it complete first, so the path exists by the time ollama's
@@ -176,7 +185,14 @@
     path = with pkgs; [ coreutils ];
     script = ''
       mkdir -p /mnt/INLAND-500GB/ollama/models
-      chown ollama:ollama /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models
+      # -R is REQUIRED, not belt-and-braces: the static ollama uid can drift
+      # (2026-11-07 outage: 991→993 after user reshuffle) and blobs/manifests
+      # keep the dead owner at 0700 → "open .../blobs: permission denied" in
+      # 37 ms. Metadata-only chown, runs once per ollama start
+      # (RemainAfterExit) — cheap even against ~20 GB of blobs (few, large
+      # files).
+      chown ollama:ollama /mnt/INLAND-500GB/ollama
+      chown -R ollama:ollama /mnt/INLAND-500GB/ollama/models
       chmod 0750 /mnt/INLAND-500GB/ollama /mnt/INLAND-500GB/ollama/models
     '';
   };
