@@ -292,6 +292,22 @@
         "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
       }
     },
+    "nixpkgs-davinci": {
+      "locked": {
+        "lastModified": 1791810085,
+        "narHash": "sha256-cSfqp7kery7HoruCeENynEu60D8wiwF4d+BMbeRsQ9Q=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "134e02770b7d23bcb1a7dcd763580e5d75a8b4e9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "134e02770b7d23bcb1a7dcd763580e5d75a8b4e9",
+        "type": "github"
+      }
+    },
     "nixpkgs-nvidia": {
       "locked": {
         "lastModified": 1793876309,
@@ -410,6 +426,7 @@
         "nix-craftapps": "nix-craftapps",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-davinci": "nixpkgs-davinci",
         "nixpkgs-nvidia": "nixpkgs-nvidia",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixvim": "nixvim",

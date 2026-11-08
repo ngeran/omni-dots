@@ -1,64 +1,43 @@
 # =========================================================================
 # Creative apps — DaVinci Resolve + Blender  (home / user layer)
 # =========================================================================
-{ pkgs, inputs, ... }: # 1. Add 'inputs' to the arguments
+{ pkgs, inputs, ... }:
 
 let
   # ---------------------------------------------------------------------
-  # LOCAL HASH FIX (2026-09-12) — REMOVE WHEN UPSTREAM RE-PINS THE HASH
-  # ---------------------------------------------------------------------
-  # Blackmagic re-released Resolve 21.1 server-side (S3 path moved to
-  # "v21.1-1"), so the zip bytes changed and the hash pinned in the
-  # unstable expression (from 2026-09-09) went stale — every build dies
-  # with "hash mismatch in fixed-output derivation davinci-resolve-src.zip".
-  # KNOWN RECURRING failure mode for this package (see nixpkgs issue
-  # #422461 for the 21.0-era occurrence). Both post-rotation downloads
-  # hashed the same (sha256-+3SB32E…), so the new artifact is stable.
+  # Resolve comes from a DEDICATED exact-rev pin (nixpkgs-davinci in
+  # flake.nix), NOT from the shared nixpkgs-unstable lock — bumping that
+  # one would drag matugen/opencode along. The pinned rev is upstream's
+  # "davinci-resolve: 21.1 -> 21.1.1" commit, which already carries the
+  # re-pinned source hash (Blackmagic rotated the 21.1 zip on S3 and
+  # upstream re-hashed it on 2026-09-11) — so the old local `davinci-hash-fix`
+  # overlay that worked around the stale hash is GONE. Do not resurrect it:
+  # it would override the 21.1.1 zip's hash with the old 21.1 one and break
+  # the build.
   #
-  # Why an overlay that patches `runCommandLocal`: the source hash is
-  # INLINE inside package.nix's inner `davinci` derivation, and the final
-  # package is `buildFHSEnv` wrapping that inner derivation — an
-  # `.overrideAttrs` on the outside cannot reach it (the wrapper keeps
-  # depending on the original). Patching the fetcher call IS the
-  # interception point the inner derivation uses.
-  #
-  # To check whether upstream has re-pinned:
+  # To bump Resolve: find the rev of upstream's next version-bump commit at
   #   https://github.com/NixOS/nixpkgs/commits/nixos-unstable/pkgs/by-name/da/davinci-resolve/package.nix
-  # Any commit newer than 2026-09-09 touching that file → delete this
-  # overlay and pass NO overlays to the import below.
+  # and move the nixpkgs-davinci pin in flake.nix to it.
   # ---------------------------------------------------------------------
-  davinci-hash-fix = _final: prev: {
-    runCommandLocal = name: attrs: body:
-      if name == "davinci-resolve-src.zip" then
-        prev.runCommandLocal name
-          (attrs // {
-            # was sha256-bQ4Yag4xfIF9Fs0UVKaYFhObMsAof5n+Sy4osw35a9g= upstream
-            outputHash = "sha256-+3SB32EHpH9/0hM3h8CrO6f7V4ZAmxUFh3P8m6QDeO0=";
-          })
-          body
-      else prev.runCommandLocal name attrs body;
-  };
-
-  # 2. Create a reference to the unstable package set for your specific system
-  pkgs-unstable = import inputs.nixpkgs-unstable {
+  pkgs-davinci = import inputs.nixpkgs-davinci {
     system = pkgs.system;
-    config.allowUnfree = true;
-    overlays = [ davinci-hash-fix ];
+    config.allowUnfree = true; # davinci-resolve is unfree (binary distribution)
   };
 
-  # 3. Reference the package from unstable instead of stable
-  davinci-pkg = pkgs-unstable.davinci-resolve;
+  davinci-pkg = pkgs-davinci.davinci-resolve;
 
+  # Re-wrap the FHS package: Resolve's bundled Qt misbehaves under Hyprland's
+  # mixed-DPI setup, so force xcb (not wayland) and a fixed 1.5 scale factor.
   davinci-wrapped = pkgs.symlinkJoin {
     name = "davinci-resolve-wrapped";
-    paths = [ davinci-pkg ]; # Use our new variable
+    paths = [ davinci-pkg ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
 
     postBuild = ''
       # Remove the read-only binary symlink
       rm $out/bin/davinci-resolve
 
-      # Use the variable in the wrapper path
+      # ...and replace it with a wrapper setting the Qt env
       makeWrapper ${davinci-pkg}/bin/davinci-resolve $out/bin/davinci-resolve \
         --set QT_QPA_PLATFORM xcb \
         --set QT_AUTO_SCREEN_SCALE_FACTOR 0 \

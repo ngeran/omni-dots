@@ -17,6 +17,15 @@
     # TODO(26.11): release-26.11 ships ≥ 595.112.07 — delete this input and
     # the overlay in nvidiagpu-compute.nix together.
     nixpkgs-nvidia.url = "github:NixOS/nixpkgs/f9a75f41be3a74eab55d3a7679d34ad6cc0da977";
+    # --- DAVINCI RESOLVE SOURCE PIN (2026-11-08) ---
+    # Sole source of davinci-resolve in modules/apps/video-editing.nix.
+    # The shared nixpkgs-unstable lock above (matugen/opencode/davinci) is
+    # older than the Resolve 21.1.1 bump and must not drift just for one app;
+    # this exact rev IS the "davinci-resolve: 21.1 -> 21.1.1" commit, and it
+    # carries upstream's re-pinned source hash — which is why the local
+    # hash-fix overlay was deleted from video-editing.nix. Pinned to an exact
+    # rev — NOT a moving branch — so bumping it moves ONLY Resolve.
+    nixpkgs-davinci.url = "github:NixOS/nixpkgs/134e02770b7d23bcb1a7dcd763580e5d75a8b4e9";
     # --- HARDWARE ---
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
