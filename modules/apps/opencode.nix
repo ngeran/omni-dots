@@ -10,10 +10,17 @@
 # The agent pipeline (plan -> build -> explore/reviewer), prompt, skill and
 # command files live under configs/opencode/ and are deployed next to this
 # config. This module is Home-Manager level (user CLI), mirroring claude.nix.
-{ inputs, pkgs, lib, ... }:
+#
+# Global plugins: TokenEconomizer (microsoft/TokenEconomizer) is loaded from a
+# clone under ~/github/ai-plugins, not vendored here — see the link at the end.
+{ inputs, config, pkgs, lib, ... }:
 
 let
   isSupported = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+
+  # Clones of AI/agent GitHub repos live OUTSIDE this flake (the user's
+  # convention), so they can be updated with `git pull` without a rebuild.
+  aiPluginsDir = "${config.home.homeDirectory}/github/ai-plugins";
 
   # Ollama's OpenAI-compatible endpoint. 127.0.0.1, not "localhost" — ollama
   # binds 127.0.0.1:11434 only, and on this box `localhost` may resolve to
@@ -347,5 +354,21 @@ in
       ../../configs/opencode/skills/quickshell/SKILL.md;
     xdg.configFile."opencode/skills/python/SKILL.md".source =
       ../../configs/opencode/skills/python/SKILL.md;
+
+    # ── Global plugin: TokenEconomizer ─────────────────────────────────────
+    # Microsoft Research's cost-control plugin (micro-skills / loop guard).
+    # opencode loads every file in ~/.config/opencode/plugins/ globally, so a
+    # link here applies to every project, not just this flake.
+    #
+    # mkOutOfStoreSymlink is REQUIRED, not a style choice: the plugin resolves
+    # scripts/ and lib/ relative to its own real path (import.meta.url →
+    # plugin/opencode/..), so a copy into the nix store would break it. The
+    # out-of-store link also means `git pull` in the clone updates the running
+    # plugin with no rebuild. Dangling if the clone is missing — re-clone with:
+    #   git clone https://github.com/microsoft/TokenEconomizer.git \
+    #     ~/github/ai-plugins/TokenEconomizer
+    xdg.configFile."opencode/plugins/tokeneconomizer.ts".source =
+      config.lib.file.mkOutOfStoreSymlink
+        "${aiPluginsDir}/TokenEconomizer/plugin/opencode/tokeneconomizer.ts";
   };
 }
