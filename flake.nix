@@ -5,6 +5,18 @@
     nixpkgs.url = "nixpkgs/nixos-26.05";
     # --- UNSTABLE ---
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
+    # --- NVIDIA DRIVER SOURCE PIN (2026-11-08) ---
+    # Sole source of the RTX 5080 driver expression in modules/nvidiagpu-compute.nix.
+    # 26.05 is frozen at 595.71.05 (recurring Xid 69 Hyprland crashes); this rev
+    # carries the same-branch production driver 595.112.07. Pinned to an exact
+    # rev — NOT a moving branch — so bumping it moves ONLY the driver.
+    # nixpkgs-unstable above is deliberately left on its own (older, vetted)
+    # lock: its consumers (matugen/opencode/davinci) must not drift with a
+    # driver bump — the Nov-5 unstable broke davinci's zip hash (Blackmagic
+    # CDN rotation; see the overlay in modules/apps/video-editing.nix).
+    # TODO(26.11): release-26.11 ships ≥ 595.112.07 — delete this input and
+    # the overlay in nvidiagpu-compute.nix together.
+    nixpkgs-nvidia.url = "github:NixOS/nixpkgs/f9a75f41be3a74eab55d3a7679d34ad6cc0da977";
     # --- HARDWARE ---
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 

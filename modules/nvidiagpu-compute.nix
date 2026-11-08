@@ -7,8 +7,9 @@
 #
 # The 5080 (Blackwell GB203) needs driver >= 570 with OPEN kernel modules —
 # proprietary modules have NO Blackwell support at all (not just "not recommended").
-# nixpkgs' nvidiaPackages.stable tracks NVIDIA's production branch, which has
-# been comfortably above the 570 floor for a while — no beta driver needed.
+# The driver comes from the pinned `nixpkgs-nvidia` input (see flake.nix and
+# the DRIVER SOURCE OVERRIDE note at hardware.nvidia.package) — still no beta
+# driver needed.
 # Don't hardcode the exact version here; verify what's actually resolved with:
 #   nix eval --raw .#nixosConfigurations.<host>.config.hardware.nvidia.package.version
 #
@@ -25,7 +26,7 @@
 #     omni-apply && systemctl reboot
 # (If the graphical session is unusable, run omni-apply from a TTY: Ctrl+Alt+F2.)
 # =========================================================================
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 {
   # =========================================================================
@@ -64,7 +65,39 @@
   hardware.nvidia = {
     # Match the driver to the running kernel (boot.kernelPackages = pkgs.linuxPackages —
     # the channel default; see the KERNEL block in hosts/desktop/default.nix for why).
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    #
+    # --- DRIVER SOURCE OVERRIDE (added 2026-11-08, Xid 69 mitigation) ---
+    # 26.05 is frozen at driver 595.71.05. Hyprland kept dying with NVRM Xid 69
+    # (GPU channel error on the compositor's channel; identical coredumps
+    # 2026-11-03 and 2026-11-08, mouse-stutter prodrome each time). Fix attempt:
+    # same-branch production driver from the pinned `nixpkgs-nvidia` input
+    # (595.112.07 — same 595 branch, point releases only, NOT the 615
+    # new-feature branch). See the input's comment in flake.nix for why it is
+    # a dedicated rev pin instead of nixpkgs-unstable.
+    #
+    # Why this shape and not a plain nixpkgs overlay: the kernel package set
+    # re-instantiates nvidia-x11 FROM SOURCE in its own scope (linux-kernels.nix:
+    # `nvidiaPackages = dontRecurseIntoAttrs (lib.makeExtensible (_: callPackage
+    # ../os-specific/linux/nvidia-x11 { }))`), so overriding top-level
+    # pkgs.nvidiaPackages never reaches boot.kernelPackages.nvidiaPackages. And a
+    # prebuilt unstable package would carry unstable's kernel vermagic and fail
+    # to load on our 6.18. Instantiating unstable's expression via the kernel
+    # set's OWN callPackage (same primitive nixpkgs uses internally) rebuilds
+    # the module against the running kernel. Note: wrapping this in
+    # `boot.kernelPackages.extend` was tried and failed empirically with
+    # "attribute 'stable' missing" — avoid re-introducing it.
+    # `hardware.nvidia.open = true` below makes the NixOS module load
+    # `package.open`, which the pinned rev's generic.nix provides automatically.
+    #
+    # TODO(26.11): when inputs move to release-26.11 (carries ≥ 595.112.07),
+    # delete this override AND the `nixpkgs-nvidia` input (remove the input
+    # from flake.nix, then run a bare `nix flake lock` to drop the lock node),
+    # and restore plain:
+    #     package = config.boot.kernelPackages.nvidiaPackages.stable;
+    package =
+      (config.boot.kernelPackages.callPackage
+        (inputs.nixpkgs-nvidia + "/pkgs/os-specific/linux/nvidia-x11")
+        { }).stable;
     modesetting.enable = true;     # REQUIRED for Wayland compositors
     open = true;                   # MANDATORY on Blackwell — proprietary modules do not
                                     # support GB20x at all. Do NOT flip this to false to
