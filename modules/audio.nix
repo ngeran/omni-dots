@@ -25,7 +25,12 @@
         "bluez5.enable-sbc-xq" = true;
         "bluez5.enable-msbc" = true;
         "bluez5.enable-hw-volume" = true;
-        "bluez5.roles" = [ "hsp_hs" "hsp_ag" "hfp_hf" "hfp_ag" ];
+        # NOTE: do NOT override "bluez5.roles" here. A previous roles list
+        # (hsp/hfp only) dropped a2dp_sink/a2dp_src, so WirePlumber registered
+        # zero A2DP codecs ("No available A2DP codecs to register on adapter")
+        # and every BT-speaker pair/connect failed at BlueZ with
+        # "a2dp-sink profile connect failed: Protocol not available".
+        # The default role set (all of hsp/hfp + a2dp) is what we want.
       };
     };
   };
