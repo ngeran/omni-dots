@@ -109,7 +109,7 @@
   # Performance + stability (desktop, always-on-AC)
   # =========================================================================
   # TCP BBR + fq_codel — better throughput + lower latency than the defaults
-  # (cubic / pfifo_fast). Helps the registry, k3s pulls, big downloads.
+  # (cubic / pfifo_fast). Helps big downloads, docker pulls, LAN transfers.
   boot.kernelModules = [ "tcp_bbr" "sch_fq_codel" ];
   boot.kernel.sysctl = {
     "net.ipv4.tcp_congestion_control" = "bbr";

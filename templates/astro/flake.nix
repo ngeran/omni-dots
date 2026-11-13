@@ -18,8 +18,8 @@
 #   4. just build
 # (Re-run `just relock` whenever deps change — it runs prefetch-npm-deps for you.)
 #
-# Dev → deploy loop (after the hash is set):
-#     just build && just push && just deploy        # k3s (local)
+# Dev loop (after the hash is set):
+#     just test                                      # docker smoke (build + run + curl)
 #     just cf                                        # Cloudflare Pages (public)
 #
 # ASTRO ≠ REACT (why this isn't a copy of #react):
@@ -33,7 +33,7 @@
 #     offline sandbox never tries to phone home or write $HOME.
 # =========================================================================
 {
-  description = "Astro + Tailwind site — Nix devShell + nginx image, just → k3s";
+  description = "Astro + Tailwind site — Nix devShell + nginx image";
 
   inputs.nixpkgs.url = "nixpkgs/nixos-26.05";
 
@@ -43,7 +43,7 @@
       forAllSystems = nixpkgs.lib.genAttrs systems;
       pkgsFor = system: nixpkgs.legacyPackages.${system};
 
-      imageName = "localhost:5000/astro-app";   # keep in lockstep with justfile + manifests
+      imageName = "astro-app";                  # `just test` docker-loads this image
       imageTag  = "latest";
     in {
       packages = forAllSystems (system:
@@ -99,8 +99,8 @@
             }
           '';
 
-          # Non-root user (UID 1000) baked in so the manifest can set
-          # runAsNonRoot + runAsUser=1000. nginx runs as this uid.
+          # Non-root user (UID 1000) baked in so the image runs unprivileged.
+          # nginx runs as this uid.
           nonRootUser = pkgs.runCommand "non-root-user" { } ''
             mkdir -p $out/etc
             printf 'root:x:0:0::/root:/bin/sh\nappuser:x:1000:1000::/nonexistent:/bin/sh\n' > $out/etc/passwd
@@ -120,7 +120,7 @@
             config = {
               User         = "1000:1000";
               # -e /dev/stderr: pre-config error log to stderr (never /var/log/nginx).
-              # /tmp (pid+temp) comes from mounts: emptyDir in k3s, --tmpfs in `just test`.
+              # /tmp (pid+temp) comes from --tmpfs in `just test`.
               Cmd          = [ "${pkgs.nginx}/bin/nginx" "-c" nginxConf "-e" "/dev/stderr" ];
               ExposedPorts = { "8080/tcp" = { }; };
             };
@@ -132,7 +132,7 @@
           default = pkgs.mkShell {
             packages = with pkgs; [
               nodejs_22    # includes npm — dev + image both use npm (no pnpm drift)
-              just skopeo kubectl
+              just
               wrangler     # Cloudflare Pages direct-upload deploy (just cf)
             ];
             shellHook = ''
@@ -141,7 +141,7 @@
               echo "      node    $(node -v 2>/dev/null || echo '—')"
               echo "      image   ${imageName}:${imageTag}"
               echo "      serve   npm run dev   (→ http://localhost:4321)"
-              echo "      deploy  just build && just push && just deploy   (k3s)"
+              echo "      test    just test   (docker smoke: run + curl /)"
               echo "      cf      just cf                                          (Cloudflare Pages)"
               echo "      deps    (cd app && npm install) → just relock → just build"
               echo ""

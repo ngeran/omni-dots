@@ -8,7 +8,6 @@ Deep-dive guides (this README is the overview):
 
 | Guide | Covers |
 |---|---|
-| [**PIPELINEv3.md**](PIPELINEv3.md) | Dev → Nix image → k8s: scaffold or migrate Python / Hugo / React+Tailwind, build a reproducible OCI image with Nix (no Dockerfile), deploy to the local k3s cluster, and drive pods (start/stop/kill/destroy). |
 | [**DEV-ENVIRONMENTS.md**](DEV-ENVIRONMENTS.md) | The per-project direnv + flake dev-shell workflow in detail — migrate existing projects, everyday use, troubleshooting. |
 | [**WORKFLOW.md**](WORKFLOW.md) | Making changes to THIS flake — the `git add → omni-apply → commit` cycle, where packages/configs/modules belong, the two-repo reload asymmetry, and common workflows + troubleshooting. |
 | [**CLEAN-INSTALL.md**](CLEAN-INSTALL.md) | Wipe + reinstall NixOS on the **desktop** host (`nixos-btw`) — backup, partition, regenerate hardware config, restore secrets, `omni-apply`. (The `dell3440` laptop host is separate.) |
@@ -46,14 +45,12 @@ Deep-dive guides (this README is the overview):
 │   └── apps.nix           # cursor / GTK theme / icons / dark mode
 │
 ├── templates/             # ★ project scaffolds: `nix flake init -t .#<name>`
-│   ├── python/            #   python service: devShell + Nix image + justfile + manifests
-│   ├── hugo/              #   hugo static site → nginx image + justfile + manifests
-│   ├── react/             #   react (vite) build → nginx image + justfile + manifests
-│   └── dev/               #   kitchen-sink devShell only (no image/deploy) — the default
+│   ├── python/              #   python service: devShell + Nix image + justfile
+│   ├── hugo/                #   hugo static site → nginx image + justfile
+│   ├── react/               #   react (vite) build → nginx image + justfile
+│   └── dev/                 #   kitchen-sink devShell only (no image) — the default
 │
-├── labs/                  # opt-in experiments: k8s-telemetry (k3s + manifests), k8s-registry
-│
-└── modules/               # system + home modules (audio, bluetooth, nvidiagpu-compute, …)
+└── modules/                 # system + home modules (audio, bluetooth, nvidiagpu-compute, …)
 ```
 
 ## Build & deploy
@@ -129,38 +126,35 @@ git push
 
 ## 🧑‍💻 Development environments (per-project shells)
 
-> **Pipeline guide (start here): [`PIPELINEv3.md`](PIPELINEv3.md)** — create/migrate Python / Hugo / React+Tailwind projects, build a Nix image, deploy to k3s, and drive pods (start/stop/kill/destroy).
->
 > **direnv deep-dive: [`DEV-ENVIRONMENTS.md`](DEV-ENVIRONMENTS.md)** — the per-project dev-shell workflow in detail.
 
 Language toolchains are **not installed globally** — that's what broke things after the Arch migration (read-only store → PEP-668 pip errors, npm-global hacks, one version per language). Instead each project declares its own tools in a `flake.nix`, and `direnv` auto-loads them on `cd`. The system and `~/.config` stay clean. This is wired by `home/devshell.nix` (direnv + nix-direnv).
 
 ### Create a NEW project
 
-Pick the template that matches the stack — `#python`/`#react`/`#hugo` each ship a devShell **plus** a Nix-built container image and a `justfile` for build → push → k8s deploy (`#dev` is a kitchen-sink devShell only):
+Pick the template that matches the stack — `#python`/`#react`/`#hugo` each ship a devShell **plus** a Nix-built container image and a `justfile` for build + docker smoke test (`#dev` is a kitchen-sink devShell only):
 
 ```bash
 mkdir my-app && cd my-app && git init
 nix flake init -t ~/.omni-nix#python    # or #react / #hugo / #dev
-git add flake.nix .envrc justfile app manifests   # flakes read the git index
+git add flake.nix .envrc justfile app   # flakes read the git index
 direnv allow                            # one-time: trust the devShell
 ```
 
-The stack's tools are now on `$PATH` (auto-loaded by direnv). Tailor `flake.nix` (image name, deps), `justfile` (`image`/`tag`/`ns`/`dep`), and `manifests/` to the project, then `direnv allow` again.
+The stack's tools are now on `$PATH` (auto-loaded by direnv). Tailor `flake.nix` (image name, deps) and the `justfile` to the project, then `direnv allow` again.
 
-### Build & deploy to k8s (Python / Hugo / React templates)
+### Build & smoke-test the container image (Python / Hugo / React templates)
 
-These templates build a **reproducible OCI image with Nix** (no Dockerfile) and deploy it to the local k3s cluster. From the project dir, with k3s up (`sudo systemctl start k3s` — it's on-demand):
+These templates build a **reproducible OCI image with Nix** (no Dockerfile) and smoke-test it locally in docker:
 
 ```bash
 just build      # nix build .#image  →  ./result (image tarball)
-just push       # skopeo → localhost:5000/<app>:latest  (no docker in the loop)
-just deploy     # kubectl apply manifests + rollout restart
-just logs       # tail the pod
-just forward    # port-forward :8080 → curl localhost:8080
+just test       # docker smoke test (web/static: curl / → 200 · python script: run to exit 0)
+just serve      # plain dev server (no container — the python template calls it `just run`)
+just check      # lint / type-check / static-build check
 ```
 
-Prerequisites, all wired by this repo: a k3s single-node cluster (`labs/k8s-telemetry/nix/k3s.nix`), a local registry on `127.0.0.1:5000` (`labs/k8s-registry.nix`), and `just` + `skopeo` globally (`modules/apps/dev-tools.nix`). The lab pyapp at `labs/k8s-telemetry/python-app/` is the live reference for this flow.
+Prerequisites, all wired by this repo: docker (starts at boot — `modules/apps/virtualization.nix`) and `just` globally (`modules/apps/dev-tools.nix`). For a public URL, `just cf` publishes the Nix-built static site to Cloudflare Pages (hugo/react/astro).
 
 ### Add a devShell to an EXISTING project
 

@@ -102,8 +102,8 @@
     };
   };
 
-  # On-demand: do NOT auto-start ollama at boot (mirrors the k3s pattern in
-  # labs/k8s-telemetry/nix/k3s.nix). The CUDA daemon inits the GPU on startup —
+  # On-demand: do NOT auto-start ollama at boot (same pattern as libvirtd).
+  # The CUDA daemon inits the GPU on startup —
   # wasted boot time + idle GPU memory on a daily driver when you're not doing
   # local AI. Start it when you sit down to use it:
   #     sudo systemctl start ollama      # also pulls/verifies the model (loader unit)

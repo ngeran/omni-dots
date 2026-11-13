@@ -22,11 +22,11 @@
 {
   imports = [
     ./jq.nix              # JSON processor — MCP/API payload inspection
-    ./yq.nix              # YAML processor — k8s manifests + LLM config files
+    ./yq.nix              # YAML processor — compose/CI/MCP config files
     ./uv.nix              # Python env manager — venvs + tool running for AI work
     ./tmux.nix            # session persistence — long agent runs survive disconnects
     ./git-delta.nix       # syntax-highlighted pagers — reviewing AI-written diffs
-    ./docker-compose.nix  # one-command local AI stacks before k3s-ifying them
+    ./docker-compose.nix  # one-command local AI stacks (compose-first evaluation)
     ./websocat.nix        # WebSocket/SSE debugging — LLM streaming endpoints
   ];
 }

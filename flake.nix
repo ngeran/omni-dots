@@ -95,25 +95,25 @@
     # =========================================================================
     # Per-stack scaffolds. Each ships a devShell (auto-loaded by direnv,
     # home/devshell.nix) PLUS a Nix-built container image and a `justfile`
-    # driving build → push (skopeo) → k3s rollout. See templates/<name>/.
+    # driving build → docker smoke test (`just test`). See templates/<name>/.
     #
-    #   #python / #react / #hugo / #astro — purpose-built per stack (Nix image + deploy)
-    #   #dev                      — kitchen-sink devShell only (no image/deploy)
+    #   #python / #react / #hugo / #astro — purpose-built per stack (Nix image + smoke test)
+    #   #dev                      — kitchen-sink devShell only (no image)
     templates.python = {
       path = ./templates/python;
-      description = "Python — FastAPI service or plain script (Nix devShell + image → k3s)";
+      description = "Python — FastAPI service or plain script (Nix devShell + image)";
     };
     templates.hugo = {
       path = ./templates/hugo;
-      description = "Hugo static site → nginx image, just → push → k3s rollout";
+      description = "Hugo static site → nginx image, just → docker smoke test";
     };
     templates.react = {
       path = ./templates/react;
-      description = "React (Vite) static build → nginx image, just → push → k3s rollout";
+      description = "React (Vite) static build → nginx image, just → docker smoke test";
     };
     templates.astro = {
       path = ./templates/astro;
-      description = "Astro + Tailwind v4 static site → nginx image, just → k3s / Cloudflare Pages";
+      description = "Astro + Tailwind v4 static site → nginx image, just → smoke test / Cloudflare Pages";
     };
     templates.dev = {
       path = ./templates/dev;

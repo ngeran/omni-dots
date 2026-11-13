@@ -1,19 +1,18 @@
 # =========================================================================
 # Open WebUI — chat UI + docs RAG front-end for the local AI stack
 # =========================================================================
-# WHY STANDALONE (native NixOS), NOT a k3s pod via the project pipeline:
-#  • The pipeline (Nix image → localhost:5000 registry → k3s) is for apps we
-#    BUILD (Flask/Hugo/React). This is upstream software; nixpkgs ships it
+# WHY STANDALONE (native NixOS service), not a container:
+#  • This is upstream software, not something we build: nixpkgs ships it
 #    (0.11.0) with a real module — nothing to containerize.
 #  • It must talk to HOST Ollama (modules/ollama.nix). Native = plain
-#    127.0.0.1:11434. A pod would need OLLAMA_HOST=0.0.0.0 + a cni0-scoped
-#    firewall hole + a PVC — three new failure modes for zero benefit.
-#  • k3s is ON-DEMAND on this box (wantedBy = [] in labs/k8s-telemetry).
-#    The chat UI is a daily-driver tool; it must not depend on the cluster
-#    being up. This service is light (~300 MB RAM) and auto-starts.
+#    127.0.0.1:11434. A container would need OLLAMA_HOST=0.0.0.0 + a
+#    bridge-network firewall hole + a volume — three new failure modes
+#    for zero benefit.
+#  • The chat UI is a daily-driver tool: light (~300 MB RAM), auto-starts,
+#    and must not depend on anything else being up.
 # If the AI stack later grows into a multi-service lab (Qdrant, rerankers)
-#    exposed on the LAN, revisit — that's the moment a k3s Deployment under
-#    labs/ starts paying for itself.
+#    exposed on the LAN, revisit — that's the moment containerizing starts
+#    paying for itself.
 #
 # RAG: embeddings run through OLLAMA (RAG_EMBEDDING_ENGINE=ollama +
 # nomic-embed-text, pulled via loadModels). That REQUIRES

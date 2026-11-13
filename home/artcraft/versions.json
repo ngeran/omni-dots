@@ -2,22 +2,22 @@
   "photocraft": {
     "displayName": "PhotoCraft",
     "repo": "storytold/photocraft",
-    "version": "0.21.0",
-    "url": "https://github.com/storytold/photocraft/releases/download/v0.21.0/photocraft-0.21.0-linux-x86_64.AppImage",
-    "hash": "sha256-dyZTOtqliWQT0s4L6FjVIiVkUL/vJE+8VDO+1Pmfpgs="
+    "version": "0.23.1",
+    "url": "https://github.com/storytold/photocraft/releases/download/v0.23.1/photocraft-0.23.1-linux-x86_64.AppImage",
+    "hash": "sha256-BXR7PlJ+HgoMHeOZcDYc84yPyn6NPjYB7yCC+w5t0X8="
   },
   "vectorcraft": {
     "displayName": "VectorCraft",
     "repo": "storytold/vectorcraft",
-    "version": "0.22.0",
-    "url": "https://github.com/storytold/vectorcraft/releases/download/v0.22.0/vectorcraft-0.22.0-linux-x86_64.AppImage",
-    "hash": "sha256-CaaNIiMlMCGcEmQ7t+ntprH2d4y/ny8vxG/5biJZ97A="
+    "version": "0.24.1",
+    "url": "https://github.com/storytold/vectorcraft/releases/download/v0.24.1/vectorcraft-0.24.1-linux-x86_64.AppImage",
+    "hash": "sha256-vc5+gumB+fTtC/JfpvJeb+T6sn6JZB5vlIiZ4BsTpRQ="
   },
   "pdfcraft": {
     "displayName": "PdfCraft",
     "repo": "storytold/pdfcraft",
-    "version": "0.19.0",
-    "url": "https://github.com/storytold/pdfcraft/releases/download/v0.19.0/pdfcraft-0.19.0-linux-x86_64.AppImage",
-    "hash": "sha256-fW9YdaTWjPH9K+jbnzBTFCwlBzUMF/GEEjDvJsIsCzY="
+    "version": "0.21.1",
+    "url": "https://github.com/storytold/pdfcraft/releases/download/v0.21.1/pdfcraft-0.21.1-linux-x86_64.AppImage",
+    "hash": "sha256-cwJ2zamt2z1I8mxgJobRj8W8Dr42CmCi9SLXDP1CjSE="
   }
 }

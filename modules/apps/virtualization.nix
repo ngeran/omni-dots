@@ -1,9 +1,11 @@
 # =========================================================================
-# VIRTUALIZATION — libvirt/KVM + Docker (VMs, virt-manager, registry host)
+# VIRTUALIZATION — libvirt/KVM + Docker (VMs, virt-manager, container engine)
 # =========================================================================
 # On-demand philosophy mirrors the rest of the system: heavy daemons do not
-# run until something needs them. Docker stays boot-started because the
-# local registry container (labs/k8s-registry.nix) auto-starts on top of it.
+# run until something needs them. Docker is the exception — it stays
+# boot-started BY CHOICE (it used to be required by the k8s registry
+# container; that lab is gone, but docker starting at boot is cheap and
+# expected to "just work").
 #
 # CLEANED 2026-09-15 (audit): dropped options/packages that re-stated
 # defaults or were never used (runAsRoot=true default, empty networking
@@ -34,7 +36,7 @@
     };
   };
 
-  # On-demand: do NOT auto-start libvirtd at boot (mirrors k3s / ollama). The
+  # On-demand: do NOT auto-start libvirtd at boot (mirrors ollama). The
   # libvirtd + virtlogd daemons and their sockets are boot overhead for VMs you
   # only run occasionally. virt-manager still works — `libvirtd.socket` stays
   # enabled, so the FIRST API call (opening virt-manager, `virsh`) socket-

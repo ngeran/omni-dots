@@ -262,7 +262,7 @@
           # ── The languages this machine edits DAILY but had no LSP for ──
           nixd.enable = true;   # Nix: hover docs, go-to-definition on options,
                                 # inline eval of the config you're reading now
-          yamlls.enable = true; # YAML: k3s manifests (labs/, restor8)
+          yamlls.enable = true; # YAML: compose files, CI configs, MCP defs
           lua_ls = {            # Lua: hypr/*.lua + Quickshell-era lua configs
             enable = true;
             # `hl` is the global the hypr lua config wrapper provides
@@ -351,7 +351,7 @@
             html = [ "prettierd" ];
             css = [ "prettierd" ];
             json = [ "prettierd" ];
-            yaml = [ "prettierd" ];   # k3s manifests
+            yaml = [ "prettierd" ];   # compose/CI/MCP YAML files
             markdown = [ "prettierd" ];
             nix = [ "nixfmt" ];       # this very repo
             lua = [ "stylua" ];       # hypr/quickshell lua files

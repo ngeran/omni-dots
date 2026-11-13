@@ -1,73 +1,27 @@
 # =========================================================================
-# build → push → rollout for the hugo static site
+# hugo static site — dev → smoke-test → publish recipes
 # =========================================================================
-# k3s (default):  requires omni-nix's k3s cluster + local registry
-#                 (127.0.0.1:5000) running — k3s is on-demand, start it first:
-#                   sudo systemctl start k3s
-# Cloudflare Pages (public URL):  `just cf` uploads the Nix-built static site.
+# serve:  local dev server, live reload → http://localhost:1313
+# build:  nix build .#image   (nginx OCI image serving the built site)
+# test:   docker smoke — load the image, run it, curl / for a 200
+# check:  hugo production build (catches broken layouts / frontmatter)
+# cf:     publish the Nix-built site to Cloudflare Pages (public URL)
 #   one-time:  wrangler login   (or: export CLOUDFLARE_API_TOKEN=…)
 #              wrangler pages project create hugo-site --production-branch main
 # =========================================================================
 set shell := ["bash", "-c"]
 
-image := "localhost:5000/hugo-site"
-tag   := "latest"
-ns    := "default"
-dep   := "hugo-site"
-port  := "8080"          # nginx container listen port (non-root high port)
+dep        := "hugo-site"   # container name used by `just test`
+port       := "8080"        # nginx listen port inside the image (non-root high port)
 cf_project := "hugo-site"   # Cloudflare Pages project name (create once, see header)
 
 # Build the Nix image (no Dockerfile, no docker).
 build:
     nix build .#image --out-link result
 
-# Push to the local registry over HTTP (no docker).
-push: build
-    #!/usr/bin/env bash
-    set -euo pipefail
-    skopeo copy --insecure-policy --dest-tls-verify=false \
-      docker-archive:"$(readlink -f result)" \
-      docker://"{{image}}:{{tag}}"
-
-# Apply manifests + roll the Deployment so k3s pulls the new image.
-deploy: push
-    #!/usr/bin/env bash
-    set -euo pipefail
-    kubectl apply -f manifests/
-    kubectl -n {{ns}} rollout restart deployment/{{dep}}
-    kubectl -n {{ns}} rollout status deployment/{{dep}} --timeout=120s || {
-      echo "FAIL rollout - pod status + last crash log:"
-      kubectl -n {{ns}} get pods
-      kubectl -n {{ns}} logs deployment/{{dep}} --previous --tail=40
-      exit 1
-    }
-
 # Local dev server (live reload) → http://localhost:1313. Source lives in ./site.
 serve:
     cd site && hugo server -D --buildDrafts
-
-logs:
-    kubectl -n {{ns}} logs deploy/{{dep}} -f
-
-# Forward the cluster's :80 → local :8080.
-forward:
-    kubectl -n {{ns}} port-forward svc/{{dep}} 8080:80
-
-# Pre-flight: k3s up, local registry reachable, git index clean (nix evaluates
-# the git INDEX, not the worktree, so unstaged edits to flake.nix/app are blind).
-doctor:
-    #!/usr/bin/env bash
-    set -uo pipefail
-    ok=1
-    systemctl is-active --quiet k3s && echo "  k3s        up" || { echo "  k3s        DOWN -> sudo systemctl start k3s"; ok=0; }
-    curl -sf --max-time 3 http://localhost:5000/v2/ >/dev/null && echo "  registry   localhost:5000 reachable" || { echo "  registry   UNREACHABLE -> start k3s / the registry"; ok=0; }
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      n=$(git status --porcelain . 2>/dev/null | wc -l)
-      [ "$n" = 0 ] && echo "  git        clean" || echo "  git        WARN - $n unstaged/untracked here (nix uses the git INDEX: stage with git add or nix build ignores them)"
-    else
-      echo "  git        (not a worktree - skip)"
-    fi
-    [ "$ok" = 1 ] && echo "doctor: ready" || { echo "doctor: NOT ready"; exit 1; }
 
 # Local smoke: load the built image into docker, run it, curl /, expect 200.
 test: build
@@ -96,10 +50,10 @@ check:
 
 # ── Cloudflare Pages (public URL) ───────────────────────────────────────────
 # Builds the static site with Nix (packages.site) and uploads it directly —
-# no Dockerfile, no Git-integration build, the same bytes you'd ship to k3s.
+# no Dockerfile, no Git-integration build; the same bytes the image serves.
 
 # One-time setup (wrangler login + project create) is in the header above.
-# Deploy to PRODUCTION — creates the <project>.pages.dev URL, incremental on re-run.
+# Publish to PRODUCTION — creates the <project>.pages.dev URL, incremental on re-run.
 cf:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -109,7 +63,7 @@ cf:
     wrangler pages deploy ./site-out --project-name {{cf_project}} --branch main
 
 # Override the branch:  CF_BRANCH=feat-x just cf-preview
-# Deploy a PREVIEW build (a branch-specific preview URL, not production).
+# Publish a PREVIEW build (a branch-specific preview URL, not production).
 cf-preview:
     #!/usr/bin/env bash
     set -euo pipefail

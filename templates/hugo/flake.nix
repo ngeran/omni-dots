@@ -11,12 +11,12 @@
 # Hugo builds OFFLINE (no network), so the image builds fully reproducibly with
 # NO lock/hash step (unlike #react's npm deps).
 #
-# Dev → deploy loop:
-#     just build && just push && just deploy        # k3s (local)
+# Dev loop:
+#     just test                                      # docker smoke (build + run + curl)
 #     just cf                                        # Cloudflare Pages (public)
 # =========================================================================
 {
-  description = "Hugo static site — Nix devShell + nginx image, just → k3s";
+  description = "Hugo static site — Nix devShell + nginx image";
 
   inputs.nixpkgs.url = "nixpkgs/nixos-26.05";
 
@@ -26,7 +26,7 @@
       forAllSystems = nixpkgs.lib.genAttrs systems;
       pkgsFor = system: nixpkgs.legacyPackages.${system};
 
-      imageName = "localhost:5000/hugo-site";   # keep in lockstep with justfile + manifests
+      imageName = "hugo-site";                  # `just test` docker-loads this image
       imageTag  = "latest";
     in {
       packages = forAllSystems (system:
@@ -88,8 +88,8 @@
             chmod 1777 $out/tmp
           '';
 
-          # Non-root user (UID 1000) baked in so the manifest can set
-          # runAsNonRoot + runAsUser=1000. nginx runs as this uid (no `user`
+          # Non-root user (UID 1000) baked in so the image runs unprivileged.
+          # nginx runs as this uid (no `user`
           # directive in nginx.conf above).
           nonRootUser = pkgs.runCommand "non-root-user" { } ''
             mkdir -p $out/etc
@@ -109,8 +109,7 @@
               nonRootUser
             ];
             # nginx's writable dirs (/tmp pid+temp, /var/log/nginx, /var/cache/nginx)
-            # are provided by mounts at runtime: emptyDir + fsGroup in the k3s
-            # manifest (deploy), `--tmpfs /tmp` in `just test` (smoke). The image
+            # are handled at runtime by `--tmpfs /tmp` in `just test` (smoke). The image
             # itself stays read-only-friendly; -e /dev/stderr below keeps the
             # pre-config error log off /var/log/nginx entirely.
             config = {
@@ -129,7 +128,7 @@
             packages = with pkgs; [
               hugo         # extended build (SCSS / asset pipeline)
               nodejs_22    # Tailwind / PostCSS pipeline if used (npm install once)
-              just skopeo kubectl
+              just
               wrangler     # Cloudflare Pages direct-upload deploy (just cf)
             ];
             shellHook = ''
@@ -138,7 +137,7 @@
               echo "      hugo    $(hugo version 2>/dev/null | awk '{print $2}' | tr -d '+-' || echo '—')"
               echo "      image   ${imageName}:${imageTag}"
               echo "      serve   hugo server -D   (→ http://localhost:1313)"
-              echo "      deploy  just build && just push && just deploy   (k3s)"
+              echo "      test    just test   (docker smoke: run + curl /)"
               echo "      cf      just cf                                          (Cloudflare Pages)"
               echo ""
             '';

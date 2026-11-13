@@ -27,8 +27,6 @@
     ../../modules/pwnagotchi.nix       # USB OTG gadget ethernet + avahi/mDNS host-side for the pwni
     ../../modules/serial-access.nix    # uaccess ACL on ttyACM/ttyUSB — browser firmware flashers (Web Serial)
     ../../modules/ssh.nix
-    ../../labs/k8s-telemetry/nix/k3s.nix  # opt-in: single-node k3s cluster (telemetry lab)
-    ../../labs/k8s-registry.nix           # opt-in: local registry for fast dev->k3s deploys (nutils etc.)
   ];
 
   networking.hostName = "nixos-btw";
@@ -74,8 +72,9 @@
   # `systemd-analyze blame` showed NetworkManager-wait-online.service eating
   # 14.5 s of the ~18 s userspace boot: it blocks boot completion until EVERY
   # interface (Wi-Fi + Ethernet) reports "online". Nothing on this machine
-  # needs the network before the desktop appears — the registry container
-  # only LISTENS on :5000, and k3s/ollama are on-demand. This removes the
+  # needs the network before the desktop appears — the heavyweight daemons
+  # (ollama, libvirtd) are on-demand, and docker clients tolerate the daemon
+  # coming up on its own. This removes the
   # service from network-online.target's wants, so boot no longer waits on
   # link state. The network still comes up in the background exactly as
   # before; NM itself is untouched.

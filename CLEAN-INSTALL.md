@@ -149,8 +149,9 @@ Then verify (re-login if needed for the desktop to come up):
 - **Theme:** `~/.cache/theme/colors.json` reseeded by activation; bar shows the theme.
 - **Data mounts:** `ls /mnt/INLAND-500GB /mnt/WD_BLACK-500GB` (auto-mounted per the flake — only
   if those drives are connected).
-- **`/persist`:** the flake bind-mounts nvim state onto `/persist` and k3s/docker use
-  `/persist/var/lib/...`. If a boot stalls on a `/persist` mount, `sudo mkdir -p`
+- **`/persist`:** the flake bind-mounts nvim state onto `/persist`; old k3s/docker
+  state under `/persist/var/lib/...` is no longer needed and can be removed. If a
+  boot stalls on a `/persist` mount, `sudo mkdir -p`
   the target dir (see `hosts/desktop/default.nix`) + `omni-apply`.
 
 **Wifi on the X870E (verify):** the board's Wi-Fi 7 is a **Realtek RTL8922AE**,
@@ -180,6 +181,6 @@ storm). Ethernet (RTL8125 2.5GbE) works regardless, so wifi never blocks the ins
 | Boot fails / can't mount root | `hardware-configuration.nix` UUIDs/filesystems are wrong — re-check §5 (regenerate, don't reuse the old one). |
 | Blank display after boot | RTX 5080 needs the NVIDIA driver (`modules/nvidiagpu-compute.nix`). Boot the ISO, re-check `nixos-install` built it; the `nvidia` driver must be in the toplevel. |
 | `omni-apply`: "would be clobbered" / `.backup` files | the flake's `backupFileExtension = "backup"` moves conflicting live files aside; if still stuck, move the live file out of the way and re-run. |
-| `/persist` mount fails at boot | `sudo mkdir -p /persist/<subdir>` for each bind target in `hosts/desktop/default.nix`, then `omni-apply`. (k3s specifically needs `sudo mkdir -p /persist/var/lib/rancher/k3s` before its first start.) |
+| `/persist` mount fails at boot | `sudo mkdir -p /persist/<subdir>` for each bind target in `hosts/desktop/default.nix`, then `omni-apply`. |
 | Wifi not detected | the board uses Realtek RTL8922AE (`rtw89_8922ae`, auto-loads). Check `ip link` / `lspci -nnk` — there's no flake wifi module to edit. Ethernet (RTL8125) works meanwhile. |
 | Can't clone private repos on the ISO | restore the repo dirs from the USB backup (§5 Option A), or copy the SSH key onto the ISO, or clone over HTTPS with a GitHub PAT. |

@@ -9,7 +9,7 @@
 #
 # What remains here is genuinely cross-project:
 #   • programming fonts — used by every editor/terminal
-#   • dev-service env vars — Claude gateway key path + kubeconfig location
+#   • dev-service env vars — Claude gateway key path
 #
 { config, pkgs, ... }:
 
@@ -34,12 +34,6 @@
     # Point Claude Code at the un-tracked key file (see essentials.nix →
     # configure-claude activation script). Env fallback path, never a literal.
     ANTHROPIC_AUTH_TOKEN_FILE = "$HOME/.config/secrets/zai_key";
-
-    # kubectl / k3s lab. The kubeconfig is runtime-written by k3s (not a
-    # store path), so point kubectl at the user copy in ~/.kube/config. Set
-    # globally — harmless when k3s is off (kubectl just reports a missing
-    # file). See labs/k8s-telemetry/CHEATSHEET.md.
-    KUBECONFIG = "$HOME/.kube/config";
   };
 
   # Context7 (docs MCP, modules/apps/opencode.nix) raises its free-tier rate

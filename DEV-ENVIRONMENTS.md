@@ -7,7 +7,7 @@ Nix flake + direnv dev-shell workflow, and how to start fresh ones.
 > tools it needs; `direnv` auto-loads them on `cd`. Nothing is installed
 > globally — the system and `~/.config` stay clean.
 
-> **Related docs:** [README.md](README.md) (overview) · [PIPELINEv3.md](PIPELINEv3.md) (build Nix images + deploy to k3s) · [WORKFLOW.md](WORKFLOW.md) (editing the flake itself).
+> **Related docs:** [README.md](README.md) (overview) · [WORKFLOW.md](WORKFLOW.md) (editing the flake itself).
 
 ---
 
@@ -23,30 +23,26 @@ Ready scaffolds live in the flake as **per-stack templates**:
 
 | Template | Ships |
 |---|---|
-| `#python` | python devShell **+ Nix-built image + justfile + k8s manifests** |
-| `#react`  | vite devShell + nginx image + justfile + manifests |
-| `#hugo`   | hugo devShell + nginx image + justfile + manifests |
+| `#python` | python devShell **+ Nix-built image + justfile** |
+| `#react`  | vite devShell + nginx image + justfile |
+| `#hugo`   | hugo devShell + nginx image + justfile |
 | `#dev`    | kitchen-sink devShell only (node/python/hugo/tailwind) — the default |
 
 `#python`/`#react`/`#hugo` go beyond a devShell: they build a **reproducible OCI
-image with Nix** (no Dockerfile) and deploy it to the local k3s cluster.
+image with Nix** (no Dockerfile) and smoke-test it locally in docker (`just test`).
 
 ```bash
 mkdir my-app && cd my-app && git init
 nix flake init -t ~/.omni-nix#python    # or #react / #hugo / #dev
-git add flake.nix .envrc justfile app manifests   # #python/#react. #hugo → use `site/` (no app/); #dev → just flake.nix .envrc
+git add flake.nix .envrc justfile app   # #python/#react. #hugo → use `site/` (no app/); #dev → just flake.nix .envrc
 direnv allow
 
-# build → push (skopeo, no docker) → k3s rollout:
-just build && just push && just deploy
-just logs       # tail the pod
-just forward    # port-forward :8080
+# build + docker smoke test (load, run, curl /):
+just build && just test
 ```
 
-Prerequisites, all wired by this repo: k3s (`labs/k8s-telemetry/nix/k3s.nix`,
-on-demand — `sudo systemctl start k3s`), a local registry on `127.0.0.1:5000`
-(`labs/k8s-registry.nix`), and `just`+`skopeo` globally (`modules/apps/dev-tools.nix`).
-The lab pyapp at `labs/k8s-telemetry/python-app/` is the live reference.
+Prerequisites, all wired by this repo: docker (starts at boot —
+`modules/apps/virtualization.nix`) and `just` (`modules/apps/dev-tools.nix`).
 
 ## Prerequisites (already wired into this repo)
 

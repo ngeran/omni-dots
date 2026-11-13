@@ -1,10 +1,7 @@
 """Plain runnable script (variant = "script").
 
-Runs to completion (exit 0) → ideal for a Kubernetes Job. Run locally
-(from app/, after `uv venv` in the repo root):
-    uv run python script.py
-In k8s it's deployed as a Job (manifests/script/job.yaml); `just deploy`
-submits / re-runs it.
+Runs to completion (exit 0). Run it locally (variant = "script"):
+    just run      # from the repo root — runs app/script.py in the devShell venv
 
 Add CLI args, a loop, env config, or network calls to suit your task.
 """
