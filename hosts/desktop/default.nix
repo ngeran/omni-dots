@@ -27,6 +27,7 @@
     ../../modules/pwnagotchi.nix       # USB OTG gadget ethernet + avahi/mDNS host-side for the pwni
     ../../modules/serial-access.nix    # uaccess ACL on ttyACM/ttyUSB — browser firmware flashers (Web Serial)
     ../../modules/ssh.nix
+    ../../modules/vpn.nix              # WireGuard (NM) + Tailscale for the velocity bar's nikos.wireguard plugin
   ];
 
   networking.hostName = "nixos-btw";
@@ -41,6 +42,10 @@
   # the daemon only keeps mpvpaper instances alive; WallpaperService drives
   # every `set`/`pause`/`resume` over the wallpaper-engine CLI.
   services.wallpaperEngine.enable = true;
+
+  # Tailscale daemon + operator access for the bar's WireGuard/Tailscale
+  # plugin (see modules/vpn.nix). WireGuard itself is NM connections only.
+  services.velocityVpn.enable = true;
 
   # =========================================================================
   # ArtCraft creative suite (photocraft / vectorcraft / pdfcraft)
