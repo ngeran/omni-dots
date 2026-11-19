@@ -47,7 +47,7 @@
 
     # Pulled automatically by `ollama-model-loader.service` the first time
     # ollama.service starts (~20 GB download; afterwards it's a no-op check).
-    #   • qwen2.5-coder:32b — deep codegen CHAT model (Open WebUI). NOTE:
+    #   • qwen2.5-coder:32b — deep codegen CHAT model. NOTE:
     #     the qwen2.5-CODER variants cannot emit structured tool_calls
     #     through this Ollama build (probed 2026-08-21: bare JSON as text,
     #     both 14b and 32b, any temperature/prompt) — they must NOT be used
@@ -55,15 +55,11 @@
     #     model narrating tool calls that never executed.
     #   • qwen2.5:14b — base Qwen, proven structured tool-caller = the
     #     local AGENT model (see the -agent variant unit below).
-    #   • nomic-embed-text — 274 MB embedding model for Open WebUI RAG
-    #     (RAG_EMBEDDING_ENGINE=ollama in modules/open-webui.nix). Runs
-    #     mostly on CPU-class compute; ~0.5 GB VRAM while resident.
     #   • gpt-oss:20b — general/reasoning MoE; migrated 2026-11-07 from a
     #     manual ~/.ollama store (rogue `ollama serve` era) via blob copy.
     loadModels = [
       "qwen2.5-coder:32b"
       "qwen2.5:14b"
-      "nomic-embed-text"
       "gpt-oss:20b"
     ];
     # syncModels stays false — we only DECLARATIVELY pull, never auto-delete
@@ -89,11 +85,10 @@
 
       # One request slot: each parallel slot duplicates the KV cache.
       OLLAMA_NUM_PARALLEL = "1";
-      # TWO resident models — LLM + embedding. This is REQUIRED for RAG: with
-      # 1, every embedding request (each Open WebUI knowledge query) would
-      # EVICT the resident coder model and force a ~20 GB reload. The embed
-      # model is ~0.5 GB, so the cost is a sliver of the 32B's GPU layers.
-      OLLAMA_MAX_LOADED_MODELS = "2";
+      # ONE resident model — 16 GB VRAM can't usefully co-reside two
+      # multi-GB models anyway; switching models evicts + reloads from
+      # INLAND (~20 GB for the 32b) instead of thrashing VRAM.
+      OLLAMA_MAX_LOADED_MODELS = "1";
 
       # Default is 5m — too eager for an on-demand daemon you start
       # deliberately. Keep the model resident for a working session instead

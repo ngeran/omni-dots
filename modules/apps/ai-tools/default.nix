@@ -15,7 +15,7 @@
 #   • Claude Code        → modules/apps/claude.nix
 #   • opencode + MCP     → modules/apps/opencode.nix
 #   • junos-mcp server   → modules/apps/junos-mcp/
-#   • Ollama / Open WebUI → modules/ollama.nix, modules/open-webui.nix
+#   • Ollama               → modules/ollama.nix
 #
 { ... }:
 
