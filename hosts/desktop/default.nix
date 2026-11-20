@@ -27,6 +27,7 @@
     ../../modules/serial-access.nix    # uaccess ACL on ttyACM/ttyUSB — browser firmware flashers (Web Serial)
     ../../modules/ssh.nix
     ../../modules/vpn.nix              # WireGuard (NM) + Tailscale for the velocity bar's nikos.wireguard plugin
+    ../../modules/vnc.nix              # TigerVNC viewer for the velocity bar's nikos.vnc plugin
   ];
 
   networking.hostName = "nixos-btw";
@@ -45,6 +46,10 @@
   # Tailscale daemon + operator access for the bar's WireGuard/Tailscale
   # plugin (see modules/vpn.nix). WireGuard itself is NM connections only.
   services.velocityVpn.enable = true;
+
+  # TigerVNC client for the bar's VNC plugin (see modules/vnc.nix): puts
+  # vncviewer + vncpasswd on the system PATH.
+  services.velocityVnc.enable = true;
 
   # =========================================================================
   # ArtCraft creative suite (photocraft / vectorcraft / pdfcraft)
