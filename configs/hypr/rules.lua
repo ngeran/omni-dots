@@ -85,3 +85,24 @@ for cls, sz in pairs(custom_floats) do
   for k, v in pairs(overlay_base) do rule[k] = v end
   hl.window_rule(rule)
 end
+
+-- ── 5. VNC viewer (TigerVNC) ────────────────────────────────────────────────
+-- The bar's nikos.vnc plugin launches `vncviewer -FullScreen`, but this build
+-- does not honor the XWayland client's own fullscreen request at map time —
+-- sessions opened tiled at half the output instead. Force the session window
+-- fullscreen here (verified live 2026-11-20: the rule key engages `fullscreen`
+-- where the argv flag does not). The pre-auth password dialog keeps a small
+-- centered float instead of tiling into the top-left corner.
+
+hl.window_rule({
+  name = "vncviewer-auth-dialog",
+  match = { class = "^Vncviewer$", title = "^VNC authentication$" },
+  float  = true,
+  center = true,
+})
+
+hl.window_rule({
+  name = "vncviewer-session",
+  match = { class = "^Vncviewer$", title = " - TigerVNC$" },
+  fullscreen = true,
+})
