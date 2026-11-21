@@ -177,6 +177,32 @@ in
   # in turn and GitHub rejects the connection with "Too many authentication
   # failures" before it ever tries the right one.
   home.file.".ssh/config".text = ''
+  # k8s-lab VMs (libvirt NAT 192.168.122.0/24): root + the lab key only
+  # (cloud-init bakes this key for root; there is no other account).
+  # Two blocks so BOTH forms work: `ssh root@192.168.122.10` and `ssh cp-1`.
+  # accept-new: new VMs (fresh host keys after a repave) connect without a
+  # prompt, while a CHANGED key on a known host still refuses — same safety
+  # as before, rescue via `ssh-keygen -R 192.168.122.<X>` (documented in the
+  # lab runbook §1.7).
+    Host 192.168.122.10 192.168.122.21 192.168.122.22
+        User root
+        IdentityFile ${config.home.homeDirectory}/.ssh/k8s-lab_ed25519
+        IdentitiesOnly yes
+        StrictHostKeyChecking accept-new
+
+    Host cp-1 worker-1 worker-2
+        User root
+        IdentityFile ${config.home.homeDirectory}/.ssh/k8s-lab_ed25519
+        IdentitiesOnly yes
+        StrictHostKeyChecking accept-new
+
+    Host cp-1
+        HostName 192.168.122.10
+    Host worker-1
+        HostName 192.168.122.21
+    Host worker-2
+        HostName 192.168.122.22
+
     Host github.com
         HostName github.com
         User git
