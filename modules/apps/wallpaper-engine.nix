@@ -15,7 +15,8 @@ let
     gnused
   ];
 
-  # Gate ExecStart on a Wayland socket existing — mirrors home/quickshell.nix.
+  # Gate ExecStart on a Wayland socket existing — mirrors the velocity
+  # flake's wayland gate (and home/hypridle.nix's).
   # This host runs Hyprland OUTSIDE systemd: graphical-session.target never
   # activates, so the unit is wantedBy default.target and may start BEFORE the
   # compositor creates its socket. Without the gate mpvpaper dies with "could
@@ -134,14 +135,15 @@ in
     systemd.user.services.wallpaper-engine = {
       description = "Animated wallpaper engine (mpvpaper watchdog)";
       # NOT graphical-session.target: it never activates on this host (Hyprland
-      # runs outside systemd — see home/quickshell.nix). default.target +
-      # ExecStartPre socket gate replaces it.
+      # runs outside systemd — see home/hypridle.nix's header). default.target
+      # + ExecStartPre socket gate replaces it.
       wantedBy = [ "default.target" ];
       # NixOS-level user units are shared by EVERY user manager on the host:
       # greetd's greeter (uid 994) ran its own copy and crash-looped at boot
       # (2026-10-31: 3 err-level "Failed to start" lines, start-limit hit).
       # It never has a Wayland socket, so skip it entirely. HM-level units
-      # (hypridle, quickshell) don't need this — they exist only for nikos.
+      # (hypridle, velocity's quickshell-bar) don't need this — they exist
+      # only for nikos.
       unitConfig.ConditionUser = "nikos";
       serviceConfig = {
         ExecStartPre = "${waitWayland}/bin/wallpaper-engine-wait-wayland";

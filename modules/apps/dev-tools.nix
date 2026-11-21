@@ -14,8 +14,8 @@
 {
   # AI/agent-development CLI tools live in their own folder (one file per
   # tool, with a hub default.nix): jq/yq/uv/tmux/delta/compose/websocat.
-  # Imported here — not in hosts/desktop — so BOTH hosts get them, matching
-  # this module's "global CLI utilities, every machine" contract.
+  # Imported here — not in hosts/desktop — matching this module's
+  # "global CLI utilities" contract.
   imports = [
     ./ai-tools
   ];

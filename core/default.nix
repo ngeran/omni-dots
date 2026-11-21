@@ -6,8 +6,8 @@
   # =========================================================================
   # Replaces the deprecated `system = "x86_64-linux"` argument to
   # nixpkgs.lib.nixosSystem (which emits the "'system' has been renamed to
-  # stdenv.hostPlatform.system" evaluation warning). Both hosts (desktop +
-  # dell3440) are x86_64-linux and import this module, so it's set once here.
+  # 'stdenv.hostPlatform.system'" evaluation warning). Set once here for every
+  # module — this flake defines a single x86_64-linux host.
   nixpkgs.hostPlatform = "x86_64-linux";
 
   # Bootloader setup
@@ -87,9 +87,9 @@
 
   # From old config: Required for proprietary drivers and many dev tools
   nixpkgs.config.allowUnfree = true;
-  # (powertop moved to hosts/dell3440 — on an always-on-AC desktop its aggressive
-  #  USB/device autosuspend + CPU tweaks fight NVIDIA power management and can drop
-  #  USB peripherals; the laptop keeps it for battery life.)
+  # (powertop is deliberately NOT installed — on an always-on-AC desktop its
+  #  aggressive USB/device autosuspend + CPU tweaks fight NVIDIA power
+  #  management and can drop USB peripherals.)
 
   # =========================================================================
   # Journal reliability — keep crash evidence out of the lost-write window

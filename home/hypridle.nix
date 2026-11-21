@@ -14,8 +14,8 @@
 #      the running daemon. (The ingested config is a plain read-only symlink;
 #      hypridle can read it directly — the cache copy was never needed.)
 #
-# The unit mirrors the Quickshell instances in home/quickshell.nix: it is
-# started EXPLICITLY by environment.lua's hyprland.start hook (after the
+# The unit mirrors the quickshell-bar unit (owned by the velocity flake): it
+# is started EXPLICITLY by environment.lua's hyprland.start hook (after the
 # session environment has been imported into the systemd user manager) and has
 # NO Install section on purpose — on this host graphical-session.target is
 # never activated (Hyprland runs outside systemd), so binding to it would mean
@@ -26,11 +26,11 @@
 let
   # Absolute path to the hypridle binary (home-manager profile symlink). A
   # systemd user service does NOT inherit the interactive shell's PATH, so the
-  # path must be resolved here (same pattern as qsBin in quickshell.nix).
+  # path must be resolved here (velocity's own units resolve theirs the same way).
   hypridleBin = "/etc/profiles/per-user/${config.home.username}/bin/hypridle";
 
   # Defensive gate: block until the compositor's Wayland socket exists (same
-  # pattern as qs-wait-wayland in home/quickshell.nix). hypridle talks the
+  # pattern as wallpaper-engine's gate). hypridle talks the
   # ext-idle-notify Wayland protocol, so without a display it would die — and
   # with Restart=on-failure it would crash-loop until the socket appears.
   # 120 × 0.5 s = up to 60 s of waiting; normally it exits instantly because

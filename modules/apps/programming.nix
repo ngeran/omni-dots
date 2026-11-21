@@ -18,7 +18,7 @@
   # 1. Programming Fonts
   # =========================================================================
   # The actual FONT FILES (jetbrains-mono, fira-code, noto, …) live in ONE
-  # place: modules/fonts.nix (system layer, both hosts). They used to ALSO be
+  # place: modules/fonts.nix (system layer). They used to ALSO be
   # listed here — the same drift the repo's one-source-of-truth rule forbids.
   # What remains: the user-level fontconfig enablement (HM font cache) and
   # the fc-* query tools.

@@ -77,25 +77,28 @@ in
 
     # System Tools
     btop
-    qrencode # quickshell bar: TrayCard NETWORK popup wifi-share QR
-    python3  # quickshell bar: omarchy-xray plugin backend (JSON-lines inspector)
+    # Backend for the quickshell bar's omarchy-xray plugin (JSON-lines
+    # inspector). NOT in velocity's runtimeInputs — owned here.
+    python3
 
-    # Clipboard history — quickshell bar: velocity.clipboard picker (J8).
-    # cliphist store capture arms at the picker's first open; wl-clipboard
-    # provides wl-paste (capture) + wl-copy (paste-back).
-    cliphist
+    # wl-copy/wl-paste for the IN-REPO consumers: the screenshot keybind
+    # (configs/hypr/keybindings.lua: grim -g "$(slurp)" - | wl-copy) and
+    # nixvim's clipboard provider (modules/apps/nixvim/default.nix). The
+    # velocity HM module also ships wl-clipboard (same store path) — kept
+    # here so those two survive even if programs.velocity is ever disabled.
     wl-clipboard
 
-    # Screen recording — quickshell bar: velocity.record service (J9). slurp
-    # is already present; wf-recorder does the capture (mp4 to ~/Videos).
-    wf-recorder
+    # REMOVED (dedupe 2026-11-21): qrencode / cliphist / wf-recorder used to
+    # be installed here "for the bar" — velocity's HM module ships all three
+    # (runtimeInputs are installed into the user profile too, nix/hm-module.nix).
+    # One owner: if velocity is disabled, its tools die with it — correctly.
 
     # Creative & Engineering Suite — the SINGLE source of truth for these
     # (NOT also in modules/apps/desktop-apps.nix; dedup'd so the two layers
     # can't drift). inkscape-with-extensions is the superset of plain inkscape.
     kicad
     # Disabled (NOT removed) 2026-10-18 — replaced by the ArtCraft suite
-    # (modules/artcraft.nix: photocraft/vectorcraft/pdfcraft). Uncomment to
+    # (home/artcraft/: photocraft/vectorcraft/pdfcraft). Uncomment to
     # restore.
     # inkscape-with-extensions
     # krita

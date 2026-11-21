@@ -20,7 +20,7 @@ let
   # and move the nixpkgs-davinci pin in flake.nix to it.
   # ---------------------------------------------------------------------
   pkgs-davinci = import inputs.nixpkgs-davinci {
-    system = pkgs.system;
+    system = pkgs.stdenv.hostPlatform.system;
     config.allowUnfree = true; # davinci-resolve is unfree (binary distribution)
   };
 

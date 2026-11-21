@@ -5,11 +5,7 @@ Step-by-step: wipe + reinstall NixOS on the new **ASUS X870E-PLUS TUF**
 Hyprland + Quickshell bar/settings + the Claude/z.ai gateway.
 
 > ⚠️ **Host: this guide is for the DESKTOP — `nixos-btw`** (ASUS X870E-PLUS TUF,
-> AMD Ryzen / NVIDIA RTX 5080, `hosts/desktop/`). The flake also defines a second
-> host, **`dell3440`** (Dell Latitude 3440 laptop — Intel CPU, integrated graphics,
-> `hosts/dell3440/`), with completely different hardware. This doc does **not**
-> cover it; for the Dell, adapt the partitioning + `hardware-configuration.nix` to
-> its hardware and install with `--flake ~/.omni-nix#dell3440`.
+> AMD Ryzen / NVIDIA RTX 5080, `hosts/desktop/`). The flake defines this one host.
 
 > This doc is committed to the repo, so it's on GitHub (`ngeran/omni-dots`) and
 > readable from your phone / the live ISO / another machine **after** you wipe.

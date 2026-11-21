@@ -8,8 +8,8 @@
 # in isolation.
 #
 # WIRING: this directory is imported by modules/apps/dev-tools.nix (the
-# "global CLI utilities, every machine" module), so BOTH hosts get everything
-# here — the desktop AND the dell3440 laptop.
+# "global CLI utilities" module) — everything here lands system-wide on
+# every host that imports dev-tools.
 #
 # NOT in this folder (they live elsewhere — one source of truth per package):
 #   • Claude Code        → modules/apps/claude.nix

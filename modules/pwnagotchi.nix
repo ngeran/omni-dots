@@ -69,8 +69,9 @@
   # ── Internet sharing: the desktop becomes the pwni's router ─────────────
   # Forwards + masquerades the gadget subnet out through whatever the current
   # uplink is (WiFi today, ethernet tomorrow), so the pwni can apt update /
-  # install plugins. The pwni-side counterpart is a default route + DNS there
-  # (see module header). Forwarding is global; the rules are per-subnet.
+  # install plugins. The pwni-side counterpart is a default route + DNS
+  # configured on the Pi itself. Forwarding is global; the FORWARD rules key
+  # on the gadget interface (-i), the MASQUERADE on its subnet.
   boot.kernel.sysctl."net.ipv4.ip_forward" = 1;
 
   networking.networkmanager.dispatcherScripts = [

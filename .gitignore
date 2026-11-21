@@ -8,6 +8,7 @@ result-*
 .npm/
 _logs/
 *.log
+unsloth_compiled_cache/
 
 # Personal Secrets and Dynamic Keys (Absolute Safeguard)
 .config/secrets/

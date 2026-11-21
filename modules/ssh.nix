@@ -7,9 +7,8 @@
 # so new devices need no key provisioning). Root stays key-only
 # (`prohibit-password`, the NixOS default) so root is not password-brute-forceable.
 #
-# openFirewall opens tcp/22 on networking.firewall. NOTE: this module is shared —
-# hosts/desktop AND hosts/dell3440 both import it, so BOTH machines accept
-# inbound SSH after this change.
+# openFirewall opens tcp/22 on networking.firewall. NOTE: single-host flake —
+# this module is imported only by hosts/desktop (nixos-btw).
 #
 # To harden later (key-only):
 #   1. settings.PasswordAuthentication = false

@@ -69,17 +69,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # -- ARTCRAFT (storytold's ArtCraft creative suite: PhotoCraft, VectorCraft,
-    # PdfCraft, ...) — upstream's prebuilt release tarballs packaged by
-    # olafkfreund's nix-craftapps flake. Consumed by modules/artcraft.nix (the
-    # programs.artcraft wrapper: per-app opt-ins + the `artcraft` life-cycle
-    # CLI). The input name MUST stay `nix-craftapps` — the helper CLI reads
-    # that name from flake.lock.
-    nix-craftapps = {
-      url = "github:olafkfreund/nix-craftapps";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # -- VELOCITY (the quickshell bar/settings rice) --
     # The live config dir IS its own flake: HM module (tools, fonts, cliphist
     # unit, keybinds single source) + NixOS module (velocity-lock PAM).
@@ -120,15 +109,15 @@
       description = "Project devShell — node / python / hugo / tailwind (direnv + nix flake)";
     };
     # Bare `nix flake init -t ~/.omni-nix` still gives the kitchen-sink dev shell.
-    defaultTemplate = self.templates.dev;
+    templates.default = self.templates.dev;
 
     nixosConfigurations = {
       # --- MAIN DESKTOP RIG ---
       nixos-btw = nixpkgs.lib.nixosSystem {
         # Externally provide `inputs` to all modules. `_module.args.inputs`
         # (below) is resolved through `config`, which recurses infinitely if a
-        # module uses `inputs` in its `imports` (e.g. modules/artcraft.nix
-        # importing inputs.nix-craftapps.nixosModules.default).
+        # module uses `inputs` in its `imports` (e.g. hosts/desktop/default.nix
+        # importing inputs.velocity.nixosModules.default).
         specialArgs = { inherit inputs; };
         modules = [
           nixos-hardware.nixosModules.common-cpu-amd

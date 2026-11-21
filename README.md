@@ -10,7 +10,7 @@ Deep-dive guides (this README is the overview):
 |---|---|
 | [**DEV-ENVIRONMENTS.md**](DEV-ENVIRONMENTS.md) | The per-project direnv + flake dev-shell workflow in detail — migrate existing projects, everyday use, troubleshooting. |
 | [**WORKFLOW.md**](WORKFLOW.md) | Making changes to THIS flake — the `git add → omni-apply → commit` cycle, where packages/configs/modules belong, the two-repo reload asymmetry, and common workflows + troubleshooting. |
-| [**CLEAN-INSTALL.md**](CLEAN-INSTALL.md) | Wipe + reinstall NixOS on the **desktop** host (`nixos-btw`) — backup, partition, regenerate hardware config, restore secrets, `omni-apply`. (The `dell3440` laptop host is separate.) |
+| [**CLEAN-INSTALL.md**](CLEAN-INSTALL.md) | Wipe + reinstall NixOS on the **desktop** host (`nixos-btw`) — backup, partition, regenerate hardware config, restore secrets, `omni-apply`. |
 
 ## Two repos
 
