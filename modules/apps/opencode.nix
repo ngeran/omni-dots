@@ -93,7 +93,7 @@ in
       # Dynamic context pruning (DCP): replaces stale tool output with
       # summaries so long sessions stay cheap. Pinned — the binary version is
       # owned by this flake, so don't let the plugin float on @latest.
-      plugin = [ "@tarquinen/opencode-dcp@3.2.0" ];
+      plugin = [ "@tarquinen/opencode-dcp@3.2.1" ];
 
       # opencode's own coarse compaction. `prune` is deprecated; DCP handles
       # the fine-grained pruning. `auto` keeps the safety net for very long
@@ -282,25 +282,22 @@ in
         }; # models
       }; # provider.zai-gateway
 
-    # ── Free-tier MCP servers ──────────────────────────────────────────────
+    # ── MCP servers ─────────────────────────────────────────────────────────
     # (local = opencode spawns the command; first call npx-downloads the
     # package into ~/.npm — a few seconds once, cached after)
     #
     # POSITION MATTERS (fixed 2026-09-15): this block used to sit INSIDE
     # provider.ollama. opencode's schema defines `mcp` only at the TOP level
-    # of settings, and provider entries accept no extra keys — so all four
-    # servers below were silently never registered. Keep it a sibling of
-    # `provider`, never a child.
+    # of settings, and provider entries accept no extra keys — so the servers
+    # were silently never registered. Keep it a sibling of `provider`, never
+    # a child.
+    #
+    # REMOVED 2026-11-22: an "anti-loop" server (`@opencode/anti-loop-mcp`)
+    # pointed at a package that does not exist on npm (404 on every npx) —
+    # it failed with status=failed in every session since it was added
+    # (see ~/.local/share/opencode/log). Loop protection for the local
+    # 14b-agent stays in modules/ollama.nix (Modelfile decoding params).
     mcp = {
-      # anti-loop: logic-layer cycle detection. While the 14b-agent model
-      # handles token-level repetition, this plugin monitors tool-call
-      # patterns to break infinite "ls -> cat -> ls" loops.
-      "anti-loop" = {
-        type = "local";
-        command = [ "${pkgs.nodejs}/bin/npx" "-y" "@opencode/anti-loop-mcp" ];
-        enabled = true;
-      };
-
       # context7: current library docs (FastAPI, Tailwind, PyEZ…) injected
       # into prompts — attacks the stale-training-data hallucinations.
       context7 = {

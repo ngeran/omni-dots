@@ -1,6 +1,9 @@
 # PLAN — k8s-lab Phase 1: from-scratch Kubernetes + Cilium on KVM (Arch guests)
 
-Status: **DRAFT r3 — Arch pivot, awaiting user approval. Not started.**
+Status: **r3 COMPLETE (2026-11-21) — all 18 steps done.** Cluster: 3× Arch
+VMs, hand-rolled k8s 1.35.0 + etcd 3.6.7 + Cilium 1.20.5, smoke-proven,
+frozen at snapshot `phase1-complete` ×3. Lab start/stop:
+`~/k8s-lab/scripts/cluster-{up,down}.sh`. Phase 2 planning is a fresh task.
 Date: 2026-11-21
 Session scope: Phase 1 only. Later phases are direction, not commitments.
 
@@ -138,13 +141,16 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
 - Check per node: `sysctl net.ipv4.ip_forward` = 1; `lsmod | grep -E
   'overlay|br_netfilter'`; binaries in PATH; `systemctl status containerd` =
   inactive (started later, by hand, in its step).
-- [ ]
+- [x] (verified remotely on all 3 nodes 2026-11-21: sysctls live, modules
+  loaded, containerd 2.4.2-1 / runc 1.5.3-1 / cni-plugins 1.10.0-1 installed,
+  containerd inactive, swap 0B)
 
 ### 7. Restore-point snapshot **[mech]**
 - Shut all three down; `snapshot-create-as <node> bootstrap-clean` ×3; start
   them again.
 - Check: `virsh snapshot-list` ×3 shows `bootstrap-clean`.
-- [ ]
+- [x] (taken 2026-11-21 after wiping a premature cp-1 cert distribution —
+  captures true post-step-6, pre-PKI state on all 3)
 
 ### 8. Runbook rework for Arch **[mech]**
 - Rewrite Part 1 (VM ops) + Part 2 (deploy loop = ssh + scp + systemctl, no
@@ -168,7 +174,11 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
   node), 0600 root.
 - Check: `openssl verify` against ca.crt for every cert; SANs/CN/EKU via
   `openssl x509 -text`; `git status` shows no keys tracked.
-- [ ]
+- [x] (2026-11-21: pki/ minted + fixed on host — front-proxy-client re-signed
+  by front-proxy-ca after issue() CA-arg bug was caught by the verify loop;
+  distributed per §5.3, all files 0600 root on the right nodes; apiserver.crt
+  hash matches host↔cp-1; ca.key + admin/kube-proxy kubeconfigs never left
+  the host; verified by remote battery)
 
 ### 10. etcd on cp-1 **[you]**
 - Download + sha256-verify `etcd-v3.6.7` tarball; `/usr/local/bin/{etcd,etcdctl}`;
@@ -178,7 +188,13 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
   `systemctl enable --now etcd`.
 - Check: `etcdctl --endpoints=https://192.168.122.10:2379 endpoint health`,
   `member list`, put/get roundtrip, `snapshot save` (first backup drill).
-- [ ]
+- [x] (verified 2026-11-21: user-built unit matches runbook flag-for-flag;
+  active+enabled; endpoint health/put-get/snapshot green via 127.0.0.1 with
+  client certs; `endpoint status` IS LEADER true, 3.6.7; negative checks both
+  directions fail as required — no-CA = x509 unknown authority, CA-without-
+  client-cert = server-side `tls: bad certificate` rejection in journal;
+  ss: 2379 on 127.0.0.1+.10, 2380 on .10. Doc fixed: dropped ETCDCTL_API
+  prefix, IS LEADER moved from member-list to endpoint-status.)
 
 ### 11. kube-apiserver on cp-1 **[you]**
 - k8s **v1.35.0** server tarball → `/usr/local/bin/`; hand-write unit
@@ -190,18 +206,31 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
   InternalIP`, `--anonymous-auth=false`, requestheader/proxy-client flags.
 - Check: `kubectl --kubeconfig pki/admin.kubeconfig get --raw /healthz`,
   `/readyz`, `/livez` → ok; anonymous curl to :6443 → **401**.
-- [ ]
+- [x] (verified 2026-11-21: unit flag-complete vs runbook; single healthy run
+  since 20:37:17 UTC (startup grpc-cancel burst = warmup noise, zero etcd
+  errors after); host devShell kubectl → /healthz /readyz /livez all ok,
+  4 bootstrap namespaces; anonymous curl → 401; CA fingerprints host↔cp-1
+  match (cluster CA ≠ front-proxy CA); ss *:6443. User reported "401 every
+  kubectl" — not reproducible via documented path; no ~/.kube/config shadow;
+  pending user re-run to confirm client-shell env was the cause.)
 
 ### 12. controller-manager + scheduler on cp-1 **[you]**
 - Hand-written units + kubeconfigs; leader election left **on** (single
   replica is fine and creates the Leases the check uses).
 - controller-manager: `--root-ca-file`, `--service-account-private-key-file`,
-  `--use-service-account-credentials`, `--cluster-signing-cert-file/-key-file`,
-  `--allocate-node-cidrs=false` (Cilium owns IPAM),
-  `--authentication-kubeconfig/--authorization-kubeconfig`.
+  `--use-service-account-credentials`, `--allocate-node-cidrs=false` (Cilium
+  owns IPAM), `--authentication-kubeconfig/--authorization-kubeconfig`.
+- **Deviation (2026-11-21, documented in the runbook):**
+  `--cluster-signing-*` flags dropped — they would require `ca.key` on
+  cp-1, and the locked rule is *CA key never leaves the host*. All lab
+  certs are pre-minted and static, so nothing needs the signer;
+  `bootstrapsigner`/`tokencleaner` controllers disabled explicitly.
+  Revisit with TLS bootstrap (later phase).
 - Check: `kubectl -n kube-system get lease` shows both; `kubectl get
   namespaces` → default, kube-system; default SA exists.
-- [ ]
+- [x] *(2026-11-21: leases held by cp-1 (cm + scheduler, verified), default
+  SA created — controller-manager's serviceaccount controller working.
+  User drove; boxes ticked after full §13 verification battery.)*
 
 ### 13. containerd + kubelet on all three **[you]**
 - containerd: hand-write `/etc/containerd/config.toml` (SystemdCgroup=true,
@@ -209,16 +238,33 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
   `/opt/cni/bin` as a real dir and copy the loopback plugin from the pacman
   cni-plugins dir (`pacman -Ql cni-plugins` → copy loopback) — Cilium writes
   its own binary there later; `systemctl enable --now containerd`.
+  *(Verified on nodes 2026-11-21: pacman's cni-plugins already installs all
+  plugins directly into `/opt/cni/bin` incl. loopback — no copy needed,
+  just verify. `crictl` is in `extra` (pacman). Config generated via
+  `containerd config default` + edits.)*
 - kubelet: v1.35.0 binaries; hand-written unit + KubeletConfiguration:
   cgroupDriver systemd, containerRuntimeEndpoint, clusterDNS
   [10.43.0.10], clusterDomain cluster.local, failSwapOn true, serving certs,
   webhook authn (anonymous off) + authz, resolvConf = real upstream (not a
   127.0.0.x stub), `--node-ip`, `--hostname-override`; cp-1 registers with
   taint `node-role.kubernetes.io/control-plane:NoSchedule`.
+  *(Verified on nodes 2026-11-21: guests run systemd-resolved, so
+  `/etc/resolv.conf` IS the `127.0.0.53` stub — kubelet must use
+  `/run/systemd/resolve/resolv.conf` (`nameserver 192.168.122.1`). Hostnames
+  are already correct, so no `--hostname-override`. DEVIATION found live
+  2026-11-21: `--node-labels=node-role.kubernetes.io/control-plane=` is
+  rejected by kubelet at flag validation (a kubelet may state provable facts
+  about itself, not self-assign a role) — the ROLES label is applied
+  admin-side from the host with `kubectl label` (as kubeadm does); the taint
+  stays as a kubelet flag.)*
 - Check: `kubectl get nodes` = 3 × **NotReady** ("cni plugin not initialized"
   — the gate); `crictl info` shows runtime ready except network.
 - Optional: snapshot `pre-cni` on all three **together**.
-- [ ]
+- [x] *(2026-11-21: 3 nodes registered NotReady on NetworkPluginNotReady,
+  correct IPs/roles; kubelet+containerd active ×3; anonymous 10250 → 401 ×3.
+  Live incidents folded into runbook troubleshooting: node-labels rejection,
+  sed backslash-continuation, ×3 copy-paste-between-nodes. pre-cni snapshot
+  pending user OK.)*
 
 ### 14. kube-proxy DaemonSet **[you]**
 - `manifests/kube-proxy.yaml`: KubeProxyConfiguration mode iptables,
@@ -227,7 +273,11 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
   `kubectl create secret`, never committed.
 - Check: ds 3/3 ready; `iptables-save | grep KUBE-SERVICES`; from a node
   `curl -k https://10.43.0.1/healthz` answers (401/403 proves ClusterIP).
-- [ ]
+- [x] *(2026-11-21: pods 3/3 Running; KUBE-SERVICES chains on worker-1;
+  10.43.0.1 → 401 from node (VIP routed), unreachable from host (intra-cluster
+  only). Two live traps folded into runbook: secret file-mounts need subPath
+  (dir-mount nesting → runc 'not a directory'); not-ready/unreachable
+  tolerations required or DESIRED 0. I drove the final fix at user request.)*
 
 ### 15. Cilium **[you]**
 - Helm OCI `--version 1.20.5` into kube-system; committed
@@ -237,13 +287,25 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
   (Matrix re-check before install: 1.20.5 ↔ k8s 1.33–1.36 ✓ 2026-11-21.)
 - Check: `cilium status --wait`; nodes **Ready**;
   `kubectl -n kube-system exec ds/cilium -- cilium-dbg status` healthy.
-- [ ]
+  *(Done 2026-11-21 by builder at user's request. All green: agents 3/3,
+  envoy 3/3 (chart ships it), operator 1/1, hubble-relay 1/1 — relay
+  crash-looped until CoreDNS existed (hubble-peer lookup), self-healed
+  after step 16. Nodes Ready ×3. Trap found live: cp-1's
+  --register-with-taints never landed — node object registered during the
+  pre-fix crash-loop era; taints stamp at registration time only; stamped
+  admin-side with kubectl taint. Values note: kubeProxyReplacement is the
+  STRING "false". Commit 0f2d7ea.)*
+- [x]
 
 ### 16. CoreDNS **[you]**
 - Pinned manifest, ClusterIP `10.43.0.10`, forward to node resolv.conf.
 - Check: busybox:1.28 pod: `nslookup kubernetes.default` + external
   `nslookup example.com` (1.28 — newer busybox nslookup lies).
-- [ ]
+  *(Done 2026-11-21 by builder. 2/2 pods on workers only (taint proof),
+  kube-dns 10.43.0.10, internal nslookup → 10.43.0.1, external → real
+  IPs. Trap found live: `health { lameduck 5s }` on one line = CoreDNS
+  parse error; Corefile blocks must be multi-line. Commit 0f2d7ea.)*
+- [x]
 
 ### 17. Smoke + NetworkPolicy demo **[you]**
 - Deployment (2 replicas across workers) + NodePort reachable from host over
@@ -251,14 +313,26 @@ metrics-server, Gitea CI/CD, AWX, GPU scheduling.
   default-deny policy blocks curl → allow policy unblocks (allow DNS egress
   if egress denied).
 - Check: all three pass; results in `README.md`.
-- [ ]
+  *(Done 2026-11-21 by builder: NodePort 200/200 from host, in-cluster
+  wget by DNS name, deny→allow policy demo. cilium connectivity test
+  needed a version-matched CLI — devShell 0.18.8 wedged silently against
+  agent 1.20.5 (the documented skew risk, now proven real); fetched
+  cilium-cli 0.20.3 sha256-verified. Result 81/82 groups, 702/703 actions;
+  sole failure = hubble-relay restart counter, known artifact of relay
+  booting pre-CoreDNS, self-healed. Commit b174e51.)*
+- [x]
 
 ### 18. Wrap-up **[mech]**
 - Stop VMs; snapshot `phase1-complete` ×3 together; `README.md` with
   architecture, node/CIDR table, restore procedure; final commit.
 - Check: `virsh snapshot-list` ×3; `git log --oneline` one commit per step;
   `git status` clean.
-- [ ]
+  *(Done 2026-11-21. phase1-complete ×3, verified by full restart → 3/3
+  Ready. README.md written. Added on user request: scripts/cluster-up.sh +
+  cluster-down.sh (idempotent lab start/stop; VMs have no autostart so the
+  lab consumes zero resources when down) — full down/up/idempotent cycle
+  tested live. Commit 399d1f2. PHASE 1 COMPLETE.)*
+- [x]
 
 ## Risks / notes
 
