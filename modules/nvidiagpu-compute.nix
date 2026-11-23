@@ -69,11 +69,21 @@
     # --- DRIVER SOURCE OVERRIDE (added 2026-11-08, Xid 69 mitigation) ---
     # 26.05 is frozen at driver 595.71.05. Hyprland kept dying with NVRM Xid 69
     # (GPU channel error on the compositor's channel; identical coredumps
-    # 2026-11-03 and 2026-11-08, mouse-stutter prodrome each time). Fix attempt:
-    # same-branch production driver from the pinned `nixpkgs-nvidia` input
-    # (595.112.07 — same 595 branch, point releases only, NOT the 615
-    # new-feature branch). See the input's comment in flake.nix for why it is
-    # a dedicated rev pin instead of nixpkgs-unstable.
+    # 2026-11-03 and 2026-11-08, mouse-stutter prodrome each time). Fix:
+    # production driver from the pinned `nixpkgs-nvidia` input. See the
+    # input's comment in flake.nix for why it is a dedicated rev pin
+    # instead of nixpkgs-unstable.
+    #
+    # BUMPED 2026-11-23: after 15 clean days on 595.112.07, the morning boot
+    # black-screened with Xid 175 (10s GSP RPC timeout → Xid 154 "GPU Reset
+    # Required" → Hyprland SIGABRT in initEGL → black screen WITH signal; full
+    # story in that boot's journal / coredumpctl). 595.112.07 is the FINAL
+    # R595 point release, so the pin moved branches: this rev now carries
+    # R620 production 620.73.04 (R620 replaced R595 as production on
+    # 2026-11-04; new GSP firmware build). Xid history on this card —
+    # 154 (Jul, RTD3) → 79 (Aug, bus) → 69 (Nov, 595.71.05) → 175 (Nov,
+    # 595.112.07) — says each driver hop reshuffles the failure mode; R620
+    # is the one lever left.
     #
     # Why this shape and not a plain nixpkgs overlay: the kernel package set
     # re-instantiates nvidia-x11 FROM SOURCE in its own scope (linux-kernels.nix:
@@ -89,7 +99,7 @@
     # `hardware.nvidia.open = true` below makes the NixOS module load
     # `package.open`, which the pinned rev's generic.nix provides automatically.
     #
-    # TODO(26.11): when inputs move to release-26.11 (carries ≥ 595.112.07),
+    # TODO(26.11): when inputs move to release-26.11 (carries ≥ 620.73.04),
     # delete this override AND the `nixpkgs-nvidia` input (remove the input
     # from flake.nix, then run a bare `nix flake lock` to drop the lock node),
     # and restore plain:
@@ -127,7 +137,8 @@
   # Verify after rebuild:  cat /sys/module/nvidia/parameters/NVreg_DynamicPowerManagement
   # (expect 0x00 / "disabled"). NOTE (driver 595): that sysfs path no longer
   # exists — the authoritative read is now:  grep DynamicPowerManagement
-  # /proc/driver/nvidia/params  (confirmed "0" on 2026-08-17).
+  # /proc/driver/nvidia/params  (confirmed "0" on 2026-08-17). Unverified on
+  # driver 620 — recheck after the 2026-11-23 R620 switch+reboot.
   #
   # RECURRENCE 2026-08-17 — twice in one day, and the second one was CAUGHT
   # by the journald SyncIntervalSec=15s hardening (core/default.nix):

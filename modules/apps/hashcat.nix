@@ -3,8 +3,9 @@
 # hashcat 7.1.2 — GPU-accelerated password cracker. Desktop-only.
 #
 # The RTX 5080 (Blackwell, sm_120) is already exposed: clinfo reports
-# "NVIDIA CUDA → NVIDIA GeForce RTX 5080" on the live system, and driver
-# nvidia-x11-595.x (>>570 Blackwell floor) ships the userspace libs hashcat
+# "NVIDIA CUDA → NVIDIA GeForce RTX 5080" on the live system, and the nvidia
+# driver package (>>570 Blackwell floor; 620.x since the 2026-11-23 R620 bump)
+# ships the userspace libs hashcat
 # dlopens at runtime. The bare hashcat package does NOT add those libs to its
 # own loader path, so we wrap it. Two distinct things must resolve:
 #
@@ -17,7 +18,8 @@
 #                         fallback to the (slower) OpenCL backend. NVRTC needs
 #                         libnvjitlink on sm_120. We pull just those two small
 #                         libs from cudaPackages (12.9 — ≥12.8 = Blackwell-capable;
-#                         compiled kernels run on the driver's CUDA 13.2 fine).
+#                         compiled kernels run on the driver's CUDA 13.x fine
+#                         (13.2 on driver 595; recheck nvidia-smi on 620).
 #
 # Result: hashcat -I shows the 5080 under BOTH backends and uses CUDA by default.
 #

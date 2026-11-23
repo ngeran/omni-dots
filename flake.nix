@@ -5,21 +5,27 @@
     nixpkgs.url = "nixpkgs/nixos-26.05";
     # --- UNSTABLE ---
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
-    # --- NVIDIA DRIVER SOURCE PIN (2026-11-08) ---
+    # --- NVIDIA DRIVER SOURCE PIN (2026-11-23) ---
     # Sole source of the RTX 5080 driver expression in modules/nvidiagpu-compute.nix.
-    # 26.05 is frozen at 595.71.05 (recurring Xid 69 Hyprland crashes); this rev
-    # carries the same-branch production driver 595.112.07. Pinned to an exact
-    # rev — NOT a moving branch — so bumping it moves ONLY the driver.
+    # 26.05 is frozen at 595.71.05. The previous pin (595.112.07, set 2026-11-08
+    # for recurring Xid 69) ran 15 clean days, then the 2026-11-23 boot
+    # black-screened with Xid 175 (GSP RPC timeout). 595.112.07 is the FINAL
+    # R595 point release, so the pin moved branches: R620 replaced R595 as the
+    # production branch on 2026-11-04, and this rev carries 620.73.04 (new GSP
+    # firmware build). Pinned to an exact rev — NOT a moving branch — so
+    # bumping it moves ONLY the driver.
     # nixpkgs-unstable above is deliberately left on its own (older, vetted)
-    # lock: its consumers (matugen/opencode/davinci) must not drift with a
-    # driver bump — the Nov-5 unstable broke davinci's zip hash (Blackmagic
-    # CDN rotation; see the overlay in modules/apps/video-editing.nix).
-    # TODO(26.11): release-26.11 ships ≥ 595.112.07 — delete this input and
-    # the overlay in nvidiagpu-compute.nix together.
-    nixpkgs-nvidia.url = "github:NixOS/nixpkgs/f9a75f41be3a74eab55d3a7679d34ad6cc0da977";
+    # lock: its consumers (matugen/opencode/davinci/hyprland — the compositor
+    # + its portal ride the same lock, see hosts/desktop/default.nix) must
+    # not drift with a driver bump — the Nov-5 unstable broke davinci's zip
+    # hash (Blackmagic CDN rotation; see the overlay in
+    # modules/apps/video-editing.nix).
+    # TODO(26.11): verify release-26.11's driver ≥ 620, then delete this
+    # input and the override in nvidiagpu-compute.nix together.
+    nixpkgs-nvidia.url = "github:NixOS/nixpkgs/b723e5d671e99c27ec7d980c3e1766256d7c0f42";
     # --- DAVINCI RESOLVE SOURCE PIN (2026-11-08) ---
     # Sole source of davinci-resolve in modules/apps/video-editing.nix.
-    # The shared nixpkgs-unstable lock above (matugen/opencode/davinci) is
+    # The shared nixpkgs-unstable lock above (matugen/opencode/davinci/hyprland) is
     # older than the Resolve 21.1.1 bump and must not drift just for one app;
     # this exact rev IS the "davinci-resolve: 21.1 -> 21.1.1" commit, and it
     # carries upstream's re-pinned source hash — which is why the local

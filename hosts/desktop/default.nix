@@ -1,5 +1,16 @@
 { inputs, config, lib, pkgs, ... }:
 
+let
+  # Hyprland 0.57.2 lives in the shared nixpkgs-unstable lock (26.05 has
+  # 0.55.4). Same import pattern as modules/matugen.nix — binary-cached on
+  # cache.nixos.org, no local C++ build. Used ONLY for the compositor and
+  # its version-coupled portal (see programs.hyprland below).
+  pkgs-unstable = import inputs.nixpkgs-unstable {
+    system = pkgs.stdenv.hostPlatform.system;
+    config.allowUnfree = true;
+  };
+in
+
 {
   imports = [
     ./hardware-configuration.nix
@@ -158,6 +169,17 @@
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
+    # 0.57.2 from the locked nixpkgs-unstable (26.05 ships 0.55.4). Why bump:
+    # 0.57.x's start-hyprland wrapper now HANDLES signal-terminated children
+    # instead of leaving a dead VT — exactly the 2026-11-23 black-screen mode
+    # (Hyprland SIGABRT after Xid 175, greeter never came back) — and init no
+    # longer grabs realtime scheduling (crashes under RT-scheduling load,
+    # fixed in 0.57.2).
+    # portalPackage moves WITH the compositor: xdg-desktop-portal-hyprland is
+    # version-coupled to it (screencast sharing breaks on mismatch), so both
+    # come from the same unstable set.
+    package = pkgs-unstable.hyprland;
+    portalPackage = pkgs-unstable.xdg-desktop-portal-hyprland;
   };
 
   # Modern way to handle Portals

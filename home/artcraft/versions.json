@@ -16,8 +16,8 @@
   "pdfcraft": {
     "displayName": "PdfCraft",
     "repo": "storytold/pdfcraft",
-    "version": "0.21.1",
-    "url": "https://github.com/storytold/pdfcraft/releases/download/v0.21.1/pdfcraft-0.21.1-linux-x86_64.AppImage",
-    "hash": "sha256-cwJ2zamt2z1I8mxgJobRj8W8Dr42CmCi9SLXDP1CjSE="
+    "version": "0.22.0",
+    "url": "https://github.com/storytold/pdfcraft/releases/download/v0.22.0/pdfcraft-0.22.0-linux-x86_64.AppImage",
+    "hash": "sha256-dx9hsHqvjMF+c8sfk/vohSbyewqoL/MtBxDiw3X0kkg="
   }
 }
