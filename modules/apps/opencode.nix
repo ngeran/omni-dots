@@ -1,6 +1,6 @@
 # modules/apps/opencode.nix
 # OpenCode — open-source AI coding agent for the terminal (opencode.ai).
-# Default model = the z.ai coding plan (glm-5.3) via its Anthropic-compatible
+# Default model = the z.ai coding plan (glm-5.4) via its Anthropic-compatible
 # gateway, authenticated from ~/.config/secrets/zai_key — the ONE location
 # every Z.ai key reference points at (Claude Code's configure-claude activation
 # script in modules/apps/essentials.nix reads the same file). The LOCAL Ollama
@@ -78,11 +78,15 @@ in
       # Nix owns the binary — never let it self-update underneath the profile.
       autoupdate = false;
 
-      # Default agent model: the strong cloud tier. Local Ollama remains
-      # selectable per-session via /models (see provider.ollama below) for
-      # offline work; its 14B variants are deliberately not the default —
-      # the cloud gateway is dramatically faster and has a 1M context.
-      model = "zai-gateway/glm-5.3";
+      # Default agent model: the strong cloud tier — GLM-5.4, released
+      # 2026-11-23 and verified live on this gateway 2026-11-24 (probe in
+      # the provider.models comment below). GLM-5.3 stays declared below
+      # as the known-good /models fallback while 5.4 is days old. Local
+      # Ollama also remains selectable per-session (see provider.ollama
+      # below) for offline work; its 14B variants are deliberately not the
+      # default — the cloud gateway is dramatically faster and has a 1M
+      # context.
+      model = "zai-gateway/glm-5.4";
 
       # Background housekeeping (titles, anchored session summaries) goes to
       # the fast/cheap sibling. opencode runs a summarizer subagent after
@@ -144,7 +148,7 @@ in
       # the main context a paragraph instead of the whole tree.
       agent = {
         plan = {
-          model = "zai-gateway/glm-5.3";
+          model = "zai-gateway/glm-5.4";
           description = "Read-only planner: explores, then writes PLAN.md only.";
           prompt = "{file:./prompts/plan.txt}";
           steps = 24;
@@ -169,7 +173,7 @@ in
         };
 
         build = {
-          model = "zai-gateway/glm-5.3";
+          model = "zai-gateway/glm-5.4";
           description = "Builder: executes PLAN.md in small, verified steps.";
           prompt = "{file:./prompts/build.txt}";
           permission = {
@@ -264,20 +268,39 @@ in
 
         models = {
           # Haiku-tier slot in the z.ai routing (fast, cheap) — also the
-          # small_model above (summarizer/titles).
+          # small_model above (summarizer/titles). Stays on 5.3: there is
+          # no glm-5.4-flash yet (gateway /v1/models lists none, and a
+          # 2026-11-24 probe of "glm-5.4-flash" got 1211 Unknown Model).
           "glm-5.3-flash" = {
             name = "GLM 5.3 Flash";
             tool_call = true;
             limit.context = 1000000;
             limit.output = 65536;
           };
-          # Sonnet/Opus-tier slot (deep work). Switch per-session with
-          # /models — the default stays the local ollama ladder.
+          # Sonnet/Opus-tier slot (deep work). Kept selectable via
+          # /models as the known-good fallback while glm-5.4 (below) is
+          # brand new.
           "glm-5.3" = {
             name = "GLM 5.3";
             tool_call = true;
             limit.context = 1000000;
             limit.output = 65536;
+          };
+          # Current flagship (2026-11-23) and the default above. First
+          # "loop transformer" model — 28 layers run twice per token,
+          # buying 2T-3T-class coding quality at 750B scale, and it costs
+          # ~1.5x FEWER coding-plan credits per token than 5.3 (z.ai
+          # multipliers 4.6/1.1/16 vs 6.9/1.7/24 for input/cache/output).
+          # Verified live against THIS gateway 2026-11-24: /v1/models
+          # lists glm-5.4 and a probe completion returned model=glm-5.4.
+          # Published limits: 1M context, 128K output — same context-1m
+          # beta header above as 5.3. Plain ID, no "[1m]" suffix (see the
+          # model-ID note above).
+          "glm-5.4" = {
+            name = "GLM 5.4";
+            tool_call = true;
+            limit.context = 1000000;
+            limit.output = 131072;
           };
         }; # models
       }; # provider.zai-gateway
