@@ -2,9 +2,9 @@
   "photocraft": {
     "displayName": "PhotoCraft",
     "repo": "storytold/photocraft",
-    "version": "0.24.0-rc.1",
-    "url": "https://github.com/storytold/photocraft/releases/download/v0.24.0-rc.1/photocraft-0.24.0-rc.1-linux-x86_64.AppImage",
-    "hash": "sha256-TNJajzWaf635u9K1nqw+vpdPqOSXezxQ0NWnjbthnZM="
+    "version": "0.24.0-rc.2",
+    "url": "https://github.com/storytold/photocraft/releases/download/v0.24.0-rc.2/photocraft-0.24.0-rc.2-linux-x86_64.AppImage",
+    "hash": "sha256-WC2atqVcaNXs+FlBfDM+b4Cl2W/vwv+o4GOqcYw9I78="
   },
   "vectorcraft": {
     "displayName": "VectorCraft",
