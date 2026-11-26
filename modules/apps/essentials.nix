@@ -123,11 +123,16 @@ in
     enable = true;
     enableBashIntegration = true;
 
-    # Your exact configuration mapped natively into Nix
+    # Your original configuration mapped natively into Nix. Deliberate
+    # differences from it are commented where they live.
     settings = {
       add_newline = true;
       command_timeout = 200;
-      format = "[$directory$git_branch$git_status]($style)$character";
+      # An explicit top-level `format` replaces starship's whole default
+      # prompt, so a module that is not listed here is never drawn. $hostname
+      # leads: the same user is on every machine, so the hostname is the only
+      # thing that says which one this prompt belongs to.
+      format = "$hostname[$directory$git_branch$git_status]($style)$character";
 
       character = {
         error_symbol = "[✗](bold cyan)";
@@ -147,19 +152,32 @@ in
       };
 
       git_status = {
+        # conflicted / up_to_date / modified are Nerd Font glyphs, as in
+        # upstream Omarchy; they render blank in a plain font.
         format = "[$all_status]($style)";
         style = "cyan";
         ahead = "⇡\${count} ";
         diverged = "⇕⇡\${ahead_count}⇣\${behind_count} ";
         behind = "⇣\${count} ";
-        conflicted = " ";
-        up_to_date = " ";
+        conflicted = " ";
+        up_to_date = " ";
         untracked = "? ";
-        modified = " ";
+        modified = " ";
         stashed = "";
         staged = "";
         renamed = "";
         deleted = "";
+      };
+
+      # Names the machine, but only inside an SSH session: the local prompt
+      # stays as it is and every remote prompt starts with the ssh symbol and
+      # the hostname. ssh_only is starship's default too; written out so the
+      # choice is visible. It keys off the SSH_CONNECTION / SSH_CLIENT /
+      # SSH_TTY variables, so a shell without them shows no label.
+      hostname = {
+        ssh_only = true;
+        format = "[$ssh_symbol$hostname]($style) ";
+        style = "bold yellow";
       };
     };
   };
